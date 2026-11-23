@@ -1,6 +1,6 @@
 // `prepare-song report`: the chart report on the Mac (spec, "The song pipeline"). It is a report, not a test.
 // For each song of the inbox, it gives the child note count for each record color and speed step, the notes
-// per minute, and the longest gap. It reads the charts from the .sng files, so it needs no ffmpeg.
+// per minute, the longest gap, and each fill of a long rest (start, end, source part, and note count). It reads the charts from the .sng files, so it needs no ffmpeg.
 
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -58,6 +58,14 @@ const rowOf = (facts: SongFacts, color: RecordColor, step: SpeedStep): string =>
   ].join('');
 };
 
+/** The report line of each fill: from its first note to the end of its last note. */
+const fillLines = (facts: SongFacts): string[] =>
+  facts.fills.map(({ part, notes }) => {
+    const start = notes[0]?.t ?? 0;
+    const end = Math.max(...notes.map((note) => note.t + note.lenSec));
+    return `  fill ${clock(start)} to ${clock(end)}  ${part}  ${String(notes.length)} notes`;
+  });
+
 /** The report lines of one song. */
 const songReport = (facts: SongFacts): string[] => {
   const length = lengthOf(facts);
@@ -68,6 +76,7 @@ const songReport = (facts: SongFacts): string[] => {
     `${facts.id}: ${facts.title} / ${facts.artist} | notes to ${clock(length)} | beat ${beat.toFixed(2)} s${tempo}`,
     '  color    step  notes  per min  longest gap',
     ...rows,
+    ...(facts.fills.length === 0 ? ['  fills: none'] : fillLines(facts)),
   ];
 };
 
