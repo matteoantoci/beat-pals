@@ -111,11 +111,11 @@ const credits = async (page: Page): Promise<void> => {
 };
 
 /** Makes the save code of the progress and gives it back. */
-const exportCode = async (page: Page): Promise<string> => {
+const makeCode = async (page: Page): Promise<string> => {
   check('save code: the note', (await textOf(page, '.save-code-note')) === 'This code lists the songs on this device.');
   await tapIn(page, '.save-make');
   await wait(300);
-  const code = await page.$eval('.save-export textarea', (el) => el.value).catch(() => '');
+  const code = await page.$eval('.save-new textarea', (el) => el.value).catch(() => '');
   check('save code: a code shows', /^[\w-]{20,}$/u.test(code), `${String(code.length)} characters`);
   return code;
 };
@@ -167,7 +167,7 @@ export const parentSections = async (page: Page): Promise<void> => {
   const before = await stored(page, SAVE);
   await soundSwitch(page);
   await credits(page);
-  const code = await exportCode(page);
+  const code = await makeCode(page);
   await reset(page);
   await restoreCode(page, code, before);
   await closeParentArea(page, 'parent sections');
