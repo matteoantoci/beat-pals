@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreBinaries": [
+    // A global tool on the Mac (CLAUDE.md, "Local services"), not a package of the repo.
+    "portless",
+  ],
+  "ignoreDependencies": [
+    // The play screen draws with PixiJS. Ticket 01 sets the stack; the play screen imports the package.
+    "pixi.js",
+  ],
+}
