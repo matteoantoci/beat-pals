@@ -10,9 +10,12 @@ export const installSound = (): void => {
   installAudio([TITLE_MUSIC]);
 };
 
-/** Starts the title music, or keeps it playing. Call it from a tap. */
+/** Starts the title music, or keeps it playing. Call it from a tap. After a context replacement, it starts again
+ * by itself until `stopTitleMusic`. */
 export const playTitleMusic = (): void => {
   playLoop(TITLE_MUSIC, TITLE_GAIN_DB);
 };
 
 export { stopLoop as stopTitleMusic };
+export { loadSong } from './song';
+export type { Song, SongEvents } from './song';
