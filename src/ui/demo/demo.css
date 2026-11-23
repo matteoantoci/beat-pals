@@ -1,0 +1,76 @@
+/* The demo route (src/ui/demo/). With `sim`, the screen is an iPhone 12: 390 x 844 in portrait, 844 x 390 in
+   landscape. The notch, the home indicator, and the round corners cover the screen, and the safe areas of that
+   phone replace env(safe-area-inset-*), which a desktop browser gives as 0. */
+.demo-sim .play-probe {
+  padding: 47px 0 34px;
+}
+
+.demo-sim .play-hud {
+  top: 63px;
+  right: 16px;
+  left: 16px;
+}
+
+.demo-device {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: 47px;
+  box-shadow: 0 0 0 64px #000;
+  pointer-events: none;
+}
+
+.demo-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 210px;
+  height: 30px;
+  transform: translateX(-50%);
+  border-radius: 0 0 20px 20px;
+  background: #000;
+}
+
+.demo-home {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 134px;
+  height: 5px;
+  transform: translateX(-50%);
+  border-radius: 3px;
+  background: #fff;
+}
+
+.demo-failure {
+  position: absolute;
+  inset: auto 16px 50%;
+  z-index: 6;
+  margin: 0;
+  color: #fff;
+  font:
+    16px/1.4 system-ui,
+    sans-serif;
+  text-align: center;
+}
+
+@media (orientation: landscape) {
+  .demo-sim .play-probe {
+    padding: 0 47px 21px;
+  }
+
+  .demo-sim .play-hud {
+    top: 16px;
+    right: 63px;
+    left: 63px;
+  }
+
+  .demo-notch {
+    top: 50%;
+    left: 0;
+    width: 30px;
+    height: 210px;
+    transform: translateY(-50%);
+    border-radius: 0 20px 20px 0;
+  }
+}

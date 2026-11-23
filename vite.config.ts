@@ -45,9 +45,15 @@ const songStore = (): Plugin => ({
   },
 });
 
-export default defineConfig({
+/**
+ * The demo route (spec, "Testing Decisions") exists in the dev server and in the smoke build (`vite build --mode
+ * smoke`) only. Every other build, as the `deploy` build, sets the flag to false, so the bundler drops the route and
+ * its fixture (src/main.tsx).
+ */
+export default defineConfig(({ mode }) => ({
   // GitHub Pages serves the app from https://<user>.github.io/beat-pals/.
   base: '/beat-pals/',
+  define: { 'import.meta.env.DEMO': JSON.stringify(mode === 'development' || mode === 'smoke') },
   plugins: [
     solid(),
     songStore(),
@@ -75,4 +81,4 @@ export default defineConfig({
       },
     }),
   ],
-});
+}));
