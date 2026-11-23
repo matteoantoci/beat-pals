@@ -1,9 +1,9 @@
 // The joy of the end scene: the pals pop in and dance on a beat of 0.55 s, and at 70% or more confetti falls
 // (prototype play-style A, `dance` and `confetti`). Both stop before the scene ends, so the final state is still.
 
+import { randomFrom, type Lane } from '../../model';
 import { css, LANE_COLORS, TOKENS } from '../pals/color';
 import { animate } from './animate';
-import type { Lane } from '../../model';
 
 /** Who dances: their pictures, and the time in seconds when each dancer starts. */
 export type Dancers = {
@@ -45,15 +45,6 @@ export const dance = ({ pals, starts, length }: Dancers): void => {
   }
 };
 
-/** A small seeded random source, so the confetti falls the same way each time. */
-const seeded = (seed: number): (() => number) => {
-  let state = seed;
-  return () => {
-    state = (state * 1_103_515_245 + 12_345) % 2_147_483_648;
-    return state / 2_147_483_648;
-  };
-};
-
 /** One piece of confetti that falls with a sway and a spin. */
 const piece = (box: HTMLElement, color: string, random: () => number): void => {
   const el = document.createElement('i');
@@ -76,7 +67,7 @@ const piece = (box: HTMLElement, color: string, random: () => number): void => {
 
 /** 56 pieces in the lane colors and white fall from the top, and all fade out before the scene ends. */
 export const confetti = (box: HTMLElement, length: number): void => {
-  const random = seeded(42);
+  const { next: random } = randomFrom(42);
   const colors = [...LANE_COLORS.map((lane) => css(lane.base)), css(TOKENS.white)];
   for (let at = 0; at < CONFETTI; at += 1) {
     piece(box, colors[at % colors.length] ?? '', random);

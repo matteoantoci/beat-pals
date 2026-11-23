@@ -16,6 +16,7 @@ export { readSaveCode, saveCode } from './progress/save-code';
 export { chartAuthors, CREDIT_GROUPS, CREDITS } from './credits/credits';
 export type { CreditGroup } from './credits/credits';
 export { isParentAnswer, parentProblem } from './parent';
+export { randomFrom } from './random';
 export type { ParentProblem } from './parent';
 export { soundStart } from './silence';
 export { firstSongTime, LOOK_AHEAD, songTime, startAt } from './clock';

@@ -3,6 +3,7 @@
 // device. The code is the JSON of `SaveData`, compressed with raw DEFLATE, in base64url (RFC 4648 §5) with no
 // padding. It is not encrypted, so it shows the song ids of the device.
 
+import { fromBase64url, toBase64url } from '../base64url';
 import { restore } from './save';
 import type { RestoreResult, SaveData } from './save';
 
@@ -15,14 +16,10 @@ const pipe = async (
 ): Promise<Uint8Array<ArrayBuffer>> =>
   new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
 
-/** The text of a save code. A code from the parent area of this app is always text of this alphabet. */
-const CODE = /^[\w-]+$/u;
-
 /** The save code of one save. */
 export const saveCode = async (save: SaveData): Promise<string> => {
   const packed = await pipe(new TextEncoder().encode(JSON.stringify(save)), new CompressionStream(FORMAT));
-  const base64 = btoa(Array.from(packed, (byte) => String.fromCodePoint(byte)).join(''));
-  return base64.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+  return toBase64url(packed);
 };
 
 /**
@@ -31,16 +28,15 @@ export const saveCode = async (save: SaveData): Promise<string> => {
  */
 export const readSaveCode = async (code: string): Promise<RestoreResult> => {
   const text = code.replaceAll(/\s/gu, '');
-  if (!CODE.test(text)) {
+  const packed = text === '' ? undefined : fromBase64url(text);
+  if (packed === undefined) {
     return { ok: false, reason: 'shape' };
   }
   try {
-    const binary = atob(text.replaceAll('-', '+').replaceAll('_', '/'));
-    const packed = Uint8Array.from(binary, (char) => char.codePointAt(0) ?? 0);
     const json = new TextDecoder().decode(await pipe(packed, new DecompressionStream(FORMAT)));
     return restore(JSON.parse(json));
   } catch {
-    // atob, the decompression, and JSON.parse throw on damaged text.
+    // The decompression and JSON.parse throw on damaged text.
     return { ok: false, reason: 'shape' };
   }
 };
