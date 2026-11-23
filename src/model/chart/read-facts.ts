@@ -1,8 +1,8 @@
-// The facts file of a ready song. `prepare-song` writes it, and the family key seals it: the store name of the file
-// is the keyed hash of its content, and AES-GCM refuses any change. So the play checks only the version and the
-// lists that it reads, which catches a facts file of a newer version.
+// The reader of the facts file of a ready song. `prepare-song` writes the file, and the family key seals it: the
+// store name of the file is the keyed hash of its content, and AES-GCM refuses any change. So the reader checks only
+// the version and the lists that the play reads, which catches a facts file of a newer version.
 
-import type { SongFacts } from '../../model';
+import type { SongFacts } from './facts';
 
 const isFacts = (value: unknown): value is SongFacts => {
   if (typeof value !== 'object' || value === null) {

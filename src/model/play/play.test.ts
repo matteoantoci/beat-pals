@@ -147,6 +147,24 @@ describe('apply: hits', () => {
   });
 });
 
+/** The note index of each hit. */
+const hitNotes = (events: readonly PlayEvent[]): number[] =>
+  events.flatMap((event) => (event.type === 'hit' ? [event.note] : []));
+
+describe('apply: the note of a hit', () => {
+  it('is the tapped note for an early tap, a late tap, and a tap on time', () => {
+    const offsets = [-0.2, 0.2, 0];
+    const played = playOut(chartOf([1, 2, 3]), { offset: (note) => offsets[note] ?? 0 });
+    expect(hitNotes(played.events)).toEqual([0, 1, 2]);
+  });
+
+  it('is the earlier note for a late tap close to the next note', () => {
+    const offsets = [0.2, null, -0.2];
+    const played = playOut(chartOf([1, 1.5, 2]), { offset: (note) => offsets[note] ?? null });
+    expect(hitNotes(played.events)).toEqual([0, 2]);
+  });
+});
+
 describe('apply: band energy', () => {
   it('goes up to steps 1, 2, 3, and gold at 4, 8, 16, and 30 hits', () => {
     const lines = story(playOut(steady(30)).events);

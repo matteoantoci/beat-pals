@@ -13,6 +13,7 @@ import {
   encodeKeyCode,
   FAMILY_KEY_BYTES,
   type FamilyKey,
+  IV_BYTES,
   makeKeyCheck,
   openFamilyKey,
   opensKeyCheck,
@@ -25,6 +26,9 @@ type Result<T> = { ok: true; value: T } | { ok: false; reason: string };
 
 /** The key folder of the Parent. */
 export const HOME_KEY_FOLDER = join(homedir(), '.config', 'beat-pals');
+
+/** A new random IV for one encrypted file. The model draws no random values, so the scripts make each IV. */
+export const newIv = (): Uint8Array<ArrayBuffer> => crypto.getRandomValues(new Uint8Array(IV_BYTES));
 
 const KEY_FILE = 'song-key';
 const CHECK_FILE = 'song-key-check';
@@ -114,7 +118,7 @@ export const makeKey = async (folder: string): Promise<Result<string>> => {
   }
   const raw = crypto.getRandomValues(new Uint8Array(FAMILY_KEY_BYTES));
   const key = await openFamilyKey(raw);
-  await writeFile(join(folder, CHECK_FILE), `${await makeKeyCheck(key)}\n`, { mode: FILE_MODE });
+  await writeFile(join(folder, CHECK_FILE), `${await makeKeyCheck(key, newIv())}\n`, { mode: FILE_MODE });
   await writeFile(join(folder, KEY_FILE), `${encodeKeyCode(raw)}\n`, { mode: FILE_MODE, flag: 'wx' });
   return { ok: true, value: key.id };
 };

@@ -2,11 +2,9 @@
 // The play model judges the taps; the view only remembers the hits that it reported, so the screen can remove the
 // hit notes and show the effects. Each frame moves the windows forward: no frame looks at the whole song.
 
+import { LOOK_AHEAD, type Action, type ChildChart, type Lane, type PlayEvent, type SongFacts } from '../../model';
 import { EFFECT_SEC, makeHit, type HitRecord } from './effects';
-import { LOOK_AHEAD } from './geometry';
 import { HOLD, makeHolds } from './held';
-import { hitNote } from './hits';
-import type { Action, ChildChart, Lane, PlayEvent, SongFacts } from '../../model';
 
 /** The ring and the pal of a lane get ready this long before a note. */
 const READY_SEC = 0.55;
@@ -161,7 +159,7 @@ export const makeView = (chart: ChildChart, beats: readonly Beat[]): LiveView =>
   const hits: HitRecord[] = [];
   const dones: HoldDone[] = [];
   const record = (hit: Extract<PlayEvent, { type: 'hit' }>, t: number, action: Action): void => {
-    const note = hitNote(chart, hit);
+    const { note } = hit;
     hitNotes[note] = 1;
     if ((chart.notes[note]?.holdSec ?? 0) > 0 && action.type === 'press') {
       holds.grab(note, action.pointerId);

@@ -3,6 +3,7 @@
 
 export { readChart } from './chart/chart-file';
 export type { SongFacts } from './chart/facts';
+export { readFacts } from './chart/read-facts';
 export { readSongChart } from './chart/song-chart';
 export { bandOf, childChart, RECORD_COLORS } from './child/child-chart';
 export type { ChildChart, RecordColor } from './child/child-chart';
@@ -17,15 +18,17 @@ export type { CreditGroup } from './credits/credits';
 export { isParentAnswer, parentProblem } from './parent';
 export type { ParentProblem } from './parent';
 export { soundStart } from './silence';
-export { firstSongTime, songTime, startAt } from './clock';
+export { firstSongTime, LOOK_AHEAD, songTime, startAt } from './clock';
 export type { ClockReading, SongStart } from './clock';
 export { apply, result, startPlay } from './play/play';
 export type { Action, Lane, PlayEvent, PlayState } from './play/play';
+export type { EnergyStep } from './play/energy';
 export { decodeKeyCode, encodeKeyCode, FAMILY_KEY_BYTES } from './store/key-code';
 export {
   decryptFile,
   ENCRYPTION_OVERHEAD,
   encryptFile,
+  IV_BYTES,
   makeKeyCheck,
   openFamilyKey,
   opensKeyCheck,

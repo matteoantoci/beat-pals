@@ -17,6 +17,8 @@ const utf8 = new TextEncoder();
 const COUNTING = Uint8Array.from({ length: 16 }, (_, at) => at);
 const COUNTING_CODE = '000G-40R4-0M30-E209-185G-R38E-1W';
 const OTHER = Uint8Array.from({ length: 16 }, (_, at) => 255 - at);
+/** A test IV: in the game and the scripts, each IV is new and random. */
+const ivOf = (fill: number): Uint8Array<ArrayBuffer> => new Uint8Array(12).fill(fill);
 
 describe('the key code', () => {
   it('gives 26 Crockford characters in groups of 4', () => {
@@ -73,24 +75,25 @@ describe('the family key', () => {
     const key = await openFamilyKey(COUNTING);
     const plain = utf8.encode('the facts of a song');
 
-    const file = await encryptFile(key, plain);
+    const file = await encryptFile(key, plain, ivOf(1));
 
     expect(file.length).toBe(plain.length + 28);
     expect(await decryptFile(key, file)).toEqual(plain);
   });
 
-  it('starts each file with a new random IV', async () => {
+  it('starts each file with its IV, and refuses an IV of another length', async () => {
     const key = await openFamilyKey(COUNTING);
     const plain = utf8.encode('the facts of a song');
 
-    const [one, two] = await Promise.all([encryptFile(key, plain), encryptFile(key, plain)]);
+    const file = await encryptFile(key, plain, ivOf(7));
 
-    expect(one.subarray(0, 12)).not.toEqual(two.subarray(0, 12));
+    expect(file.subarray(0, 12)).toEqual(ivOf(7));
+    await expect(encryptFile(key, plain, new Uint8Array(8))).rejects.toThrow('An IV has 12 bytes.');
   });
 
   it('refuses a wrong key and a damaged file', async () => {
     const key = await openFamilyKey(COUNTING);
-    const file = await encryptFile(key, utf8.encode('the facts of a song'));
+    const file = await encryptFile(key, utf8.encode('the facts of a song'), ivOf(1));
     const damaged = file.slice();
     damaged[20] = (damaged[20] ?? 0) ^ 1;
 
@@ -101,7 +104,7 @@ describe('the family key', () => {
 
   it('opens its own key check and refuses the key check of another key', async () => {
     const [one, two] = await Promise.all([openFamilyKey(COUNTING), openFamilyKey(OTHER)]);
-    const check = await makeKeyCheck(one);
+    const check = await makeKeyCheck(one, ivOf(2));
 
     expect(check).toMatch(/^[A-Za-z0-9_-]+$/u);
     expect(await opensKeyCheck(one, check)).toBe(true);

@@ -18,7 +18,7 @@ import {
   type SongIndex,
   storeName,
 } from '../../src/model/index.ts';
-import type { MacKey } from './key.ts';
+import { type MacKey, newIv } from './key.ts';
 
 type Options = {
   /** The folder of the prepared songs, songs/.prepared/. */
@@ -69,7 +69,7 @@ const storeFile = async (
     () => undefined
   );
   if (present !== size) {
-    await writeWhole(site, `${name}.bin`, await encryptFile(key.key, plain));
+    await writeWhole(site, `${name}.bin`, await encryptFile(key.key, plain, newIv()));
     written.push(name);
   }
   return { name, size };

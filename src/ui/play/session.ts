@@ -2,12 +2,11 @@
 // pictures, makes the stage, and then starts the player. A screen that closes during the load stops it, and the load
 // frees each part that it made. Only one play exists at a time, so the running play is the state of this module.
 
-import { childChart, playSetup } from '../../model';
+import { childChart, playSetup, readFacts } from '../../model';
 import { progressOf } from '../../shell/save';
 import { readSongFiles } from '../../shell/songs';
 import { loadSong } from '../../sound';
 import { decodePals } from '../pals/pal-svg';
-import { readFacts } from './facts';
 import { layout, type Geometry } from './geometry';
 import { makePals, type Pals } from './pals';
 import { startPlayer, type Player, type PlayerParts } from './player';

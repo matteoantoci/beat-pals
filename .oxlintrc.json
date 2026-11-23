@@ -12,6 +12,26 @@
     {
       "files": ["src/sound/levels.ts"],
       "rules": { "max-lines": "off" }
+    },
+    {
+      "files": ["src/model/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/shell", "**/shell/**", "**/sound", "**/sound/**", "**/ui", "**/ui/**"],
+                "message": "The game model imports no other layer."
+              },
+              {
+                "group": ["pixi.js", "pixi.js/**", "solid-js", "solid-js/**"],
+                "message": "The game model is pure TypeScript: no view package."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

@@ -3,17 +3,17 @@
 // pools, no Graphics drawn again in a frame, no filters, one mask, and resolution 2 at most with autoDensity.
 
 import { Application, Container, Graphics, Sprite } from 'pixi.js';
+import { LOOK_AHEAD, type Lane } from '../../model';
 import { hex, TOKENS } from '../pals/color';
 import { shapeKey } from './atlas';
 import { drawHit, type EffectScene } from './effects';
 import { dressEnergy, drawEnergy, makeEnergyParts, type EnergyParts } from './energy-stage';
-import { laneX, LOOK_AHEAD, noteY } from './geometry';
+import { laneX, noteY } from './geometry';
 import { CHUTE_SHARE } from './paint-stage';
 import { makePool, type Pool } from './pool';
 import { makeRing, type Ring } from './rings';
 import { drawNotes } from './stage-notes';
 import { makeTextures, type Textures } from './textures';
-import type { Lane } from '../../model';
 import type { EnergyLook } from './energy';
 import type { Geometry } from './geometry';
 import type { View } from './view';

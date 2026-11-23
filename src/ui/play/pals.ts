@@ -97,7 +97,7 @@ const idlePose = (lane: Lane, { phase, strong }: BeatPhase, energy: EnergyLook):
   const jump = -18 * Math.max(0, Math.sin((Math.PI * phase) / 0.7));
   const land = phase > 0.7 ? jumpShare * Math.sin((Math.PI * (phase - 0.7)) / 0.3) : 0;
   const ty = bob * (1 - bounceShare) + bounce * bounceShare * (1 - jumpShare) + jump * jumpShare;
-  return { state: energy.level >= 1 ? 'joy' : 'idle', ty, rot: 0, sx: 1 + 0.05 * land, sy: 1 - 0.08 * land };
+  return { state: energy.step >= 1 ? 'joy' : 'idle', ty, rot: 0, sx: 1 + 0.05 * land, sy: 1 - 0.08 * land };
 };
 
 /** The dance after a hit: a squash, then a jump with a lean. */

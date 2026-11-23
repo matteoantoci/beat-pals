@@ -4,7 +4,7 @@
 // - Store name of a file: hex(HMAC-SHA-256(K_name, plain content)), with
 //   K_name = HKDF-SHA-256(family key, no salt, info "beat-pals/name").
 // - Encryption: AES-GCM with a random 12-byte IV at the start of the file, so a file is 28 bytes larger than its
-//   plain content (IV and tag).
+//   plain content (IV and tag). The model draws no random values: the caller makes each IV.
 // - Key check: a known text, encrypted with the family key, in base64url.
 
 import { FAMILY_KEY_BYTES } from './key-code';
@@ -25,7 +25,8 @@ export type FamilyKey = {
 /** An encrypted file is this many bytes larger than its plain content: the IV (12) and the tag (16). */
 export const ENCRYPTION_OVERHEAD = 28;
 
-const IV_BYTES = 12;
+/** The length of an AES-GCM IV. Use a new random IV for each file. */
+export const IV_BYTES = 12;
 const KEY_CHECK_TEXT = 'beat-pals/key-check';
 const utf8 = new TextEncoder();
 
@@ -83,9 +84,15 @@ export const openFamilyKey = async (raw: Uint8Array<ArrayBuffer>): Promise<Famil
 export const storeName = async (key: FamilyKey, plain: Uint8Array<ArrayBuffer>): Promise<string> =>
   hex(new Uint8Array(await crypto.subtle.sign('HMAC', key.naming, plain)));
 
-/** Encrypts the plain content with a new random IV. The result starts with the IV. */
-export const encryptFile = async (key: FamilyKey, plain: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> => {
-  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
+/** Encrypts the plain content with the IV, which must be new and random. The result starts with the IV. */
+export const encryptFile = async (
+  key: FamilyKey,
+  plain: Uint8Array<ArrayBuffer>,
+  iv: Uint8Array<ArrayBuffer>
+): Promise<Uint8Array<ArrayBuffer>> => {
+  if (iv.length !== IV_BYTES) {
+    throw new Error(`An IV has ${String(IV_BYTES)} bytes.`);
+  }
   const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key.cipher, plain));
   const file = new Uint8Array(IV_BYTES + sealed.length);
   file.set(iv);
@@ -110,9 +117,9 @@ export const decryptFile = async (
   }
 };
 
-/** A new key check: the known text, encrypted with a random IV, in base64url. Made one time with the key. */
-export const makeKeyCheck = async (key: FamilyKey): Promise<string> =>
-  base64url(await encryptFile(key, utf8.encode(KEY_CHECK_TEXT)));
+/** A new key check: the known text, encrypted with a new random IV, in base64url. Made one time with the key. */
+export const makeKeyCheck = async (key: FamilyKey, iv: Uint8Array<ArrayBuffer>): Promise<string> =>
+  base64url(await encryptFile(key, utf8.encode(KEY_CHECK_TEXT), iv));
 
 /** True when the family key opens the key check of a manifest. */
 export const opensKeyCheck = async (key: FamilyKey, keyCheck: string): Promise<boolean> => {
