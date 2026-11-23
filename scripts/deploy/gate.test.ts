@@ -6,11 +6,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { encryptFile, storeName } from '../../src/model/index.ts';
 import { loadKey, type MacKey, makeKey } from '../prepare/key.ts';
 import { storeSongs } from '../prepare/store.ts';
-import { checkSite, type SongStrings } from './gate.ts';
+import { checkSite } from './gate.ts';
 
 // All song names here are invented.
-const SONG: SongStrings = { id: 'kites-of-paper', title: 'Paper Kites', artist: 'The Lanterns', charter: 'Mossy Fern' };
-const ONE_WORD: SongStrings = { id: 'bright-glimmer', title: 'Glimmer', artist: 'Zephyra', charter: 'Quillon' };
+const SONG = { id: 'kites-of-paper', title: 'Paper Kites', artist: 'The Lanterns', charter: 'Mossy Fern' };
+const ONE_WORD = { id: 'bright-glimmer', title: 'Glimmer', artist: 'Zephyra', charter: 'Quillon' };
 const ICON = Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 7, 7, 7);
 
 let root = '';
@@ -30,7 +30,7 @@ const newKey = async (name: string): Promise<MacKey> => {
 };
 
 /** Writes one prepared song folder, as the prepare step does. */
-const prepare = async (prepared: string, song: SongStrings) => {
+const prepare = async (prepared: string, song: typeof SONG) => {
   const folder = join(prepared, song.id);
   await mkdir(folder, { recursive: true });
   const facts = { version: 1, ...song, beats: [], notes: [], fills: [] };
@@ -58,8 +58,7 @@ const addStoreFile = async (name: string, bin: Uint8Array) => {
   await writeFile(manifestPath(), JSON.stringify(manifest));
 };
 
-const check = async () =>
-  checkSite({ dist, key: key.key, songs: [SONG, ONE_WORD], appAssets: new Set([sha256(ICON)]) });
+const check = async () => checkSite({ dist, key: key.key, appAssets: new Set([sha256(ICON)]) });
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'beat-pals-gate-'));
@@ -88,14 +87,6 @@ afterEach(async () => {
 
 describe('checkSite', () => {
   it('passes a site with the song store, the app code, and the app assets', async () => {
-    expect(await check()).toEqual([]);
-  });
-
-  it('passes a one-word title, artist, or charter alone, as the leak scan does', async () => {
-    await write('assets/title.js', 'const title = "glimmer";');
-    await write('assets/artist.js', 'const artist = "Zephyra";');
-    await write('assets/charter.js', 'const charter = "QUILLON";');
-
     expect(await check()).toEqual([]);
   });
 
@@ -146,7 +137,7 @@ describe('checkSite', () => {
     });
 
     it('refuses a manifest of another family key', async () => {
-      const failures = await checkSite({ dist, key: otherKey.key, songs: [], appAssets: new Set() });
+      const failures = await checkSite({ dist, key: otherKey.key, appAssets: new Set() });
 
       expect(failures[0]).toMatch(/key id/u);
     });
@@ -204,40 +195,6 @@ describe('checkSite', () => {
       await write(path, 'not really audio');
 
       expect(await check()).toEqual([expect.stringContaining(`${path}: `)]);
-    });
-  });
-
-  describe('song strings', () => {
-    it('refuses a song title with another case and accents', async () => {
-      await write('assets/index-abc.js', 'const title = "PÁPER kités";');
-
-      expect(await check()).toEqual([expect.stringMatching(/assets\/index-abc\.js: .*title "Paper Kites"/u)]);
-    });
-
-    it('refuses a song id in a file name', async () => {
-      await write('assets/kites-of-paper-abc.js', '');
-
-      expect(await check()).toEqual([expect.stringMatching(/assets\/kites-of-paper-abc\.js: .*id "kites-of-paper"/u)]);
-    });
-
-    it('refuses a charter of 2 or more words', async () => {
-      await write('index.html', '<p>Chart by mossy fern</p>');
-
-      expect(await check()).toEqual([expect.stringMatching(/index\.html: .*charter "Mossy Fern"/u)]);
-    });
-
-    it('refuses a one-word charter next to another name of its song', async () => {
-      await write('assets/index-abc.js', '["Quillon", "Zephyra"]');
-
-      expect(await check()).toEqual([expect.stringMatching(/charter "Quillon"/u)]);
-    });
-
-    it('refuses the name of a song that only the song index holds', async () => {
-      await write('assets/index-abc.js', 'const artist = "the lanterns";');
-
-      expect(await checkSite({ dist, key: key.key, songs: [], appAssets: new Set([sha256(ICON)]) })).toEqual([
-        expect.stringMatching(/artist "The Lanterns"/u),
-      ]);
     });
   });
 });
