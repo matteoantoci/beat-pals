@@ -1,0 +1,27 @@
+[Song]
+{
+  Name = "Test Tune"
+  Resolution = 192
+}
+[SyncTrack]
+{
+  0 = TS 4
+  0 = B 120000
+}
+[ExpertSingle]
+{
+  0 = S 2 768
+  0 = N 5 0
+}
+[ExpertDoubleBass]
+{
+  0 = N 3 0
+}
+[HardSingle]
+{
+  384 = N 1 0
+}
+[EasySingle]
+{
+  0 = N 0 0
+}
