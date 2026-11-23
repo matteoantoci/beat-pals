@@ -29,6 +29,9 @@ const BANDS: Readonly<Record<RecordColor, readonly Lane[]>> = {
   diamond: [0, DOT, 2],
 };
 
+/** The band of a record color: the lanes of the pals that play. */
+export const bandOf = (color: RecordColor): readonly Lane[] => BANDS[color];
+
 /** The child chart of the facts for one play. */
 export const childChart = (facts: SongFacts, color: RecordColor, step: SpeedStep): ChildChart => {
   const notes = [...facts.notes, ...facts.fills.flatMap((fill) => fill.notes)].toSorted((a, b) => a.t - b.t);

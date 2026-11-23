@@ -1,16 +1,17 @@
 // The play part of the smoke run (scripts/smoke.ts): the song list with the test song, a play with a running audio
 // context, a hit seen through `data-last-hit` (the hit effects are PixiJS drawings), the layout in portrait and in
 // landscape, the pause hold, the sound after a return from the background, home from the pause screen, and a play
-// to the end of the song. SMOKE_SHOTS=<folder> also saves screenshots of the song list, the play in portrait and
-// in landscape, and the pause screen.
+// to the end of the song with its end scene (smoke-end.ts). SMOKE_SHOTS=<folder> also saves screenshots of the song
+// list, the play in portrait and in landscape, the pause screen, and the end scene.
 
+import { endScene } from './smoke-end.ts';
 import { check, setVisibility, shot, shows, tap, touchHold, wait } from './smoke-page.ts';
 import type { AudioRecord } from './smoke-audio.ts';
 import type { Page } from 'puppeteer-core';
 
 const PORTRAIT = { width: 390, height: 763, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } as const;
 const LANDSCAPE = { ...PORTRAIT, width: 844, height: 390 } as const;
-/** The test song lasts 15 s; the end goes back to the song list. */
+/** The test song lasts 15 s; its end shows the end scene. */
 const SONG_END_MS = 25_000;
 const HIT_SIGN = /^1 (?:great|good) \d+\.\d{3}$/u;
 
@@ -145,5 +146,5 @@ export const playChecks = async (page: Page, audio: AudioRecord, shots: string |
   check('pause screen: a hold on home goes to the song list', await shows(page, '.song-list', 2000));
   await tap(page, '.song-cover');
   check('second play: the play screen shows', await shows(page, '.play'));
-  check('second play: the end of the song goes to the song list', await shows(page, '.song-list', SONG_END_MS));
+  await endScene(page, SONG_END_MS, shots);
 };

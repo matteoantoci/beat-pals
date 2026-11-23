@@ -4,9 +4,13 @@
 export { readChart } from './chart/chart-file';
 export type { SongFacts } from './chart/facts';
 export { readSongChart } from './chart/song-chart';
-export { childChart, RECORD_COLORS } from './child/child-chart';
+export { bandOf, childChart, RECORD_COLORS } from './child/child-chart';
 export type { ChildChart, RecordColor } from './child/child-chart';
 export type { SpeedStep } from './child/speed-steps';
+export { danceOf, NEW_SONG, playSetup, scorePlay } from './progress/progress';
+export type { Dance, PlayScore, SongProgress } from './progress/progress';
+export { restore, snapshot, songProgress, withSong } from './progress/save';
+export type { SavedProgress } from './progress/save';
 export { isParentAnswer, parentProblem } from './parent';
 export type { ParentProblem } from './parent';
 export { soundStart } from './silence';

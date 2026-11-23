@@ -5,6 +5,7 @@
 
 import { apply, result, startPlay } from '../../model';
 import { watchLifecycle } from '../../shell/lifecycle';
+import { writeSave } from '../../shell/save';
 import { keepScreenOn } from '../../shell/wake-lock';
 import { makeEnergyTrack, type EnergyStep } from './energy';
 import { watchTaps } from './taps';
@@ -155,8 +156,8 @@ const run = (parts: PlayerParts): void => {
   frameId = requestAnimationFrame((now) => frame(parts, now));
 };
 
-/** The taps go to the model only while the play runs. The play pauses when the page hides; iOS also stops the audio
- * context then, and the song pauses itself for that. */
+/** The taps go to the model only while the play runs. The play pauses when the page hides, and the save is written
+ * (spec, "Save"); iOS also stops the audio context then, and the song pauses itself for that. */
 const listen = (parts: PlayerParts): (() => void) => {
   const time = (): number => parts.song.songTime();
   const unwatchTaps = watchTaps(parts.root, {
@@ -171,7 +172,11 @@ const listen = (parts: PlayerParts): (() => void) => {
       }
     },
   });
-  const unwatchLifecycle = watchLifecycle({ hidden: () => pause(parts), visible: nothing });
+  const hidden = (): void => {
+    pause(parts);
+    writeSave();
+  };
+  const unwatchLifecycle = watchLifecycle({ hidden, visible: nothing });
   return () => {
     unwatchTaps();
     unwatchLifecycle();

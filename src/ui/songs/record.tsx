@@ -60,25 +60,26 @@ export const Record = (props: { readonly color: RecordColor }): JSX.Element => {
   );
 };
 
+/** One star: lemon when earned, a dark place with a light rim when not. */
+export const StarIcon = (props: { readonly on: boolean; readonly class?: string }): JSX.Element => {
+  const look = (): typeof STAR_ON => (props.on ? STAR_ON : STAR_OFF);
+  return (
+    <svg class={props.class} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d={STAR_PATH}
+        fill={look().fill}
+        stroke={look().stroke}
+        stroke-width="2"
+        stroke-linejoin="round"
+        vector-effect="non-scaling-stroke"
+      />
+    </svg>
+  );
+};
+
 /** The 3 star places of a record color, with the earned stars filled. */
 export const Stars = (props: { readonly count: number }): JSX.Element => (
   <div class="song-stars" role="img" aria-label={`${String(props.count)} stars`}>
-    <For each={[0, 1, 2]}>
-      {(place) => {
-        const look = (): typeof STAR_ON => (place < props.count ? STAR_ON : STAR_OFF);
-        return (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d={STAR_PATH}
-              fill={look().fill}
-              stroke={look().stroke}
-              stroke-width="2"
-              stroke-linejoin="round"
-              vector-effect="non-scaling-stroke"
-            />
-          </svg>
-        );
-      }}
-    </For>
+    <For each={[0, 1, 2]}>{(place) => <StarIcon on={place < props.count} />}</For>
   </div>
 );

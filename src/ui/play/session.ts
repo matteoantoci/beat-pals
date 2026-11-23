@@ -2,7 +2,8 @@
 // pictures, makes the stage, and then starts the player. A screen that closes during the load stops it, and the load
 // frees each part that it made. Only one play exists at a time, so the running play is the state of this module.
 
-import { childChart } from '../../model';
+import { childChart, playSetup } from '../../model';
+import { progressOf } from '../../shell/save';
 import { readSongFiles } from '../../shell/songs';
 import { loadSong } from '../../sound';
 import { decodePals } from '../pals/pal-svg';
@@ -102,7 +103,8 @@ const load = async (elements: PlayElements, choice: SongChoice, id: number): Pro
   if (files === undefined || facts === undefined || id !== current) {
     return undefined;
   }
-  const chart = childChart(facts, 'bronze', 0);
+  const { color, step } = playSetup(progressOf(choice.song.id));
+  const chart = childChart(facts, color, step);
   const song = await loadSong(files.audio, SONG_EVENTS);
   await decodePals();
   const stage = id === current ? await createStage(elements.canvas, measure(elements), chart.band) : undefined;
@@ -115,7 +117,7 @@ const load = async (elements: PlayElements, choice: SongChoice, id: number): Pro
   return { chart, song, stage, pals, view: makeView(chart, facts.beats), ...watchResize(elements, stage, pals) };
 };
 
-/** Loads the song of the choice and starts its play at bronze. */
+/** Loads the song of the choice and starts its play at the record color and speed step of its progress. */
 export const startSession = (elements: PlayElements, choice: SongChoice, hooks: SessionHooks): Session => {
   stopRunning();
   current += 1;
