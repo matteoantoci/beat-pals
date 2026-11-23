@@ -32,11 +32,11 @@ describe('freeze', () => {
 
   it('shows the energy step of the query fully, with no level-up moment', () => {
     const { energy } = freeze(chartOf(PLATINUM), demoFacts().beats, { t: 0.5, energy: 'gold' });
-    expect(energy).toEqual({ level: 4, fades: [1, 1, 1, 1], levelUp: undefined });
+    expect(energy).toEqual({ step: 4, fades: [1, 1, 1, 1], levelUp: undefined });
   });
 
   it('shows the energy that the play reached without a step in the query', () => {
     const { energy } = freeze(chartOf(PLATINUM), demoFacts().beats, { t: 20, energy: undefined });
-    expect(energy.level).toBeGreaterThan(0);
+    expect(energy.step).toBeGreaterThan(0);
   });
 });

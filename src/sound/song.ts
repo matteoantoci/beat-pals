@@ -27,8 +27,8 @@ export type Song = {
   readonly pause: () => void;
   /** Continues from the saved song time in the current context. */
   readonly resume: () => void;
-  /** Plays a clap at a song time. A time in the past plays the clap now. The Sound effects switch turns it off. */
-  readonly clap: (at: number) => void;
+  /** Plays a clap at a song time, brighter for a great hit. A past time plays now. The Sound effects switch turns it off. */
+  readonly clap: (at: number, great: boolean) => void;
   /** Plays the level-up sound of an energy step at a song time, as a clap. */
   readonly levelUp: (step: LevelUpStep, at: number) => void;
   /** Cancels the claps that did not play yet. */
@@ -177,9 +177,9 @@ const handle = (id: number, duration: number): Song => {
         play(frozen);
       }
     },
-    clap: (at) => {
+    clap: (at, great) => {
       if (id === current) {
-        effect(clapBuffer(), at);
+        effect(clapBuffer(great), at);
       }
     },
     levelUp: (step, at) => {

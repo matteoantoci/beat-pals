@@ -2,7 +2,10 @@
 // to 3, and for gold a "ta-da" (a G4 pickup and a C major chord with a soft high shimmer). The sound layer makes
 // them in code, as the clap, so they need no file and no licence.
 
-export type LevelUpStep = 1 | 2 | 3 | 'gold';
+import type { EnergyStep } from '../model';
+
+/** The steps that a step up reaches. */
+export type LevelUpStep = Exclude<EnergyStep, 0>;
 
 /** One soft tone: its pitch, its start and length in seconds, its peak level, and its wave. */
 type Tone = {

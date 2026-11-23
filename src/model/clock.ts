@@ -3,8 +3,8 @@
 
 /** The song starts this long after the current context time, so the source start is never in the past. */
 const START_DELAY = 0.1;
-/** The highway shows the notes of the next 2.0 s. */
-const LOOK_AHEAD = 2;
+/** The highway shows the notes of the next 2.0 s (C6). A play starts at least this long before its first note. */
+export const LOOK_AHEAD = 2;
 /** The guarded read adds at most this much time after the last output timestamp. */
 const MAX_GAP = 0.05;
 

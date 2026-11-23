@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { result } from '../index';
-import { playOut } from './test-player';
+import { result, startPlay } from '../index';
+import { playActions, playOut } from './test-player';
 import type { ChildChart, PlayEvent } from '../index';
 
 /** A chart of 3 notes, 2 s apart from 2 s on: a double on Pip + Dot, a soft hold of 1 s on Bo, a plain note on Dot. */
@@ -15,7 +15,7 @@ const CHART: ChildChart = {
 
 const lines = (events: readonly PlayEvent[]): string[] =>
   events.flatMap((event) =>
-    event.type === 'energy' ? [] : [`${event.type} ${'note' in event ? event.note : event.lane}`]
+    event.type === 'energy' ? [] : [`${event.type} ${'lane' in event ? event.lane : event.note}`]
   );
 
 describe('apply: doubles', () => {
@@ -51,5 +51,21 @@ describe('apply: soft holds', () => {
   it('gives no holdDone for a hold that was not hit', () => {
     const played = playOut(CHART, { offset: (note) => (note === 1 ? null : 0) });
     expect(lines(played.events)).toEqual(['hit 0', 'faded 1', 'hit 1']);
+  });
+
+  it('finishes a hold at its release after the half point, with no advance before the release', () => {
+    const played = playActions(startPlay(CHART), [
+      { type: 'press', t: 4, lane: 2, pointerId: 7 },
+      { type: 'release', t: 4.6, pointerId: 7 },
+    ]);
+    expect(lines(played.events)).toEqual(['hit 2', 'holdDone 1']);
+  });
+
+  it('gives no holdDone for a release before the half point', () => {
+    const played = playActions(startPlay(CHART), [
+      { type: 'press', t: 4, lane: 2, pointerId: 7 },
+      { type: 'release', t: 4.4, pointerId: 7 },
+    ]);
+    expect(lines(played.events)).toEqual(['hit 2']);
   });
 });

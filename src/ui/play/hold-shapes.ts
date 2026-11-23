@@ -1,6 +1,9 @@
 // The atlas shapes of the soft holds and the doubles (see ./paint-holds): the held head, the star bead, the band
-// strip, its cap and its dots, falling and held, for each lane, and the jelly band of each pair of adjacent lanes.
+// strip, its cap and its dots, falling and held, for each lane, the jelly band of each pair of adjacent lanes, and
+// the clap burst of a double hit (see ./paint-fx).
 
+import { LEMON, WHITE } from './paint';
+import { CLAP_GLOW_R, paintClapGlow, paintClapPill } from './paint-fx';
 import {
   BAND_HALO,
   BAND_STRIP,
@@ -30,6 +33,9 @@ export const holdKey = {
   /** The jelly band of a double from `left` to the lane on its right. */
   link: (left: Lane): string => `link ${String(left)}`,
   popStar: 'pop star',
+  /** The clap burst of a double hit: the glow, and a white or a lemon pill. */
+  clapGlow: 'clap glow',
+  clapPill: (lemon: boolean): string => `clap pill ${lemon ? 'lemon' : 'white'}`,
 } as const;
 
 /** The share of the note size that is the half width of a hold band. */
@@ -70,3 +76,10 @@ export const linkShapes = (geometry: Geometry): Shape[] => {
     paint: (ctx: Ctx) => paintLink(ctx, [left, left === 0 ? 1 : 2], { length: geometry.laneW, noteS: geometry.noteS }),
   }));
 };
+
+/** The soft glow and the 2 pills of the clap burst. */
+export const clapShapes = (): Shape[] => [
+  square(holdKey.clapGlow, 2 * CLAP_GLOW_R + 2, paintClapGlow),
+  { key: holdKey.clapPill(false), w: 12, h: 6, paint: (ctx) => paintClapPill(ctx, WHITE) },
+  { key: holdKey.clapPill(true), w: 12, h: 6, paint: (ctx) => paintClapPill(ctx, LEMON) },
+];

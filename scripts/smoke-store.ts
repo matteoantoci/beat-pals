@@ -74,7 +74,8 @@ const makeStore = async (work: string, site: string): Promise<string> => {
   value(await makeKey(keyFolder), 'key');
   const key = value(await loadKey(keyFolder), 'key');
   await prepare(join(work, 'prepared', SONG_ID));
-  const stored = await storeSongs({ prepared: join(work, 'prepared'), site, key, log: () => undefined });
+  const prepared = join(work, 'prepared');
+  const stored = await storeSongs({ prepared, site, key, songIds: new Set([SONG_ID]), log: () => undefined });
   if (!stored.ok) {
     throw new Error(`smoke store: ${stored.reason}`);
   }

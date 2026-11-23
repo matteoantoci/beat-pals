@@ -2,10 +2,7 @@
 // the 4 px scale. The highway is flat: a note falls at one speed from the top to its ring, and the look-ahead is
 // 2.0 s in both orientations. The 3 lanes never move: Pip left, Dot in the middle, Bo right.
 
-import type { Lane } from '../../model';
-
-/** The highway shows the notes of the next 2.0 s (C6). The same value as the song clock lead-in. */
-export const LOOK_AHEAD = 2;
+import { LOOK_AHEAD, type Lane } from '../../model';
 
 /** The safe-area insets of the screen, in CSS px. */
 export type Insets = { readonly top: number; readonly right: number; readonly bottom: number; readonly left: number };

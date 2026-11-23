@@ -1,8 +1,7 @@
-// The play model (spec, "Play rules", "Band energy", and "Play model interface"). It judges the taps of one play
-// against the child chart and gives the events that the play screen shows and plays. Each `t` is the song time in
-// seconds from the guarded song clock. A note with 2 lanes (a double) counts when either lane is tapped. A soft hold
-// counts at its tap, as a plain note. When the finger stays down to its half point, the hold is done. An early
-// release is never a miss.
+// The play model (spec, "Play rules", "Band energy", and "Play model interface"). It judges the taps of one play against
+// the child chart and gives the events that the play screen shows and plays. Each `t` is the song time in seconds from
+// the guarded song clock. A double counts when either of its 2 lanes is tapped. A soft hold counts at its tap, as a
+// plain note; when the finger stays down to its half point, the hold is done. An early release is never a miss.
 
 import { energyStep, hitEnergy, passEnergy, START_ENERGY, type Energy, type EnergyStep } from './energy';
 import { goodWindows, GREAT_SEC } from './windows';
@@ -24,8 +23,15 @@ export type Action =
 
 /** Each event is one thing that the play screen shows or plays. */
 export type PlayEvent =
-  /** A tap hit a note. The clap plays at `soundAt`: the note time for an early tap, the tap time for a late tap. */
-  | { readonly type: 'hit'; readonly lane: Lane; readonly grade: 'great' | 'good'; readonly soundAt: number }
+  /** A tap in `lane` hit the note `note` (index in the child chart). The clap plays at `soundAt`: the note time for
+   * an early tap, the tap time for a late tap. */
+  | {
+      readonly type: 'hit';
+      readonly note: number;
+      readonly lane: Lane;
+      readonly grade: 'great' | 'good';
+      readonly soundAt: number;
+    }
   /** A tap in the lane of a waiting pal: the pal hops. */
   | { readonly type: 'hop'; readonly lane: Lane }
   /** The good window of the note ended with no hit. `note` is the index in the child chart. */
@@ -111,19 +117,11 @@ const press = (play: PlayState, { t, lane, pointerId }: Extract<Action, { type: 
       hits: play.hits + 1,
       energy,
     },
-    events: [{ type: 'hit', lane, grade, soundAt: Math.max(t, note.t) }, ...energyEvents(play.energy, energy)],
+    events: [
+      { type: 'hit', note: at, lane, grade, soundAt: Math.max(t, note.t) },
+      ...energyEvents(play.energy, energy),
+    ],
   };
-};
-
-const release = (play: PlayState, pointerId: number): Outcome => {
-  if (!play.down.has(pointerId)) {
-    return { state: play, events: [] };
-  }
-  const down = new Map(play.down);
-  down.delete(pointerId);
-  const holding = new Map(play.holding);
-  holding.delete(pointerId);
-  return { state: { ...play, down, holding }, events: [] };
 };
 
 /** Each soft hold whose finger stayed down to its half point by `t` is done. */
@@ -141,6 +139,19 @@ const finishHolds = (play: PlayState, t: number): Outcome => {
     state: { ...play, holding },
     events: done.map(([, note]) => ({ type: 'holdDone', note })),
   };
+};
+
+/** A release first finishes each soft hold that reached its half point by `t`, so a release between 2 frames counts. */
+const release = (play: PlayState, { t, pointerId }: Extract<Action, { type: 'release' }>): Outcome => {
+  if (!play.down.has(pointerId)) {
+    return { state: play, events: [] };
+  }
+  const held = finishHolds(play, t);
+  const down = new Map(held.state.down);
+  down.delete(pointerId);
+  const holding = new Map(held.state.holding);
+  holding.delete(pointerId);
+  return { state: { ...held.state, down, holding }, events: held.events };
 };
 
 /** Each note whose good window ended before `t` passes: a note with no hit fades, and the energy can drop. */
@@ -183,7 +194,7 @@ export const apply = (play: PlayState, action: Action): Outcome => {
     case 'press':
       return press(play, action);
     case 'release':
-      return release(play, action.pointerId);
+      return release(play, action);
     case 'advance':
       return advance(play, action.t);
     case 'quit':

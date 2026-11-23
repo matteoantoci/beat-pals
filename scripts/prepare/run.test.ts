@@ -225,14 +225,33 @@ describe('prepareSongs', () => {
     expect(await prepare('fern-hill')).toBe(1);
   });
 
-  it('logs a failed encoder, keeps no song folder, and counts the failure', async () => {
+  it('logs and counts a song that the encoder cannot encode, and goes on with the other songs (story 50)', async () => {
     await put('paper-kites.sng', song([['song.opus', audio(3)]]));
-    const broken: Encoder = { ...encoder, audio: async () => Promise.reject(new Error('ffmpeg failed: no codec')) };
+    await put('moss-garden.sng', song([['song.opus', audio(5)]]));
+    const broken: Encoder = {
+      ...encoder,
+      audio: async (parts, out) =>
+        out.includes('paper-kites') ? Promise.reject(new Error('ffmpeg failed: no codec')) : encoder.audio(parts, out),
+    };
 
-    const failed = await prepareSongs({ inbox, prepared, encoder: broken, log: (line) => lines.push(line) });
+    const code = await prepareSongs({ inbox, prepared, encoder: broken, log: (line) => lines.push(line) });
 
-    expect(failed).toBe(1);
+    expect(code).toBe(0);
     expect(lines).toContain('paper-kites: failed, ffmpeg failed: no codec');
-    expect(await readdir(prepared)).toEqual([]);
+    expect(lines.at(-1)).toBe('prepare-song: 1 prepared, 0 unchanged, 0 skipped, 1 failed.');
+    expect(await readdir(prepared)).toEqual(['moss-garden']);
+  });
+
+  it('removes and logs each prepared folder whose .sng file left the inbox', async () => {
+    await put('paper-kites.sng', song([['song.opus', audio(3)]]));
+    await put('moss-garden.sng', song([['song.opus', audio(5)]]));
+    await prepare();
+    await rm(join(inbox, 'paper-kites.sng'));
+    lines = [];
+
+    await prepare();
+
+    expect(await readdir(prepared)).toEqual(['moss-garden']);
+    expect(lines).toContain('paper-kites: removed from the prepared songs, its .sng file is gone.');
   });
 });

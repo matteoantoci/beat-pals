@@ -57,6 +57,6 @@ describe('the level-up moment', () => {
     energy.record(1, 1);
     expect(energy.record(0, 5)).toBe(false);
     expect(energy.at(5.1).levelUp).toBeUndefined();
-    expect(energy.at(5.1).level).toBe(0);
+    expect(energy.at(5.1).step).toBe(0);
   });
 });

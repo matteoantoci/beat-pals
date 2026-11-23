@@ -32,6 +32,12 @@ describe('childChart off-beat notes at diamond', () => {
     expect(childChart(facts, 'diamond', 2).notes.map((note) => note.t)).toEqual([0, 2, 2.43, 4, 6]);
   });
 
+  it('lets an off-beat note join at 0.43 s when the float difference comes out a little short', () => {
+    // 10.43 - 10 is 0.4299999999999997 in floating point.
+    const facts = factsWith(steadyBeats(2, 2), [8, 10, 10.43, 12, 14]);
+    expect(childChart(facts, 'diamond', 2).notes.map((note) => note.t)).toEqual([8, 10, 10.43, 12, 14]);
+  });
+
   it.each([
     [0, 0.2],
     [1, 0.35],

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { encryptFile, storeName } from '../../src/model/index.ts';
 import { DEMO_MARKER } from '../../src/ui/demo/marker.ts';
-import { loadKey, type MacKey, makeKey } from '../prepare/key.ts';
+import { loadKey, type MacKey, makeKey, newIv } from '../prepare/key.ts';
 import { storeSongs } from '../prepare/store.ts';
 import { checkSite } from './gate.ts';
 
@@ -70,7 +70,8 @@ beforeEach(async () => {
   const site = join(root, 'site');
   await prepare(prepared, SONG);
   await prepare(prepared, ONE_WORD);
-  const stored = await storeSongs({ prepared, site, key, log: () => undefined });
+  const songIds = new Set([SONG.id, ONE_WORD.id]);
+  const stored = await storeSongs({ prepared, site, key, songIds, log: () => undefined });
   if (!stored.ok) {
     throw new Error(stored.reason);
   }
@@ -113,7 +114,7 @@ describe('checkSite', () => {
     it('refuses a store file that the manifest does not name', async () => {
       const plain = new TextEncoder().encode('loose file');
       const name = await storeName(key.key, plain);
-      await write(`songs/${name}.bin`, await encryptFile(key.key, plain));
+      await write(`songs/${name}.bin`, await encryptFile(key.key, plain, newIv()));
 
       expect(await check()).toEqual([
         expect.stringMatching(new RegExp(`songs/${name}\\.bin: .*not in the manifest`, 'u')),
@@ -157,14 +158,14 @@ describe('checkSite', () => {
 
     it('refuses a file of another family key', async () => {
       const plain = new TextEncoder().encode('other key file');
-      await addStoreFile(await storeName(key.key, plain), await encryptFile(otherKey.key, plain));
+      await addStoreFile(await storeName(key.key, plain), await encryptFile(otherKey.key, plain, newIv()));
 
       expect(await check()).toEqual([expect.stringMatching(/does not decrypt/u)]);
     });
 
     it('refuses a file whose keyed hash is not its name', async () => {
       const plain = new TextEncoder().encode('renamed file');
-      await addStoreFile('0'.repeat(64), await encryptFile(key.key, plain));
+      await addStoreFile('0'.repeat(64), await encryptFile(key.key, plain, newIv()));
 
       expect(await check()).toEqual([expect.stringMatching(/keyed hash/u)]);
     });

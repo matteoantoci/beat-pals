@@ -2,8 +2,9 @@
 // the missing files of the download plan into Cache Storage, song by song and one file at a time. A cached file is
 // skipped, so a new start after a stop continues from the next missing file.
 // One download runs at a time. The screens watch its progress, so a screen that opens during a download shows it.
-// The screen stays on during a download. After a complete download, the store is kept as the last store, and only
-// then are the old files deleted. The setup mark follows the download: started, then done.
+// The screen stays on during a download: the wake lock asks again at each return to visible while the download runs.
+// After a complete download, the store is kept as the last store, and only then are the old files deleted. The
+// setup mark follows the download: started, then done. A setup download continues only from a tap of the parent.
 
 import { downloadPlan } from '../../model';
 import { keepScreenOn } from '../wake-lock';

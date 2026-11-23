@@ -11,6 +11,8 @@ type FactsNote = SongFacts['notes'][number];
 
 /** No accepted note may be closer than this to an off-beat note that joins. */
 const OFF_BEAT_GAP_SEC = 0.43;
+/** The facts round times to the microsecond: a gap this much short of the rule still meets it. */
+const TIME_PRECISION = 1e-6;
 /** The highest off-beat share of the accepted notes for each speed step. */
 const OFF_BEAT_CAPS: Readonly<Record<SpeedStep, number>> = { 0: 0.2, 1: 0.35, 2: 0.5 };
 
@@ -42,7 +44,7 @@ export const addOffBeat = (
     .forEach((note) => {
       const at = firstAfter(accepted, note.t);
       const near = [accepted[at - 1], accepted[at]].some(
-        (other) => other !== undefined && Math.abs(other - note.t) < OFF_BEAT_GAP_SEC
+        (other) => other !== undefined && Math.abs(other - note.t) < OFF_BEAT_GAP_SEC - TIME_PRECISION
       );
       if (near || (offSoFar + 1) / (at + 1) > OFF_BEAT_CAPS[step]) {
         return;

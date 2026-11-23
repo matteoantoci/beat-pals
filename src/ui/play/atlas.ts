@@ -2,7 +2,7 @@
 // layers, hit effects, and the band energy) is painted one time for each layout into one 2D canvas. A simple shelf
 // packer places the shapes in rows. Each shape paints around (0, 0), so its sprite takes the anchor 0.5.
 
-import { holdKey, holdShapes, linkShapes, POP_SHARE } from './hold-shapes';
+import { clapShapes, holdKey, holdShapes, linkShapes, POP_SHARE } from './hold-shapes';
 import { laneCss, LEMON, paintBubble, paintCircleLine, paintDisc, paintPill, WHITE } from './paint';
 import {
   GLOW_R,
@@ -152,6 +152,7 @@ const shapesOf = (geometry: Geometry, band: readonly Lane[]): Shape[] => {
     square(shapeKey.core, 2 * CORE_R + 4, (ctx) => paintDisc(ctx, CORE_R, WHITE)),
     square(shapeKey.whiteStuds, 2 * (r + 8), (ctx) => paintStuds(ctx, r, WHITE)),
     { key: shapeKey.musicNote, w: 24 - NOTE_HEAD.x, h: 32, paint: paintMusicNote },
+    ...clapShapes(),
     square(shapeKey.popStar, 2 * geometry.noteS * POP_SHARE * 1.4 + 8, (ctx) =>
       paintPopStar(ctx, geometry.noteS * POP_SHARE)
     ),

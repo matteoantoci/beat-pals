@@ -5,8 +5,7 @@
 // notch and home indicator with their safe areas, and `reduce` turns on reduced motion.
 
 import { RECORD_COLORS } from '../../model';
-import type { SongProgress } from '../../model';
-import type { EnergyStep } from '../play/energy';
+import type { EnergyStep, SongProgress } from '../../model';
 
 export type Demo = {
   readonly progress: SongProgress;

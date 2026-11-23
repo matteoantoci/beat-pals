@@ -2,7 +2,7 @@
 // For each song of the inbox, it gives the child note count for each record color and speed step, the notes
 // per minute, the longest gap, the share of each lane of the band, and each fill of a long rest (start, end, source part, and note count). It reads the charts from the .sng files, so it needs no ffmpeg.
 
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   type ChildChart,
@@ -133,8 +133,7 @@ const reportOne = async (inbox: string, song: InboxSong, log: Options['log']): P
 
 /** Prints the chart report of each song of the inbox, one song at a time, in the song order. */
 export const reportSongs = async ({ inbox, log }: Options): Promise<void> => {
-  const entries = await readdir(inbox, { withFileTypes: true });
-  const { songs } = readInbox(entries.filter((entry) => entry.isFile()).map((entry) => entry.name));
+  const { songs } = await readInbox(inbox);
   const charted = await songs.reduce<Promise<number>>(
     async (done, song) => (await done) + ((await reportOne(inbox, song, log)) ? 1 : 0),
     Promise.resolve(0)

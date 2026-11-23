@@ -2,11 +2,9 @@
 // The play model judges the taps; the view only remembers the hits that it reported, so the screen can remove the
 // hit notes and show the effects. Each frame moves the windows forward: no frame looks at the whole song.
 
+import { LOOK_AHEAD, type Action, type ChildChart, type Lane, type PlayEvent, type SongFacts } from '../../model';
 import { EFFECT_SEC, makeHit, type HitRecord } from './effects';
-import { LOOK_AHEAD } from './geometry';
 import { HOLD, makeHolds } from './held';
-import { hitNote } from './hits';
-import type { Action, ChildChart, Lane, PlayEvent, SongFacts } from '../../model';
 
 /** The ring and the pal of a lane get ready this long before a note. */
 const READY_SEC = 0.55;
@@ -24,8 +22,10 @@ export type LaneState = {
   /** The seconds since the last hit in the lane, or Infinity. */
   readonly hitAge: number;
   readonly great: boolean;
-  /** The lean side of the last hit. */
+  /** The lean side of the last hit. After a double hit, the side of the partner lane. */
   readonly side: 1 | -1;
+  /** True when the last hit was a double: the 2 pals lean toward each other and clap. */
+  readonly clap: boolean;
   /** True while a finger holds a soft hold of the lane. */
   readonly held: boolean;
   /** The seconds since the last soft hold of the lane was done, or Infinity. */
@@ -56,7 +56,7 @@ export type View = {
   readonly t: number;
 };
 
-/** The view, and the 2 changes that the player makes to it. */
+/** The view, and the 2 changes that the play loop makes to it. */
 export type LiveView = {
   readonly view: () => View;
   /**
@@ -73,6 +73,7 @@ const IDLE: LaneState = {
   hitAge: Number.POSITIVE_INFINITY,
   great: false,
   side: 1,
+  clap: false,
   held: false,
   doneAge: Number.POSITIVE_INFINITY,
 };
@@ -152,7 +153,24 @@ const laneState = (view: View, lane: Lane): LaneState => {
   const held = { near: nearness(view, lane), held: isHeld(view, lane), doneAge: doneAge(view, lane) };
   return hit === undefined
     ? { ...IDLE, ...held }
-    : { ...held, hitAge: view.t - hit.at, great: hit.great, side: hit.side };
+    : { ...held, hitAge: view.t - hit.at, great: hit.great, side: hit.side, clap: hit.clap };
+};
+
+/**
+ * The records of a hit at song time `t`, which pop the ring and make the pal dance: one in the tapped lane, or one in
+ * each lane of a double, whose 2 pals lean toward each other and clap. `count` is the number of hits so far.
+ */
+const hitRecords = (
+  hit: Extract<PlayEvent, { type: 'hit' }>,
+  lanes: readonly Lane[],
+  { t, count }: { t: number; count: number }
+): HitRecord[] => {
+  const great = hit.grade === 'great';
+  return lanes.length === 1
+    ? [makeHit({ lane: hit.lane, at: t, great, side: count % 2 === 0 ? 1 : -1, clap: false })]
+    : lanes.map((lane) =>
+        makeHit({ lane, at: t, great, side: lanes.some((other) => other > lane) ? 1 : -1, clap: true })
+      );
 };
 
 export const makeView = (chart: ChildChart, beats: readonly Beat[]): LiveView => {
@@ -161,12 +179,11 @@ export const makeView = (chart: ChildChart, beats: readonly Beat[]): LiveView =>
   const hits: HitRecord[] = [];
   const dones: HoldDone[] = [];
   const record = (hit: Extract<PlayEvent, { type: 'hit' }>, t: number, action: Action): void => {
-    const note = hitNote(chart, hit);
-    hitNotes[note] = 1;
-    if ((chart.notes[note]?.holdSec ?? 0) > 0 && action.type === 'press') {
-      holds.grab(note, action.pointerId);
+    hitNotes[hit.note] = 1;
+    if ((chart.notes[hit.note]?.holdSec ?? 0) > 0 && action.type === 'press') {
+      holds.grab(hit.note, action.pointerId);
     }
-    hits.push(makeHit({ lane: hit.lane, at: t, great: hit.grade === 'great', side: hits.length % 2 === 0 ? 1 : -1 }));
+    hits.push(...hitRecords(hit, chart.notes[hit.note]?.lanes ?? [hit.lane], { t, count: hits.length }));
   };
   let view: View = {
     chart,

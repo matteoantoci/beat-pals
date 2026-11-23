@@ -12,6 +12,8 @@ let root = '';
 let prepared = '';
 let site = '';
 let lines: string[] = [];
+/** The song ids of the inbox: each prepared song has its .sng file unless a test removes it. */
+let songIds = new Set<string>();
 
 /** Makes a family key in a key folder of its own, under the temporary folder. */
 const newKey = async (name: string): Promise<MacKey> => {
@@ -28,6 +30,7 @@ type Song = { id: string; title: string; audio: string; cover?: Uint8Array };
 /** Writes a prepared song folder as the prepare step does: the facts file, the audio, and the cover. */
 const prepare = async ({ id, title, audio, cover }: Song) => {
   const folder = join(prepared, id);
+  songIds.add(id);
   await mkdir(folder, { recursive: true });
   const facts = { version: 1, id, title, artist: 'The Lanterns', charter: 'Mossy', beats: [], notes: [], fills: [] };
   await writeFile(join(folder, 'song.json'), `${JSON.stringify(facts)}\n`);
@@ -38,7 +41,7 @@ const prepare = async ({ id, title, audio, cover }: Song) => {
   }
 };
 
-const store = async (key: MacKey) => storeSongs({ prepared, site, key, log: (line) => lines.push(line) });
+const store = async (key: MacKey) => storeSongs({ prepared, site, key, songIds, log: (line) => lines.push(line) });
 
 const manifestOf = async () => {
   const manifest = readManifest(await readFile(join(site, 'manifest.json'), 'utf8'));
@@ -70,6 +73,7 @@ beforeEach(async () => {
   prepared = join(root, 'songs', '.prepared');
   site = join(root, 'songs', '.site');
   lines = [];
+  songIds = new Set();
   await mkdir(prepared, { recursive: true });
   await prepare({ id: 'paper-kites', title: 'Paper Kites', audio: 'kites audio', cover: PNG });
   await prepare({ id: 'quiet-moon', title: 'A Quiet Moon', audio: 'moon audio' });
@@ -194,5 +198,15 @@ describe('storeSongs', () => {
     // The new audio and the new index.
     expect(added).toHaveLength(2);
     expect(lines.at(-1)).toMatch(/ 3 written, 2 removed\.$/u);
+  });
+
+  it('stores no prepared song whose .sng file left the inbox, and logs it', async () => {
+    const key = await newKey('key');
+    songIds.delete('paper-kites');
+
+    await store(key);
+
+    expect((await indexOf(key.key)).songs.map((song) => song.id)).toEqual(['quiet-moon']);
+    expect(lines).toContain('paper-kites: not stored, no .sng file in the inbox has this id.');
   });
 });

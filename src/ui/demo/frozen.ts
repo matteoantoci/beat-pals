@@ -5,9 +5,9 @@
 
 import { apply, startPlay } from '../../model';
 import { playScript } from '../../model/play/test-player';
-import { makeEnergyTrack, type EnergyLook, type EnergyStep } from '../play/energy';
+import { makeEnergyTrack, type EnergyLook } from '../play/energy';
 import { makeView, type View } from '../play/view';
-import type { Action, ChildChart, Lane, SongFacts } from '../../model';
+import type { Action, ChildChart, EnergyStep, Lane, SongFacts } from '../../model';
 
 /** Longer than the fade of a lasting effect (0.8 s) and the gold level-up moment (1.1 s). */
 const SETTLE_SEC = 1.2;
