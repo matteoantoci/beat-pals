@@ -95,3 +95,16 @@ describe('childChart holds', () => {
     expect(holdsOf([{ t: 0, frets: [0], lenSec: 1 }], 'gold')).toEqual([0]);
   });
 });
+
+describe('childChart at diamond', () => {
+  it('keeps the doubles and the soft holds of platinum', () => {
+    const notes = [
+      { t: 0, frets: [0, 4], lenSec: 0 },
+      { t: 0.5, frets: [1], lenSec: 1 },
+      { t: 2, frets: [1], lenSec: 0 },
+    ];
+    const chart = childChart(factsWith(notes), 'diamond', 2).notes;
+    expect(chart.some((note) => note.lanes.length === 2)).toBe(true);
+    expect(chart.some((note) => note.holdSec > 0)).toBe(true);
+  });
+});
