@@ -6,9 +6,9 @@
 //   and a u64 offset from the start of the container;
 // - file data: a u64 section size, then the masked files. Byte i of a file is masked with mask[i % 16] ^ (i % 256).
 
-type SngFile = { readonly name: string; readonly bytes: Uint8Array };
+export type SngFile = { readonly name: string; readonly bytes: Uint8Array };
 
-type Sng = {
+export type Sng = {
   /** The song.ini keys, for example `name`, `artist`, `charter`, `delay`. */
   readonly metadata: ReadonlyMap<string, string>;
   readonly files: readonly SngFile[];

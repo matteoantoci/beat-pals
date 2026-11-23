@@ -3,6 +3,8 @@
   "ignoreBinaries": [
     // A global tool on the Mac (CLAUDE.md, "Local services"), not a package of the repo.
     "portless",
+    // prepare-song runs ffmpeg from the Mac (Homebrew), not from a package of the repo.
+    "ffmpeg",
   ],
   "ignoreDependencies": [
     // The play screen draws with PixiJS. Ticket 01 sets the stack; the play screen imports the package.
