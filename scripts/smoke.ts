@@ -116,11 +116,11 @@ const parentCheck = async (page: Page): Promise<void> => {
     const [left = 0, right = 0] = (el.textContent.match(/\d+/gu) ?? []).map(Number);
     return String(left * right);
   });
-  // In Chrome, the lift of the hold finger clicks the pad button under it, so clear the answer first.
-  await tap(page, '.parent-pad button[aria-label="Delete"]');
-  await wait(150);
-  await tap(page, '.parent-pad button[aria-label="Delete"]');
-  await wait(150);
+  await wait(300);
+  check(
+    'hold release: answer field is empty',
+    (await page.$eval('.parent-problem output', (el) => el.textContent)) === '?'
+  );
   await typeDigits(page, answer);
   await tap(page, '.parent-ok');
   await wait(300);
