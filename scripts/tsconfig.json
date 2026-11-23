@@ -5,5 +5,13 @@
     "types": ["node"],
     "allowImportingTsExtensions": true
   },
-  "include": ["smoke.ts", "smoke-audio.ts", "smoke-page.ts"]
+  "include": [
+    "smoke.ts",
+    "smoke-audio.ts",
+    "smoke-page.ts",
+    "deploy.ts",
+    "leak-scan.ts",
+    "leak-scan.test.ts",
+    "lib/*.ts"
+  ]
 }
