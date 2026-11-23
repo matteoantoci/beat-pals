@@ -1,4 +1,6 @@
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+import { RECORD_COLORS } from '../../model';
+import { progressOf } from '../../shell/save';
 import { loadFamilyKey, readCover, readSongStore, watchDownload } from '../../shell/songs';
 import { playTitleMusic } from '../../sound';
 import { palPicture } from '../pals/pal-svg';
@@ -28,7 +30,7 @@ type Cards = {
 const ignore = (): void => undefined;
 
 /** The cover picture of the song as an object URL, or undefined for a song with a plain card. */
-const pictureOf = async (key: FamilyKey, song: IndexSong): Promise<string | undefined> => {
+export const pictureOf = async (key: FamilyKey, song: IndexSong): Promise<string | undefined> => {
   const cover = await readCover(key, song);
   return cover === null ? undefined : URL.createObjectURL(cover);
 };
@@ -91,28 +93,35 @@ const HomeIcon = (): JSX.Element => (
   </svg>
 );
 
-const SongCard = (props: { readonly card: Card; readonly onTap: () => void }): JSX.Element => (
-  <li class="song-card">
-    <button type="button" class="song-cover" aria-label={props.card.song.title} onClick={() => props.onTap()}>
-      <Show
-        when={props.card.picture}
-        fallback={
-          <span class="song-picture song-plain">
-            <img src={palPicture(1, 'idle')} alt="" draggable={false} />
-          </span>
-        }
-      >
-        {(picture) => <img class="song-picture" src={picture()} alt="" draggable={false} />}
-      </Show>
-    </button>
-    {/* Every song shows bronze with no star until the progress of each song is saved. */}
-    <div class="song-shelf">
-      <Record color="bronze" />
-      <Stars count={0} />
-    </div>
-    <span class="song-title">{props.card.song.title}</span>
-  </li>
+/** The cover picture of a song, or a plain card with Dot for a song with no picture. */
+export const SongPicture = (props: { readonly picture: string | undefined }): JSX.Element => (
+  <Show
+    when={props.picture}
+    fallback={
+      <span class="song-picture song-plain">
+        <img src={palPicture(1, 'idle')} alt="" draggable={false} />
+      </span>
+    }
+  >
+    {(picture) => <img class="song-picture" src={picture()} alt="" draggable={false} />}
+  </Show>
 );
+
+const SongCard = (props: { readonly card: Card; readonly onTap: () => void }): JSX.Element => {
+  const progress = progressOf(props.card.song.id);
+  return (
+    <li class="song-card">
+      <button type="button" class="song-cover" aria-label={props.card.song.title} onClick={() => props.onTap()}>
+        <SongPicture picture={props.card.picture} />
+      </button>
+      <div class="song-shelf">
+        <Record color={RECORD_COLORS[progress.color]} />
+        <Stars count={progress.stars} />
+      </div>
+      <span class="song-title">{props.card.song.title}</span>
+    </li>
+  );
+};
 
 type SongListProps = { readonly onHome: () => void; readonly onPlay: (choice: SongChoice) => void };
 

@@ -1,0 +1,253 @@
+/* The end scene (src/ui/end/), style A of the prototype (views #end and #join). Portrait: the song sleeve with its
+   record and the 3 stars on top, the band on its floor below, and the button at the bottom. Landscape: the sleeve
+   and stars on the left, the band on the right. The motion is in motion.ts. */
+.end {
+  --cover: 168px;
+  --record: 152px;
+  --star: 56px;
+  --pal: 104px;
+  --spot: min(120px, 31vw);
+  position: relative;
+  display: grid;
+  grid-template:
+    'info' 1fr
+    'stage' auto
+    'foot' auto
+    / 1fr;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.end-confetti {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.end-confetto {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  will-change: transform;
+}
+
+.end-info {
+  grid-area: info;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  min-height: 0;
+}
+
+/* The cover sits in front; each record hides behind it before it slides out by 62% of its size. */
+.end-sleeve {
+  position: relative;
+  flex: none;
+  width: calc(var(--cover) + var(--record) * 0.62);
+  height: var(--cover);
+}
+
+.end-record {
+  position: absolute;
+  top: calc((var(--cover) - var(--record)) / 2);
+  right: 0;
+  width: var(--record);
+  height: var(--record);
+}
+
+.end-record .song-record {
+  width: 100%;
+  height: 100%;
+}
+
+.end-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--cover);
+  height: var(--cover);
+  border-radius: var(--r-m);
+  box-shadow: var(--block);
+}
+
+.end-stars {
+  display: flex;
+  gap: 16px;
+}
+
+.end-slot {
+  position: relative;
+  width: var(--star);
+  height: var(--star);
+}
+
+.end-slot svg,
+.end-star {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.end-star {
+  opacity: 0;
+}
+
+.end-star.earned {
+  opacity: 1;
+}
+
+.end-sparks {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+}
+
+.end-sparks .end-spark {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+}
+
+/* The band on its floor. Each pal keeps its place: Pip left, Dot in the middle, Bo right. */
+.end-stage {
+  grid-area: stage;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 24px 0 32px;
+}
+
+.end-stage::before {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  width: calc(var(--spot) * 3);
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--grape-950) 35%, transparent);
+  transform: translateX(-50%);
+  content: '';
+}
+
+.end-spot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: var(--spot);
+  height: var(--pal);
+}
+
+.end-shadow {
+  position: absolute;
+  bottom: -7px;
+  width: calc(var(--pal) * 0.84);
+  height: 14px;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--grape-950) 55%, transparent);
+}
+
+.end-body {
+  position: relative;
+  width: var(--pal);
+  height: var(--pal);
+  transform-origin: 50% 100%;
+}
+
+/* A waiting pal stands at the side of the band, a little smaller. */
+.end-spot.waiting .end-body,
+.end-spot.waiting .end-shadow {
+  scale: 0.8;
+}
+
+.end-pal {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+
+.end-spot .end-sparks {
+  top: 50%;
+}
+
+.end-foot {
+  grid-area: foot;
+  display: grid;
+  place-items: center;
+  height: 64px;
+  padding-bottom: 16px;
+}
+
+.end-done {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  padding: 16px;
+  border: none;
+  border-radius: var(--r-full);
+  background: var(--grape-600);
+  box-shadow: var(--block);
+  animation: end-done-in 0.3s var(--ease-out);
+}
+
+.end-done svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--grape-300);
+}
+
+@keyframes end-done-in {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+@media (orientation: landscape) {
+  .end {
+    --cover: 112px;
+    --record: 100px;
+    --star: 40px;
+    --pal: 80px;
+    --spot: 100px;
+    grid-template:
+      'info stage' 1fr
+      'info foot' auto
+      / 1fr 1.4fr;
+  }
+
+  .end-info {
+    gap: 16px;
+  }
+
+  .end-stage {
+    align-items: flex-end;
+    padding: 16px 0 24px;
+  }
+
+  .end-stage::before {
+    bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .end-done {
+    animation-name: none;
+  }
+}
