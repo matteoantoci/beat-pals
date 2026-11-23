@@ -1,7 +1,6 @@
-// The band energy on the PixiJS stage (spec, "Band energy"; prototype play-style A). Each step keeps the effects of
-// the steps below. Step 2: warmer lane edges and floor sparkles on each beat. Step 3: a brighter stage light. Gold:
-// thick gold rims, a warm floor band under the pal shadows, and more sparkles; no glow behind the pals, no counter.
-// Reduced motion: nothing travels or turns; the sparkles fade in place and the gold wave is not drawn (C16).
+// The band energy on the PixiJS stage (spec, "Band energy"; prototype play-style A). Step 2: warm lane edges, floor
+// sparkles. Step 3: a stage light. Gold: gold rims, a warm floor band under the pal shadows, more sparkles. No glow
+// stays behind the pals. Reduced motion: nothing travels or turns, and the gold wave is not drawn (C16).
 
 import { Sprite, type Container } from 'pixi.js';
 import { shapeKey } from './atlas';
@@ -47,7 +46,6 @@ export type EnergyScene = {
   readonly beat: number;
 };
 
-/** `value` from 0 to 1. */
 const easeOut = (value: number): number => 1 - (1 - value) ** 3;
 
 /** A still random number from 0 to 1 for a pair of integers, so a frozen time shows the same sparkles. */
@@ -78,12 +76,14 @@ export const makeEnergyParts = (layers: EnergyLayers, band: readonly Lane[]): En
 
 /** Puts the still parts in place for a layout. */
 export const dressEnergy = (parts: EnergyParts, geometry: Geometry, textures: Textures): void => {
-  const { cx, floorY, palH, laneW, hitY } = geometry;
+  const { cx, floorY, laneW, hitY, topY } = geometry;
   const { stageLight, goldFloor, wave } = parts;
   const sideTop = geometry.chuteTop + laneW * CHUTE_SHARE;
+  // Over the lower highway and the rings, up to the pal tops: no glow behind the pals, so their edges keep contrast.
+  const light = { y: hitY - (hitY - topY) * 0.35, ry: (hitY - topY) * 0.35 + geometry.ringR - 12 };
   stageLight.texture = textures.shape(shapeKey.stageLight);
-  stageLight.position.set(cx, floorY - palH * 0.5);
-  stageLight.scale.set((laneW * 2.2) / GLOW_R);
+  stageLight.position.set(cx, light.y);
+  stageLight.scale.set((laneW * 2.2) / GLOW_R, light.ry / GLOW_R);
   goldFloor.texture = textures.shape(shapeKey.goldFloor);
   goldFloor.position.set(cx, floorY + GOLD_FLOOR.drop);
   wave.texture = textures.shape(shapeKey.goldWave);
@@ -173,19 +173,19 @@ const drawUpSparkle = (scene: EnergyScene, pool: Pool, { up, lane, j }: UpSparkl
   });
 };
 
-/** The soft glow over the band (never a flash) and, at gold, the thin ring wave. */
+/** The soft glow over the rings, up to the pal tops (never a flash), and at gold the thin ring wave. */
 const drawGlow = (parts: EnergyParts, scene: EnergyScene, up: LevelUp): void => {
-  const { geometry } = scene;
+  const { cx, ringR, hitY, laneW, floorY, palH } = scene.geometry;
   const { glow, wave } = parts;
   const gold = up.to === GOLD;
   const k = up.progress;
   glow.texture = scene.textures.shape(gold ? shapeKey.glowGold : shapeKey.glowWhite);
-  glow.position.set(geometry.cx, geometry.floorY - geometry.palH * 0.6);
-  glow.scale.set((geometry.laneW * (gold ? 2 : 1.5)) / GLOW_R);
+  glow.position.set(cx, hitY - ringR);
+  glow.scale.set((laneW * (gold ? 2 : 1.5)) / GLOW_R, (2 * ringR - 12) / GLOW_R);
   glow.alpha = Math.sin(Math.PI * k);
   wave.visible = gold && !scene.reduced;
-  wave.position.copyFrom(glow.position);
-  wave.scale.set((geometry.palH * 0.6 + easeOut(k) * geometry.laneW * 1.3) / WAVE_R);
+  wave.position.set(cx, floorY - palH * 0.6);
+  wave.scale.set((palH * 0.6 + easeOut(k) * laneW * 1.3) / WAVE_R);
   wave.alpha = 1 - k;
 };
 

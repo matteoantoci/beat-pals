@@ -1,6 +1,6 @@
 // The texture atlas of the play screen (C20: one atlas). Each shape of the moving parts (notes, beat pills, ring
-// layers, and hit effects) is painted one time for each layout into one 2D canvas. A simple shelf packer places the
-// shapes in rows. Each shape paints around (0, 0), so its sprite takes the anchor 0.5.
+// layers, hit effects, and the band energy) is painted one time for each layout into one 2D canvas. A simple shelf
+// packer places the shapes in rows. Each shape paints around (0, 0), so its sprite takes the anchor 0.5.
 
 import { laneCss, LEMON, paintBubble, paintCircleLine, paintDisc, paintPill, WHITE } from './paint';
 import {

@@ -41,7 +41,7 @@ const strongBeats = (beats: SongFacts['beats']): boolean[] => {
 /** The index of the last beat at or before the frame time. */
 const beatNow = (view: View): number => {
   let at = view.first.beat;
-  while (at > 0 && (view.beats[at]?.t ?? 0) > view.t) {
+  while (at > 0 && (view.beats[at]?.t ?? Number.POSITIVE_INFINITY) > view.t) {
     at -= 1;
   }
   while ((view.beats[at + 1]?.t ?? Number.POSITIVE_INFINITY) <= view.t) {
