@@ -1,4 +1,4 @@
-// The doubles of the child chart (spec, "The child chart"), from platinum up, as accents. A chord on a downbeat
+// The doubles of the child chart (spec, "The child chart"), from gold up, as accents. A chord on a downbeat
 // becomes a double only when none of the 3 child notes before it is a double, so at most 1 in 4 child notes is a
 // double. A double has its contour lane and one adjacent lane: Pip gives Pip + Dot, and Bo gives Dot + Bo. Dot gives
 // Dot + Bo when the highest fret of the chord is 3 or 4, else Pip + Dot. All other chords stay one note.

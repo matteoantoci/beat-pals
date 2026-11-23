@@ -13,8 +13,8 @@ import type { SongFacts } from '../chart/facts';
 /** A note of the child chart. `holdSec` is 0 for a plain note. */
 type ChildNote = { t: number; lanes: NoteLanes; holdSec: number };
 
-/** The record colors, from the first to the last. */
-export const RECORD_COLORS = ['bronze', 'silver', 'gold', 'platinum', 'diamond'] as const;
+/** The record colors, from the first level to the last. Level 0 has no record: the first good play earns bronze. */
+export const RECORD_COLORS = ['none', 'bronze', 'silver', 'gold', 'platinum'] as const;
 
 export type RecordColor = (typeof RECORD_COLORS)[number];
 
@@ -23,17 +23,17 @@ export type ChildChart = { band: readonly Lane[]; notes: ChildNote[] };
 
 const DOT: Lane = 1;
 
-/** The band of each record color: Dot at bronze, Pip joins at silver, and Bo joins at gold. */
+/** The band of each record color: Dot alone with no record, Pip joins at bronze, and Bo joins at silver. */
 const BANDS: Readonly<Record<RecordColor, readonly Lane[]>> = {
-  bronze: [DOT],
-  silver: [0, DOT],
+  none: [DOT],
+  bronze: [0, DOT],
+  silver: [0, DOT, 2],
   gold: [0, DOT, 2],
   platinum: [0, DOT, 2],
-  diamond: [0, DOT, 2],
 };
 
-/** The colors with doubles and soft holds: platinum and up. */
-const ACCENTS: ReadonlySet<RecordColor> = new Set(['platinum', 'diamond']);
+/** The colors with doubles and soft holds: gold and up. */
+const ACCENTS: ReadonlySet<RecordColor> = new Set(['gold', 'platinum']);
 
 /** The band of a record color: the lanes of the pals that play. */
 export const bandOf = (color: RecordColor): readonly Lane[] => BANDS[color];
@@ -44,7 +44,7 @@ export const childChart = (facts: SongFacts, color: RecordColor, step: SpeedStep
   const beats = timedBeats(facts.beats);
   const kept = keptBeats(facts.beats, step);
   const onBeat = refillGaps(notes, filterNotes(notes, kept), { kept, beats });
-  const filtered = color === 'diamond' ? addOffBeat(notes, onBeat, { beats, step }) : onBeat;
+  const filtered = color === 'platinum' ? addOffBeat(notes, onBeat, { beats, step }) : onBeat;
   const band = BANDS[color];
   const lanes = mapLanes(filtered, band);
   if (!ACCENTS.has(color)) {

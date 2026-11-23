@@ -12,7 +12,7 @@ export const Reset = (): JSX.Element => {
     setAsking(false);
     setNote(
       clearSave()
-        ? 'The progress is deleted. Each song starts again at bronze with 0 stars.'
+        ? 'The progress is deleted. Each song starts again with no record.'
         : 'The progress could not be deleted.'
     );
   };

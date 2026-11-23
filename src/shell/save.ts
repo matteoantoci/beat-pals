@@ -62,7 +62,7 @@ export const clearSave = (): boolean => {
   }
 };
 
-/** The progress of one song: bronze with 0 stars before its first play. */
+/** The progress of one song: level 0 (no record) before its first play. */
 export const progressOf = (songId: string): SongProgress => songProgress(progress(), songId);
 
 /** Finds the outcome of a song play from its hit ratio, keeps the new progress, and writes the save. */

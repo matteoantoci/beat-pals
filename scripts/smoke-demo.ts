@@ -15,15 +15,15 @@ const PAINT_MS = 300;
 /** The iPhone 12 screen in CSS px. */
 const SIZES = { portrait: { width: 390, height: 844 }, landscape: { width: 844, height: 390 } } as const;
 
-// The times in the demo song (src/ui/demo/demo.chart): a note at 14.0 s in each color (a double from platinum up),
-// and at platinum a soft hold from 15.0 s and a double at 14.0 s.
+// The times in the demo song (src/ui/demo/demo.chart): a note at 14.0 s in each color (a double from gold up),
+// and at gold a soft hold from 15.0 s and a double at 14.0 s.
 /** 0.1 s after the hit at 14.0 s; a soft hold and plain notes are on the way. */
 const T_HIT = 14.1;
 /** 0.3 s after the hit at 14.0 s. */
 const T_LATER = 14.3;
-/** 1.2 s after the bronze hit at 12.0 s, before the next bronze note at 14.0 s: no hit effect may show. */
+/** 1.2 s after the level 0 hit at 12.0 s, before the next level 0 note at 13.5 s: no hit effect may show. */
 const T_GONE = 13.2;
-/** The platinum double at 14.0 s is on the way. */
+/** The gold double at 14.0 s is on the way. */
 const T_DOUBLE = 12.6;
 /** In the middle of a soft hold. */
 const T_HELD = 15.3;
@@ -32,31 +32,31 @@ type Shot = { readonly name: string; readonly query: string };
 /** One screenshot: the demo, the folder, and the screen size. */
 type ShotPlace = { readonly shot: Shot; readonly folder: string; readonly size: keyof typeof SIZES };
 
-const COLOR_SHOTS: readonly Shot[] = ['bronze.0', 'silver.1', 'gold.1', 'platinum.1', 'diamond.2'].map((record) => ({
+const COLOR_SHOTS: readonly Shot[] = ['none.0', 'bronze.1', 'silver.1', 'gold.1', 'platinum.2'].map((record) => ({
   name: `color-${record.split('.')[0] ?? record}`,
   query: `demo=${record}&energy=0&t=${String(T_HIT)}&sim`,
 }));
 
 const ENERGY_SHOTS: readonly Shot[] = ['0', '1', '2', '3', 'gold'].map((step) => ({
   name: `energy-${step}`,
-  query: `demo=platinum.1&energy=${step}&t=${String(T_HIT)}&sim`,
+  query: `demo=gold.1&energy=${step}&t=${String(T_HIT)}&sim`,
 }));
 
-/** The level-up moments of a perfect platinum play, 0.2 s after each step up, with the energy of the play (no energy in the query). */
+/** The level-up moments of a perfect gold play, 0.2 s after each step up, with the energy of the play (no energy in the query). */
 const LEVEL_UP_SHOTS: readonly Shot[] = [
   { step: '1', at: 4.2 },
   { step: '2', at: 8.2 },
   { step: '3', at: 16.2 },
   { step: 'gold', at: 30.7 },
-].map(({ step, at }) => ({ name: `level-up-${step}`, query: `demo=platinum.1&t=${String(at)}&sim` }));
+].map(({ step, at }) => ({ name: `level-up-${step}`, query: `demo=gold.1&t=${String(at)}&sim` }));
 
 const OTHER_SHOTS: readonly Shot[] = [
-  { name: 'hit-later-platinum', query: `demo=platinum.1&energy=0&t=${String(T_LATER)}&sim` },
-  { name: 'hit-gone-bronze', query: `demo=bronze.0&energy=0&t=${String(T_GONE)}&sim` },
-  { name: 'double-platinum', query: `demo=platinum.1&energy=0&t=${String(T_DOUBLE)}&sim` },
-  { name: 'held-platinum', query: `demo=platinum.1&energy=2&t=${String(T_HELD)}&sim` },
-  { name: 'reduce-diamond', query: `demo=diamond.2&energy=gold&t=${String(T_HIT)}&sim&reduce` },
-  { name: 'reduce-later-diamond', query: `demo=diamond.2&energy=gold&t=${String(T_LATER)}&sim&reduce` },
+  { name: 'hit-later-gold', query: `demo=gold.1&energy=0&t=${String(T_LATER)}&sim` },
+  { name: 'hit-gone-none', query: `demo=none.0&energy=0&t=${String(T_GONE)}&sim` },
+  { name: 'double-gold', query: `demo=gold.1&energy=0&t=${String(T_DOUBLE)}&sim` },
+  { name: 'held-gold', query: `demo=gold.1&energy=2&t=${String(T_HELD)}&sim` },
+  { name: 'reduce-platinum', query: `demo=platinum.2&energy=gold&t=${String(T_HIT)}&sim&reduce` },
+  { name: 'reduce-later-platinum', query: `demo=platinum.2&energy=gold&t=${String(T_LATER)}&sim&reduce` },
 ];
 
 const open = async (page: Page, url: string, query: string): Promise<boolean> => {
@@ -87,7 +87,7 @@ const saveShots = async (page: Page, url: string, folder: string): Promise<void>
 /** The route loads and freezes, and a wrong query shows its reason. */
 const routeChecks = async (page: Page, url: string): Promise<void> => {
   await page.setViewport({ ...SIZES.portrait, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
-  const ready = await open(page, url, `demo=gold.1&energy=2&t=${String(T_HIT)}&sim`);
+  const ready = await open(page, url, `demo=silver.1&energy=2&t=${String(T_HIT)}&sim`);
   const pals = await page.$$eval('.play-pal:not([hidden])', (images) => images.length);
   check('demo route: the frozen play screen shows', ready && pals === 3, `${String(pals)} pals`);
   await page.goto(`${url}?demo=copper.9`, { waitUntil: 'load' });

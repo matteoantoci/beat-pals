@@ -9,12 +9,12 @@ const chartOf = (progress: SongProgress) => {
   return childChart(demoFacts(), color, step);
 };
 
-const BRONZE: SongProgress = { color: 0, stars: 0, weakPlays: 0 };
-const PLATINUM: SongProgress = { color: 3, stars: 1, weakPlays: 0 };
+const NONE: SongProgress = { color: 0, stars: 0, weakPlays: 0 };
+const GOLD: SongProgress = { color: 3, stars: 1, weakPlays: 0 };
 
 describe('freeze', () => {
   it('hits each note before the frozen time and no note after it', () => {
-    const chart = chartOf(BRONZE);
+    const chart = chartOf(NONE);
     const { view } = freeze(chart, demoFacts().beats, { t: 14.15, energy: undefined });
     expect(view.t).toBe(14.15);
     const hit = chart.notes.map((note, at) => [note.t < 14.15, view.hitNotes[at] === 1]);
@@ -22,7 +22,7 @@ describe('freeze', () => {
   });
 
   it('holds the soft hold that the frozen time is in', () => {
-    const chart = chartOf(PLATINUM);
+    const chart = chartOf(GOLD);
     const hold = chart.notes.find((note) => note.holdSec > 0 && note.t > 10);
     expect(hold).toBeDefined();
     const t = (hold?.t ?? 0) + (hold?.holdSec ?? 0) / 2;
@@ -31,12 +31,12 @@ describe('freeze', () => {
   });
 
   it('shows the energy step of the query fully, with no level-up moment', () => {
-    const { energy } = freeze(chartOf(PLATINUM), demoFacts().beats, { t: 0.5, energy: 'gold' });
+    const { energy } = freeze(chartOf(GOLD), demoFacts().beats, { t: 0.5, energy: 'gold' });
     expect(energy).toEqual({ step: 4, fades: [1, 1, 1, 1], levelUp: undefined });
   });
 
   it('shows the energy that the play reached without a step in the query', () => {
-    const { energy } = freeze(chartOf(PLATINUM), demoFacts().beats, { t: 20, energy: undefined });
+    const { energy } = freeze(chartOf(GOLD), demoFacts().beats, { t: 20, energy: undefined });
     expect(energy.step).toBeGreaterThan(0);
   });
 });

@@ -23,7 +23,7 @@ const restored = (save: unknown): SavedProgress => {
 const throughJson = (save: unknown): unknown => JSON.parse(JSON.stringify(save));
 
 describe('the progress of a song', () => {
-  it('is bronze with 0 stars for a song with no play', () => {
+  it('is level 0 (no record) with 0 stars for a song with no play', () => {
     expect(songProgress(played(), 'never-played')).toEqual(NEW_SONG);
     expect(songProgress(played(), 'constructor')).toEqual(NEW_SONG);
   });
@@ -114,7 +114,7 @@ describe('restore of old and damaged shapes', () => {
       { color: 1, stars: 1, weakPlays: 3 },
       { color: 1, stars: 1 },
       { color: '1', stars: 1, weakPlays: 0 },
-      // The third star of a color below diamond opens the next color.
+      // The third star of a color below platinum opens the next color.
       { color: 3, stars: 3, weakPlays: 0 },
     ];
 

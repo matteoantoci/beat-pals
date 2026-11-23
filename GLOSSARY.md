@@ -105,7 +105,7 @@ _Avoid_: Bonus, achievement
 ## Progress
 
 **Record color**:
-The level of skill on one song: bronze, silver, gold, platinum, or diamond, each with one new skill.
+The level of skill on one song. There are 5 levels: level 0, bronze, silver, gold, and platinum. Each level above level 0 adds one new skill. Level 0 shows no record. The first good play at level 0 earns the bronze record.
 _Avoid_: Level, cup, medal, trophy, rank, tier
 
 **Star**:
@@ -147,7 +147,7 @@ The short reward screen after a play.
 _Avoid_: Results screen, score screen, game over
 
 **Join scene**:
-The scene where a waiting pal jumps into the band, at silver and gold.
+The scene where a waiting pal jumps into the band, at bronze and silver.
 _Avoid_: Unlock scene
 
 **Parent check**:

@@ -1,20 +1,21 @@
 // The progress of one song (spec, "Progress"): the record color, the stars of that color, and the weak plays in a
-// row. A play at 70% or more earns the next star, and the third star opens the next color with 0 stars. Stars are
-// never lost. After 2 weak plays, the next play uses the speed step one below, inside the same color only; a good
-// play at that lower step earns no star, so a star is always earned at her own speed.
+// row. A play at 70% or more earns the next star, and the third star opens the next color with 0 stars. Level 0 has
+// no record and no stars: one good play at every beat earns the bronze record. Stars are never lost. After 2 weak
+// plays, the next play uses the speed step one below, inside the same color only; a good play at that lower step
+// earns no star, so a star is always earned at her own speed.
 
 import { bandOf, RECORD_COLORS, type RecordColor } from '../child/child-chart';
 import type { Lane } from '../child/lanes';
 import type { SpeedStep } from '../child/speed-steps';
 
-/** color: 0 bronze to 4 diamond. stars: the stars of that color (3 only at diamond, the top). */
+/** color: 0 (no record) to 4 platinum. stars: the stars of that color (3 only at platinum, the top). */
 export type SongProgress = {
   readonly color: 0 | 1 | 2 | 3 | 4;
   readonly stars: 0 | 1 | 2 | 3;
   readonly weakPlays: 0 | 1 | 2;
 };
 
-/** A song with no play yet: bronze with 0 stars. */
+/** A song with no play yet: level 0, with no record and no stars. */
 export const NEW_SONG: SongProgress = { color: 0, stars: 0, weakPlays: 0 };
 
 /** The lowest hit ratio of a good play. */
@@ -45,13 +46,19 @@ export type PlayOutcome = {
 /** Who dances in the end scene. There is never a sad pal. */
 export type Dance = 'band' | 'band-and-waiting' | 'party';
 
-/** The speed step that the stars of the color earned: diamond with 3 stars stays at step 2. */
+/** The speed step that the stars of the color earned: platinum with 3 stars stays at step 2. */
 const EARNED_STEP: Readonly<Record<SongProgress['stars'], SpeedStep>> = { 0: 0, 1: 1, 2: 2, 3: 2 };
 const STEP_BELOW: Readonly<Record<SpeedStep, SpeedStep>> = { 0: 0, 1: 0, 2: 1 };
 const NEXT_STAR = { 0: 1, 1: 2, 2: 3 } as const;
 const NEXT_COLOR = { 0: 1, 1: 2, 2: 3, 3: 4 } as const;
 
+/** Level 0 (no record) plays every beat (speed step 2), and it never steps down. */
+const FIRST_LEVEL: PlaySetup = { color: 'none', step: 2, steppedDown: false };
+
 export const playSetup = (progress: SongProgress): PlaySetup => {
+  if (progress.color === 0) {
+    return FIRST_LEVEL;
+  }
   const earned = EARNED_STEP[progress.stars];
   const steppedDown = progress.weakPlays === 2 && earned > 0;
   return { color: RECORD_COLORS[progress.color], step: steppedDown ? STEP_BELOW[earned] : earned, steppedDown };
@@ -69,18 +76,19 @@ export const outcomeOf = (before: SongProgress, ratio: number): PlayOutcome => {
   if (ratio < GOOD_RATIO) {
     return { ...nothing, after: { ...before, weakPlays: before.weakPlays === 0 ? 1 : 2 } };
   }
-  // Diamond with 3 stars is the top, and a good play at the lower step earns no star.
+  // Platinum with 3 stars is the top, and a good play at the lower step earns no star.
   if (before.stars === 3 || playSetup(before).steppedDown) {
     return { ...nothing, after: { ...before, weakPlays: 0 } };
   }
   const star = before.stars;
-  if (star < 2 || before.color === 4) {
+  if (before.color === 4 || (star < 2 && before.color !== 0)) {
     const after: SongProgress = { color: before.color, stars: NEXT_STAR[star], weakPlays: 0 };
     return { ...nothing, after, star };
   }
   const color = NEXT_COLOR[before.color];
   const opened = RECORD_COLORS[color];
-  return { before, after: { color, stars: 0, weakPlays: 0 }, star, opened, joins: joinerOf(before, opened) };
+  const earned = before.color === 0 ? null : star;
+  return { before, after: { color, stars: 0, weakPlays: 0 }, star: earned, opened, joins: joinerOf(before, opened) };
 };
 
 /** Below 40% the band dances; to below 70% the waiting pals dance too; from 70% all pals dance with confetti. */

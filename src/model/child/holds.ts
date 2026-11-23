@@ -1,4 +1,4 @@
-// The holds of the child chart (spec, "The child chart"), from platinum up. A sustain ends at the latest at the next
+// The holds of the child chart (spec, "The child chart"), from gold up. A sustain ends at the latest at the next
 // child note (in any lane) minus the good window of that note, so a hold never overlaps the next note. After that
 // cut, a sustain of at least one beat becomes a soft hold. All other sustains become plain notes.
 

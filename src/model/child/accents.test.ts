@@ -21,7 +21,7 @@ const factsWith = (notes: FactsNote[]): SongFacts => ({
 const onBeats = (frets: readonly number[][]): FactsNote[] =>
   frets.map((fret, at) => ({ t: at / 2, frets: fret, lenSec: 0 }));
 
-const lanesOf = (notes: FactsNote[], color: 'gold' | 'platinum' = 'platinum'): number[][] =>
+const lanesOf = (notes: FactsNote[], color: 'silver' | 'gold' = 'gold'): number[][] =>
   childChart(factsWith(notes), color, 2).notes.map((note) => note.lanes);
 
 describe('childChart doubles', () => {
@@ -48,16 +48,16 @@ describe('childChart doubles', () => {
     const doubles = lanesOf(notes).flatMap((lanes, at) => (lanes.length === 2 ? [at] : []));
     expect(doubles).toEqual([0, 4, 8]);
     // With chords on beats 1 and 3 of a bar only at step 0, the 3-note rule drops every second downbeat chord.
-    const sparse = childChart(factsWith(notes), 'platinum', 0).notes.map((note) => note.lanes.length);
+    const sparse = childChart(factsWith(notes), 'gold', 0).notes.map((note) => note.lanes.length);
     expect(sparse).toEqual([2, 1, 1, 1, 2, 1]);
   });
 
-  it('makes no double below platinum', () => {
-    expect(lanesOf(onBeats([[0, 1]]), 'gold')).toEqual([[1]]);
+  it('makes no double below gold', () => {
+    expect(lanesOf(onBeats([[0, 1]]), 'silver')).toEqual([[1]]);
   });
 });
 
-const holdsOf = (notes: FactsNote[], color: 'gold' | 'platinum' = 'platinum'): number[] =>
+const holdsOf = (notes: FactsNote[], color: 'silver' | 'gold' = 'gold'): number[] =>
   childChart(factsWith(notes), color, 2).notes.map((note) => note.holdSec);
 
 describe('childChart holds', () => {
@@ -91,19 +91,19 @@ describe('childChart holds', () => {
     expect(holdsOf([{ t: 0, frets: [0], lenSec: 0.4375 }])).toEqual([0]);
   });
 
-  it('makes no hold below platinum', () => {
-    expect(holdsOf([{ t: 0, frets: [0], lenSec: 1 }], 'gold')).toEqual([0]);
+  it('makes no hold below gold', () => {
+    expect(holdsOf([{ t: 0, frets: [0], lenSec: 1 }], 'silver')).toEqual([0]);
   });
 });
 
-describe('childChart at diamond', () => {
-  it('keeps the doubles and the soft holds of platinum', () => {
+describe('childChart at platinum', () => {
+  it('keeps the doubles and the soft holds of gold', () => {
     const notes = [
       { t: 0, frets: [0, 4], lenSec: 0 },
       { t: 0.5, frets: [1], lenSec: 1 },
       { t: 2, frets: [1], lenSec: 0 },
     ];
-    const chart = childChart(factsWith(notes), 'diamond', 2).notes;
+    const chart = childChart(factsWith(notes), 'platinum', 2).notes;
     expect(chart.some((note) => note.lanes.length === 2)).toBe(true);
     expect(chart.some((note) => note.holdSec > 0)).toBe(true);
   });

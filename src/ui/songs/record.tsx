@@ -1,16 +1,16 @@
-import { For } from 'solid-js';
+import { For, Show } from 'solid-js';
 import { css, shade, TOKENS, type Oklch } from '../pals/color';
 import type { RecordColor } from '../../model';
 import type { JSX } from 'solid-js';
 
 // The reward shelf of a song card (spec, "Screens"): a record in the record color next to 3 stars. The whole disc
-// has the color, so it reads at a glance. Platinum has a second shine line and diamond has white sparkles, so each
-// record differs by a mark and not only by color.
+// has the color, so it reads at a glance. Platinum has a second shine line, so each record differs by a mark and not
+// only by color. Level 0 has no record: an empty place of the same size keeps the layout.
 
 /** `shine` is the color of the shine lines: white, but silver on the white platinum disc so that they show. */
 type RecordShades = { readonly base: Oklch; readonly dark: Oklch; readonly groove: Oklch; readonly shine?: Oklch };
 
-const RECORDS: Readonly<Record<RecordColor, RecordShades>> = {
+const RECORDS: Readonly<Record<Exclude<RecordColor, 'none'>, RecordShades>> = {
   bronze: { base: TOKENS.bronze, dark: shade(TOKENS.bronze, -0.2, -8), groove: shade(TOKENS.bronze, -0.1, -4) },
   silver: { base: TOKENS.silver, dark: shade(TOKENS.silver, -0.26), groove: shade(TOKENS.silver, -0.14) },
   gold: { base: TOKENS.lemon, dark: shade(TOKENS.lemon, -0.2, -18), groove: shade(TOKENS.lemon, -0.09, -10) },
@@ -20,7 +20,6 @@ const RECORDS: Readonly<Record<RecordColor, RecordShades>> = {
     groove: shade(TOKENS.silver, 0.06),
     shine: shade(TOKENS.silver, -0.12),
   },
-  diamond: { base: TOKENS.ice, dark: shade(TOKENS.ice, -0.24, 10), groove: shade(TOKENS.ice, -0.1) },
 };
 
 const INK = css(TOKENS.g950);
@@ -28,24 +27,11 @@ const STAR_PATH = 'M12 1.8l2.9 6.4 7 .8-5.2 4.7 1.5 6.9L12 17.1l-6.2 3.5 1.5-6.9
 const STAR_ON = { fill: css(TOKENS.lemon), stroke: css(shade(TOKENS.lemon, -0.15, -16)) };
 const STAR_OFF = { fill: css(TOKENS.g950, 0.4), stroke: css(TOKENS.g300) };
 
-const RecordMark = (props: { readonly color: RecordColor; readonly shine: string }): JSX.Element => {
-  if (props.color === 'diamond') {
-    return (
-      <path
-        d="M44 10 Q44 18 52 18 Q44 18 44 26 Q44 18 36 18 Q44 18 44 10Z M20 40 Q20 45 25 45 Q20 45 20 50 Q20 45 15 45 Q20 45 20 40Z"
-        fill={css(TOKENS.white)}
-      />
-    );
-  }
-  if (props.color === 'platinum') {
-    return (
-      <path d="M46 50 A22 22 0 0 0 54 38" fill="none" stroke={props.shine} stroke-width="2" stroke-linecap="round" />
-    );
-  }
-  return null;
-};
+const PlatinumMark = (props: { readonly shine: string }): JSX.Element => (
+  <path d="M46 50 A22 22 0 0 0 54 38" fill="none" stroke={props.shine} stroke-width="2" stroke-linecap="round" />
+);
 
-export const Record = (props: { readonly color: RecordColor }): JSX.Element => {
+const Disc = (props: { readonly color: Exclude<RecordColor, 'none'> }): JSX.Element => {
   const shades = (): RecordShades => RECORDS[props.color];
   const shine = (): string => css(shades().shine ?? TOKENS.white);
   return (
@@ -64,8 +50,20 @@ export const Record = (props: { readonly color: RecordColor }): JSX.Element => {
         stroke-linecap="round"
         opacity=".7"
       />
-      <RecordMark color={props.color} shine={shine()} />
+      <Show when={props.color === 'platinum'}>
+        <PlatinumMark shine={shine()} />
+      </Show>
     </svg>
+  );
+};
+
+/** The record of a color, or an empty place of the same size at level 0 (no record). */
+export const Record = (props: { readonly color: RecordColor }): JSX.Element => {
+  const disc = (): Exclude<RecordColor, 'none'> | undefined => (props.color === 'none' ? undefined : props.color);
+  return (
+    <Show when={disc()} fallback={<svg class="song-record" viewBox="0 0 64 64" aria-hidden="true" />}>
+      {(color) => <Disc color={color()} />}
+    </Show>
   );
 };
 

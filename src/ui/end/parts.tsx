@@ -54,27 +54,30 @@ export const Sleeve = (props: SleeveProps): JSX.Element => (
   </div>
 );
 
-/** The 3 star places of the record. The stars of before the play shine; the new star flies in. */
+/** The 3 star places of the record, or nothing at level 0 (no record). The stars of before the play shine; the new
+ * star flies in. */
 export const StarRow = (props: { readonly outcome: PlayOutcome; readonly refs: Refs }): JSX.Element => (
-  <div class="end-stars" role="img" aria-label={`${String(props.outcome.after.stars)} stars`}>
-    <For each={[0, 1, 2]}>
-      {(place) => (
-        <span class="end-slot">
-          <StarIcon on={false} />
-          <span
-            class="end-star"
-            classList={{ earned: place < props.outcome.before.stars || place === props.outcome.star }}
-            ref={(el) => props.refs.stars.push(el)}
-          >
-            <StarIcon on />
+  <Show when={props.outcome.before.color > 0}>
+    <div class="end-stars" role="img" aria-label={`${String(props.outcome.after.stars)} stars`}>
+      <For each={[0, 1, 2]}>
+        {(place) => (
+          <span class="end-slot">
+            <StarIcon on={false} />
+            <span
+              class="end-star"
+              classList={{ earned: place < props.outcome.before.stars || place === props.outcome.star }}
+              ref={(el) => props.refs.stars.push(el)}
+            >
+              <StarIcon on />
+            </span>
+            <Show when={place === props.outcome.star}>
+              <Sparks ref={(el) => Object.assign(props.refs, { starSparks: el })} />
+            </Show>
           </span>
-          <Show when={place === props.outcome.star}>
-            <Sparks ref={(el) => Object.assign(props.refs, { starSparks: el })} />
-          </Show>
-        </span>
-      )}
-    </For>
-  </div>
+        )}
+      </For>
+    </div>
+  </Show>
 );
 
 /** The 3 pals on the floor, Pip, Dot, and Bo in their places. A waiting pal stands a little smaller. The dancers

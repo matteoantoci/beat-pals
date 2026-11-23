@@ -55,26 +55,26 @@ describe('reportSongs', () => {
     expect(lines.slice(0, 5)).toEqual([
       'paper-kites: Paper Kites / The Lanterns | notes to 0:03 | beat 0.50 s (120 BPM)',
       '  color    step  notes  per min  longest gap       lanes',
-      '  bronze      0      4     68.6  1.0 s at 0:00     Dot 100%',
-      '  bronze      1      6    102.9  1.0 s at 0:01     Dot 100%',
-      '  bronze      2      8    137.1  0.5 s at 0:00     Dot 100%',
+      '  none        0      4     68.6  1.0 s at 0:00     Dot 100%',
+      '  none        1      6    102.9  1.0 s at 0:01     Dot 100%',
+      '  none        2      8    137.1  0.5 s at 0:00     Dot 100%',
     ]);
-    expect(lines.filter((line) => line.startsWith('  diamond '))).toHaveLength(3);
+    expect(lines.filter((line) => line.startsWith('  platinum '))).toHaveLength(3);
     expect(lines.slice(-2)).toEqual([
       'quiet-hum: no child chart, The chart has no lead guitar notes.',
       'report: 2 songs, 1 with a child chart.',
     ]);
   });
 
-  it('gives the off-beat notes in the diamond rows only', async () => {
+  it('gives the off-beat notes in the platinum rows only', async () => {
     // Notes at 0 s and 2 s on the beat, and one at 1.25 s off the beat.
     await writeFile(join(inbox, 'paper-kites.sng'), sng('Paper Kites', chartOf([0, 480, 768])));
     const lines: string[] = [];
     await reportSongs({ inbox, log: (line) => lines.push(line) });
     const notesOf = (color: string): string[] =>
       lines.filter((line) => line.startsWith(`  ${color} `)).map((line) => line.trim().split(/ +/)[2] ?? '');
-    expect(notesOf('platinum')).toEqual(['2', '2', '2']);
-    expect(notesOf('diamond')).toEqual(['2', '2', '3']);
+    expect(notesOf('gold')).toEqual(['2', '2', '2']);
+    expect(notesOf('platinum')).toEqual(['2', '2', '3']);
   });
 
   it('lists each fill of a long rest: start, end, source part, and note count', async () => {
@@ -86,7 +86,7 @@ describe('reportSongs', () => {
     expect(lines.filter((line) => line.includes('fill'))).toEqual(['  fill 0:01 to 0:05  bass  3 notes']);
   });
 
-  it('flags each silver or gold chart that gives a lane of the band less than 15% of the notes', async () => {
+  it('flags each bronze or silver chart that gives a lane of the band less than 15% of the notes', async () => {
     // Every beat: red, red, green, green, and again. At step 2, Pip and Dot have half of the notes each, and Bo none.
     const frets = [1, 1, 0, 0, 1, 1, 0, 0];
     const chart = chartOf(
@@ -96,9 +96,9 @@ describe('reportSongs', () => {
     await writeFile(join(inbox, 'paper-kites.sng'), sng('Paper Kites', chart));
     const lines: string[] = [];
     await reportSongs({ inbox, log: (line) => lines.push(line) });
-    expect(lines).toContain('  silver      2      8    137.1  0.5 s at 0:00     Pip 50% Dot 50%');
+    expect(lines).toContain('  bronze      2      8    137.1  0.5 s at 0:00     Pip 50% Dot 50%');
     const flags = lines.filter((line) => line.includes('FLAG'));
-    expect(flags).toContain('  FLAG gold step 2: Bo has 0% of the notes');
-    expect(flags.filter((line) => line.includes('silver step 2'))).toEqual([]);
+    expect(flags).toContain('  FLAG silver step 2: Bo has 0% of the notes');
+    expect(flags.filter((line) => line.includes('bronze step 2'))).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 // The query of the demo route (spec, "Testing Decisions"): `?demo=<color>.<stars>&energy=<step>&t=<sec>&sim&reduce`,
-// for example `?demo=platinum.1&energy=3&t=2.4&sim`. The record color and its stars give the play setup, as the
+// for example `?demo=gold.1&energy=3&t=2.4&sim`. The record color and its stars give the play setup, as the
 // progress of a song does. `energy` sets the band energy step (0 to 3, or gold); without it, the screen shows the
 // energy that the play reached. `t` is the song time where the screen freezes (default 0). `sim` draws the iPhone 12
 // notch and home indicator with their safe areas, and `reduce` turns on reduced motion.
@@ -19,11 +19,11 @@ type Read<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; 
 
 const STARS: Readonly<Record<string, SongProgress['stars']>> = { 0: 0, 1: 1, 2: 2, 3: 3 };
 const COLORS: Readonly<Record<string, SongProgress['color']>> = {
-  bronze: 0,
-  silver: 1,
-  gold: 2,
-  platinum: 3,
-  diamond: 4,
+  none: 0,
+  bronze: 1,
+  silver: 2,
+  gold: 3,
+  platinum: 4,
 };
 const ENERGY: Readonly<Record<string, EnergyStep>> = { 0: 0, 1: 1, 2: 2, 3: 3, gold: 'gold' };
 

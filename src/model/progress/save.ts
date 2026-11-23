@@ -38,7 +38,7 @@ const fieldsOf = (value: unknown): ReadonlyMap<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? new Map(Object.entries(value)) : undefined;
 
 /** The progress of one song, or undefined when a value is out of its range. Other fields are left out. 3 stars
- * exist only at diamond: the third star of another color opens the next color. */
+ * exist only at platinum: the third star of another color opens the next color. */
 const progressFrom = (value: unknown): SongProgress | undefined => {
   const fields = fieldsOf(value);
   const color = fields?.get('color');
@@ -59,7 +59,7 @@ const progressMap = (songs: Iterable<readonly [string, SongProgress]>): SavedPro
   return map;
 };
 
-/** The progress of a song: bronze with 0 stars when the song has no play yet. */
+/** The progress of a song: level 0 (no record) when the song has no play yet. */
 export const songProgress = (saved: SavedProgress, songId: string): SongProgress =>
   Object.hasOwn(saved, songId) ? (saved[songId] ?? NEW_SONG) : NEW_SONG;
 

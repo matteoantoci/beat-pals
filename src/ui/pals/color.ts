@@ -1,9 +1,9 @@
-// The colour tokens of style A (prototype play-style A, C27): one palette of 11 tokens with fixed roles.
+// The colour tokens of style A (prototype play-style A, C27): one palette of 10 tokens with fixed roles.
 // - The dark ramp: grape 950, 800, 600, 300. The background, the chrome, the ink, and the parent area.
 // - The 3 lane colours: berry (Pip), lemon (Dot), mint (Bo). Each has a dark shade for rims and shadows and a light
 //   shade for cores (`LANE_COLORS`). Lemon is also the accent: reward, progress, and the play action only.
 // - White: highlights and the eyes of the pals.
-// - The record metals bronze, silver, and ice: the record colours of the reward shelf only.
+// - The record metals bronze and silver: the record colours of the reward shelf only.
 // Each colour is an OKLCH triple. The SVG pictures need CSS strings, and PixiJS needs numbers, so both come from the
 // same maths, one time at start.
 
@@ -21,7 +21,6 @@ export const TOKENS = {
   white: [1, 0, 0],
   bronze: [0.74, 0.15, 60],
   silver: [0.8, 0.02, 250],
-  ice: [0.86, 0.09, 215],
 } as const satisfies Readonly<Record<string, Oklch>>;
 
 /** The colours of one lane, from the colours of its pal. */
