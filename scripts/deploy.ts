@@ -8,8 +8,10 @@
 // 5. It runs the pre-push gate on dist/ (scripts/deploy/gate.ts). Any failure stops the deploy before the push.
 // 6. It commits dist/ in a temporary repo as one commit with no parent, and force-pushes it to the gh-pages branch
 //    of origin. So gh-pages always has exactly one commit, and its history does not grow.
-// 7. It waits until https://matteoantoci.github.io/beat-pals/ serves the main JS chunk and the song index (one
-//    .bin file) with HTTP 200.
+// 7. It waits until https://matteoantoci.github.io/beat-pals/ serves the deploy stamp of this push (deploy.txt:
+//    the source commit and the deploy time), then the main JS chunk and the song index (one .bin file) with HTTP
+//    200. The stamp is new at each push. The chunk name stays the same when the code does not change, so its
+//    HTTP 200 alone can come from the old site.
 // The key folder is ~/.config/beat-pals/, or the folder in BEAT_PALS_KEY_FOLDER, as for `prepare-song`.
 
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -72,6 +74,31 @@ const probe = async (url: string): Promise<number | string> => {
   } catch (error) {
     return String(error);
   }
+};
+
+/** Fetches the text at the URL once. Gives undefined on a network error or a status other than 200. */
+const fetchText = async (url: string): Promise<string | undefined> => {
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    return response.ok ? await response.text() : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/** Polls deploy.txt until it holds the stamp of this push. Throws after `end`. */
+const waitForStamp = async (stamp: string, end: number): Promise<void> => {
+  const served = await fetchText(`${SITE}deploy.txt?stamp=${encodeURIComponent(stamp)}`);
+  if (served?.trim() === stamp) {
+    console.log(`deploy: the site serves the stamp of this push, ${stamp}`);
+    return;
+  }
+  if (Date.now() > end) {
+    throw new Error(`The site does not serve the stamp ${stamp} after ${String(LIVE_TIMEOUT_MS / 60_000)} minutes.`);
+  }
+  console.log(`deploy: the site does not serve the new stamp yet, try again in ${String(POLL_MS / 1000)} s`);
+  await sleep(POLL_MS);
+  return waitForStamp(stamp, end);
 };
 
 /** Polls the URL until HTTP 200. Throws after `end`. */
@@ -145,9 +172,12 @@ const main = async (): Promise<void> => {
   await cp(join(root, 'songs', '.site'), join(root, 'dist', 'songs'), { recursive: true });
   const index = await gate(root);
   const source = run('git', ['rev-parse', '--short', 'HEAD'], root);
+  const stamp = `${source} ${new Date().toISOString()}`;
+  await writeFile(join(root, 'dist', 'deploy.txt'), `${stamp}\n`);
   await publish(join(root, 'dist'), run('git', ['remote', 'get-url', 'origin'], root), source);
   console.log(`deploy: pushed ${BRANCH}.`);
   const end = Date.now() + LIVE_TIMEOUT_MS;
+  await waitForStamp(stamp, end);
   await waitForLive('the main JS chunk', `${SITE}${chunk}`, end);
   await waitForLive('the song index', `${SITE}songs/${index}.bin`, end);
   console.log(`deploy: live at ${SITE}`);
