@@ -12,10 +12,11 @@ import type { EnergyStep } from '../model';
 /** The steps that a step up reaches. */
 export type LevelUpStep = Exclude<EnergyStep, 0>;
 
-/** The play gain in dB of each effect. Its file is `sounds/<effect>.wav`. */
+/** The play gain in dB of each effect. Its file is `sounds/<effect>.wav`. The claps are 3 dB below the level rule:
+ * the parent heard them too loud over the songs, in quiet and in loud parts. */
 const GAIN_DB = {
-  clap: -5,
-  'clap-great': -5,
+  clap: -8,
+  'clap-great': -8,
   'level-up': -8.2,
   gold: -6.1,
   record: -3.8,
