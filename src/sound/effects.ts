@@ -37,6 +37,30 @@ export type Shot = { readonly effect: Effect; readonly rate: number; readonly bo
 /** A whole tone is 2 semitones. */
 const WHOLE_TONE = 2 ** (2 / 12);
 
+/** A high shelf on the claps: their crack above 3 kHz is what pierces over a loud song. The plain clap is 6 dB softer
+ * there. The great clap is only 3 dB softer, because its tambourine lives above 3 kHz and makes it sound bigger. */
+const CLAP_SHELF_DB = { clap: -6, 'clap-great': -3 } as const;
+
+const isClap = (effect: Effect): effect is keyof typeof CLAP_SHELF_DB => effect in CLAP_SHELF_DB;
+
+const clapShelves = new WeakMap<AudioContext, Record<keyof typeof CLAP_SHELF_DB, AudioNode>>();
+
+/** The high shelf of a clap in `ctx`, in front of the output: one node for each clap, made at its first play. */
+const clapShelfOf = (ctx: AudioContext, effect: keyof typeof CLAP_SHELF_DB): AudioNode => {
+  const known = clapShelves.get(ctx);
+  if (known) {
+    return known[effect];
+  }
+  const shelf = (gain: number): AudioNode => {
+    const node = new BiquadFilterNode(ctx, { type: 'highshelf', frequency: 3000, gain });
+    node.connect(outputOf(ctx));
+    return node;
+  };
+  const made = { clap: shelf(CLAP_SHELF_DB.clap), 'clap-great': shelf(CLAP_SHELF_DB['clap-great']) };
+  clapShelves.set(ctx, made);
+  return made[effect];
+};
+
 /** The level-up sound of a step: steps 1 to 3 play the same chime, each one whole tone higher; gold plays the bells. */
 export const levelUpShot = (step: LevelUpStep): Shot =>
   step === 'gold' ? { effect: 'gold', rate: 1 } : { effect: 'level-up', rate: WHOLE_TONE ** (step - 1) };
@@ -52,7 +76,7 @@ export const startEffect = (ctx: AudioContext, shot: Shot, when: number): AudioB
   }
   const source = new AudioBufferSourceNode(ctx, { buffer, playbackRate: shot.rate });
   const gain = new GainNode(ctx, { gain: 10 ** ((GAIN_DB[shot.effect] + (shot.boostDb ?? 0)) / 20) });
-  source.connect(gain).connect(outputOf(ctx));
+  source.connect(gain).connect(isClap(shot.effect) ? clapShelfOf(ctx, shot.effect) : outputOf(ctx));
   source.start(when);
   return source;
 };
