@@ -1,11 +1,22 @@
+import { minimal2023Preset, type Preset } from '@vite-pwa/assets-generator/config';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import solid from 'vite-plugin-solid';
 
-// The stage colour. Keep the same value in index.html and src/ui/styles.css.
+// The stage colour. Keep the same value in index.html, public/icon.svg, and src/ui/styles.css.
 const STAGE = '#2C176F';
+
+// The apple and maskable icons fill the whole square with the stage colour, as in Pile Pals. The minimal-2023
+// defaults add 30 % white padding, and iOS shows it as a white frame (Pile Pals
+// docs/research/native-feel/app-icons.md). resizeOptions replaces the whole default object, so fit must be given again.
+const fullBleed = { padding: 0, resizeOptions: { fit: 'contain', background: STAGE } } as const;
+const iconPreset = {
+  ...minimal2023Preset,
+  maskable: { ...minimal2023Preset.maskable, ...fullBleed },
+  apple: { ...minimal2023Preset.apple, ...fullBleed },
+} satisfies Preset;
 
 // The dev server serves the song store, songs/.site/, at /beat-pals/songs/, as GitHub Pages does (spec,
 // "Delivery"). Only the manifest and the store files: songs/ also holds the .sng files and the plain audio, so
@@ -61,7 +72,7 @@ export default defineConfig(({ mode }) => ({
       // The code, not the Child, accepts an update (src/shell/update.ts).
       registerType: 'prompt',
       injectRegister: false,
-      pwaAssets: { image: 'public/icon.svg', preset: 'minimal-2023' },
+      pwaAssets: { image: 'public/icon.svg', preset: iconPreset },
       manifest: {
         name: 'Beat Pals',
         short_name: 'Beat Pals',
