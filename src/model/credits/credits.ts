@@ -53,6 +53,15 @@ const ENTRIES: readonly CreditEntry[] = [
     files: ['public/setup/*'],
     change: '',
   },
+  {
+    kind: 'picture',
+    title: 'Launch screens',
+    author: 'Beat Pals',
+    licence: 'own',
+    url: '',
+    files: ['public/splash/*'],
+    change: '',
+  },
 ];
 
 /** One licence and its works. */

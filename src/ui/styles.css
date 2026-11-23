@@ -23,8 +23,13 @@ body {
   overscroll-behavior: none;
 }
 
+/* The fixed full-width box at the top, with the stage as an opaque background-color. iOS 26 blurs the band below
+   the status bar unless such a box exists: WebKit reads the colour from the style, not from the pixels (Pile Pals
+   docs/research/native-feel/shell.md, "Top edge blur"). */
 #app {
-  height: 100%;
+  position: fixed;
+  inset: 0;
   box-sizing: border-box;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--stage);
 }
