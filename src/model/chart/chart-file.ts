@@ -106,6 +106,7 @@ export const readChart = (text: string, meta: SongMeta): ChartResult => {
     offsetSec: Number(song.get('Offset')) || 0,
     tempos: temposOf(sync),
     timeSignatures: timeSignaturesOf(sync),
+    beats: undefined,
     guitar: highestDifficulty((difficulty) => fretNotes(sections.get(`${difficulty}Single`))),
     endTick: endTickOf(sections),
   };

@@ -21,6 +21,7 @@
     "check": "sh .githooks/pre-commit"
   },
   "dependencies": {
+    "midi-file": "^1.2.4",
     "pixi.js": "^8.23.0",
     "solid-js": "^1.9.18"
   },
