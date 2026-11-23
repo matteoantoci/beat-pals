@@ -1,0 +1,42 @@
+/* The title screen (src/ui/title/). */
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.logo {
+  width: min(60vmin, 320px);
+  height: auto;
+  touch-action: none;
+}
+
+.logo-record {
+  fill: #2b2340;
+}
+
+.logo-groove {
+  fill: none;
+  stroke: #463a66;
+  stroke-width: 2;
+}
+
+.logo-label {
+  fill: var(--gold);
+}
+
+.logo-eye {
+  fill: #fff;
+}
+
+.logo-pupil {
+  fill: #2b2340;
+}
+
+.logo-smile {
+  fill: none;
+  stroke: #2b2340;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
