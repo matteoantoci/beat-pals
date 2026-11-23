@@ -52,7 +52,7 @@ const layoutFits = async (page: Page, name: string): Promise<void> => {
   const screen = page.viewport() ?? PORTRAIT;
   const canvas = await boxOf(page, '.play-stage');
   const pause = onScreen(await boxOf(page, '.pause-button'), screen);
-  const dot = onScreen(await boxOf(page, '.play-pal:not([hidden])'), screen);
+  const dot = onScreen(await boxOf(page, '.play-pal[data-pal="dot"]'), screen);
   const still = await page.evaluate(
     () => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight
   );

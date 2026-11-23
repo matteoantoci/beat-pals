@@ -3,11 +3,9 @@
 // passes run in this order: the filter, the lane mapping, the doubles, and the holds.
 
 import { filterNotes } from './filter';
+import { type Lane, mapLanes } from './lanes';
 import { keptBeats, type SpeedStep } from './speed-steps';
 import type { SongFacts } from '../chart/facts';
-
-/** A lane: 0 Pip, 1 Dot, 2 Bo. */
-type Lane = 0 | 1 | 2;
 
 /** A note of the child chart. `holdSec` is 0 for a plain note. */
 type ChildNote = { t: number; lanes: [Lane] | [Lane, Lane]; holdSec: number };
@@ -35,6 +33,7 @@ const BANDS: Readonly<Record<RecordColor, readonly Lane[]>> = {
 export const childChart = (facts: SongFacts, color: RecordColor, step: SpeedStep): ChildChart => {
   const notes = [...facts.notes, ...facts.fills.flatMap((fill) => fill.notes)].toSorted((a, b) => a.t - b.t);
   const filtered = filterNotes(notes, keptBeats(facts.beats, step));
-  // Every note goes to Dot, a plain note with no hold. Dot is in every band.
-  return { band: BANDS[color], notes: filtered.map((note) => ({ t: note.t, lanes: [DOT], holdSec: 0 })) };
+  const band = BANDS[color];
+  const lanes = mapLanes(filtered, band);
+  return { band, notes: filtered.map((note, at) => ({ t: note.t, lanes: [lanes[at] ?? DOT], holdSec: 0 })) };
 };

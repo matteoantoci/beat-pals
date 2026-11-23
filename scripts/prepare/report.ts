@@ -1,10 +1,17 @@
 // `prepare-song report`: the chart report on the Mac (spec, "The song pipeline"). It is a report, not a test.
 // For each song of the inbox, it gives the child note count for each record color and speed step, the notes
-// per minute, the longest gap, and each fill of a long rest (start, end, source part, and note count). It reads the charts from the .sng files, so it needs no ffmpeg.
+// per minute, the longest gap, the share of each lane of the band, and each fill of a long rest (start, end, source part, and note count). It reads the charts from the .sng files, so it needs no ffmpeg.
 
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { childChart, RECORD_COLORS, type RecordColor, type SongFacts, type SpeedStep } from '../../src/model/index.ts';
+import {
+  type ChildChart,
+  childChart,
+  RECORD_COLORS,
+  type RecordColor,
+  type SongFacts,
+  type SpeedStep,
+} from '../../src/model/index.ts';
 import { type InboxSong, readInbox } from './inbox.ts';
 import { planSong } from './plan.ts';
 
@@ -44,9 +51,29 @@ const longestGap = (times: readonly number[]): string => {
   return longest === undefined ? 'none' : `${longest.sec.toFixed(1)} s at ${clock(longest.from)}`;
 };
 
+const PAL_NAMES = ['Pip', 'Dot', 'Bo'] as const;
+/** The report flags a silver or gold chart that gives a lane of the band less than this share (a first value to tune). */
+const LOW_LANE_SHARE = 0.15;
+const FLAGGED_COLORS: readonly RecordColor[] = ['silver', 'gold'];
+const PERCENT = 100;
+
+/** The share of the notes in each lane of the band, in lane order. */
+const laneShares = (chart: ChildChart): { lane: number; share: number }[] =>
+  chart.band.map((lane) => ({
+    lane,
+    share:
+      chart.notes.length === 0
+        ? 0
+        : chart.notes.filter((note) => note.lanes.includes(lane)).length / chart.notes.length,
+  }));
+
 /** The report row of one record color and speed step. */
 const rowOf = (facts: SongFacts, color: RecordColor, step: SpeedStep): string => {
-  const times = childChart(facts, color, step).notes.map((note) => note.t);
+  const chart = childChart(facts, color, step);
+  const times = chart.notes.map((note) => note.t);
+  const shares = laneShares(chart).map(
+    ({ lane, share }) => `${PAL_NAMES[lane] ?? '?'} ${String(Math.round(share * PERCENT))}%`
+  );
   const length = lengthOf(facts);
   const perMinute = length > 0 ? (times.length * SECONDS_PER_MINUTE) / length : 0;
   return [
@@ -54,7 +81,8 @@ const rowOf = (facts: SongFacts, color: RecordColor, step: SpeedStep): string =>
     String(step).padStart(4),
     String(times.length).padStart(7),
     perMinute.toFixed(1).padStart(9),
-    `  ${longestGap(times)}`,
+    `  ${longestGap(times).padEnd(16)}`,
+    `  ${shares.join(' ')}`,
   ].join('');
 };
 
@@ -66,6 +94,17 @@ const fillLines = (facts: SongFacts): string[] =>
     return `  fill ${clock(start)} to ${clock(end)}  ${part}  ${String(notes.length)} notes`;
   });
 
+/** The flag lines of a song: each silver or gold chart that gives a lane of the band less than 15% of the notes. */
+const flagLines = (facts: SongFacts): string[] =>
+  FLAGGED_COLORS.flatMap((color) => STEPS.map((step) => ({ color, step }))).flatMap(({ color, step }) =>
+    laneShares(childChart(facts, color, step))
+      .filter(({ share }) => share < LOW_LANE_SHARE)
+      .map(
+        ({ lane, share }) =>
+          `  FLAG ${color} step ${String(step)}: ${PAL_NAMES[lane] ?? '?'} has ${String(Math.round(share * PERCENT))}% of the notes`
+      )
+  );
+
 /** The report lines of one song. */
 const songReport = (facts: SongFacts): string[] => {
   const length = lengthOf(facts);
@@ -74,8 +113,9 @@ const songReport = (facts: SongFacts): string[] => {
   const rows = RECORD_COLORS.flatMap((color) => STEPS.map((step) => rowOf(facts, color, step)));
   return [
     `${facts.id}: ${facts.title} / ${facts.artist} | notes to ${clock(length)} | beat ${beat.toFixed(2)} s${tempo}`,
-    '  color    step  notes  per min  longest gap',
+    '  color    step  notes  per min  longest gap       lanes',
     ...rows,
+    ...flagLines(facts),
     ...(facts.fills.length === 0 ? ['  fills: none'] : fillLines(facts)),
   ];
 };
