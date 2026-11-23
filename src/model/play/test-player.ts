@@ -1,5 +1,5 @@
 // A player for the tests (spec, "Testing Decisions"). It builds a script of `press` and `release` actions from a
-// child chart: an offset for each note, a hold share for each soft hold, and extra taps. Then it plays the script
+// child chart: an offset and a lane for each note, a hold share for each soft hold, and extra taps. Then it plays the script
 // through `apply`, with an `advance` to the time of each action, as the play screen does at each frame. It uses only
 // the public interface. Not a test file: vitest does not collect it, and the app does not import it.
 
@@ -12,6 +12,8 @@ type Touches = {
   readonly offset?: (note: number) => number | null;
   /** The share of a soft hold that the finger stays down, from 0 to 1. Default: 1. */
   readonly hold?: (note: number) => number;
+  /** The lane of the tap for the note at this index. Default: the first lane of the note. */
+  readonly lane?: (note: number) => Lane;
   /** Taps that are not for a note: the song time and the lane. */
   readonly extra?: readonly { readonly t: number; readonly lane: Lane }[];
 };
@@ -40,7 +42,8 @@ const noteTaps = (chart: ChildChart, touches: Touches): Tap[] =>
     }
     const t = note.t + offset;
     const held = note.holdSec * (touches.hold === undefined ? 1 : touches.hold(at));
-    return [{ t, lane: note.lanes[0], up: t + Math.max(TAP_SEC, held) }];
+    const lane = touches.lane === undefined ? note.lanes[0] : touches.lane(at);
+    return [{ t, lane, up: t + Math.max(TAP_SEC, held) }];
   });
 
 /**

@@ -11,11 +11,12 @@ import { laneX, LOOK_AHEAD, noteY } from './geometry';
 import { CHUTE_SHARE } from './paint-stage';
 import { makePool, type Pool } from './pool';
 import { makeRing, type Ring } from './rings';
+import { drawNotes } from './stage-notes';
 import { makeTextures, type Textures } from './textures';
-import { lastShown, MISS_FADE_SEC, type View } from './view';
 import type { Lane } from '../../model';
 import type { EnergyLook } from './energy';
 import type { Geometry } from './geometry';
+import type { View } from './view';
 
 export type Stage = {
   /** Paints the stage again for a new screen size. */
@@ -40,6 +41,8 @@ type Parts = {
   readonly rings: readonly Ring[];
   readonly pills: Pool;
   readonly notes: Pool;
+  /** The parts that cross between the chutes or sit on the rings: doubles, held heads, and popped beads. */
+  readonly links: Pool;
   readonly effects: Pool;
   readonly energy: EnergyParts;
 };
@@ -86,19 +89,6 @@ const drawBeat = ({ parts, view, scene }: Frame, at: number): void => {
   }
 };
 
-const drawNote = ({ parts, view, scene }: Frame, at: number): void => {
-  const note = view.chart.notes[at];
-  const dt = (note?.t ?? 0) - view.t;
-  if (note === undefined || view.hitNotes[at] === 1 || dt < -MISS_FADE_SEC) {
-    return;
-  }
-  const [lane] = note.lanes;
-  const y = noteY(scene.geometry, dt);
-  // A note fades in at the top, and a missed note fades out below its ring.
-  const alpha = clamp01(Math.min((y - scene.geometry.topY + 20) / 60, dt < 0 ? 1 + dt / MISS_FADE_SEC : 1));
-  parts.notes.show(scene.textures.shape(shapeKey.bubble(lane)), { x: laneX(scene.geometry, lane), y, alpha });
-};
-
 const drawLanes = ({ parts, view, scene }: Frame): void => {
   parts.band.forEach((lane, at) => {
     const state = view.lanes[lane];
@@ -118,11 +108,7 @@ const drawFrame = (frame: Frame): void => {
     drawBeat(frame, at);
   }
   parts.pills.end();
-  parts.notes.begin();
-  for (let at = view.first.note; (view.chart.notes[at]?.t ?? Number.POSITIVE_INFINITY) < lastShown(view.t); at += 1) {
-    drawNote(frame, at);
-  }
-  parts.notes.end();
+  drawNotes({ notes: parts.notes, links: parts.links, view, scene: frame.scene });
   parts.effects.begin();
   for (let at = view.first.hit; at < view.hits.length; at += 1) {
     drawHit(frame.scene, view.hits[at]);
@@ -148,9 +134,11 @@ const makeParts = (app: Application, band: readonly Lane[]): Parts => {
   const noteLayer = layer();
   const mask = app.stage.addChild(new Graphics());
   noteLayer.mask = mask;
+  // The jelly band of a double crosses between the chutes, so it is not clipped.
+  const links = makePool(layer());
   const effects = makePool(layer());
   const energy = makeEnergyParts({ back: energyBack, rims, front: layer() }, band);
-  return { app, band, backdrop, glows, mask, rings, pills, notes: makePool(noteLayer), effects, energy };
+  return { app, band, backdrop, glows, mask, rings, pills, notes: makePool(noteLayer), links, effects, energy };
 };
 
 /** Makes the stage on the canvas for the lanes of the band. */

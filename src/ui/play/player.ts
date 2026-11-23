@@ -66,13 +66,14 @@ const energize = (parts: PlayerParts, step: EnergyStep, t: number): void => {
   }
 };
 
-const show = (parts: PlayerParts, events: readonly PlayEvent[], t: number): void => {
-  // `faded` and `holdDone` have no picture at bronze.
+/** Shows the events of an action at song time `t`. */
+const show = (parts: PlayerParts, events: readonly PlayEvent[], { t, action }: { t: number; action: Action }): void => {
+  // `faded` has no picture: a missed note only fades.
+  parts.view.track(action, events, t);
   for (const event of events.filter((each) => each.type === 'hop')) {
     parts.pals.hop(event.lane, t);
   }
   for (const event of events.filter((each) => each.type === 'hit')) {
-    parts.view.record(event, t);
     parts.song.clap(event.soundAt);
     parts.root.setAttribute('data-last-hit', `${String(event.lane)} ${event.grade} ${t.toFixed(3)}`);
   }
@@ -84,7 +85,7 @@ const show = (parts: PlayerParts, events: readonly PlayEvent[], t: number): void
 const act = (parts: PlayerParts, action: Action, t: number): void => {
   const outcome = play === undefined ? undefined : apply(play, action);
   play = outcome?.state;
-  show(parts, outcome?.events ?? [], t);
+  show(parts, outcome?.events ?? [], { t, action });
 };
 
 /** Stops the loop and the song, and lets go of each finger. */
