@@ -19,6 +19,7 @@ const offlinePlay = async (page: Page, audio: AudioRecord): Promise<void> => {
   await page.reload().catch(() => undefined);
   const shown = await shows(page, '.title .logo');
   check('offline: the service worker starts the app', shown, shown ? '' : (await page.content()).slice(0, 300));
+  check('offline: the play button shows', await shows(page, '.title-play'));
   await tap(page, '.title');
   check('offline: the song list shows the test song', await shows(page, '.song-card'));
   audio.reset();

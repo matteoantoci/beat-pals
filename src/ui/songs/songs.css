@@ -133,28 +133,6 @@
   white-space: nowrap;
 }
 
-/* No ready song: the pals stand next to a closed record box. */
-.song-closed-box {
-  position: absolute;
-  inset: 96px 16px 32px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
-  margin: auto;
-  height: 120px;
-}
-
-.box-pal {
-  width: 88px;
-  height: 88px;
-}
-
-.closed-box {
-  width: 120px;
-  height: 120px;
-}
-
 @media (orientation: landscape) {
   .song-shelf {
     gap: 4px;
@@ -172,18 +150,6 @@
   .song-stars svg {
     width: 24px;
     height: 24px;
-  }
-}
-
-@media (max-width: 400px) {
-  .box-pal {
-    width: 64px;
-    height: 64px;
-  }
-
-  .closed-box {
-    width: 88px;
-    height: 88px;
   }
 }
 

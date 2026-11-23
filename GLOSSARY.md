@@ -127,7 +127,7 @@ _Avoid_: Easy mode, penalty, demotion
 ## Screens
 
 **Title screen**:
-The first screen, with the logo and the title music.
+The first screen, with the logo, the wordmark, the pals on the stage floor, and the title music. It shows the play button only when a song is ready.
 _Avoid_: Home screen, splash, start screen
 
 **Song list**:

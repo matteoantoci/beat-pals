@@ -4,7 +4,6 @@ import { progressOf } from '../../shell/save';
 import { loadFamilyKey, readCover, readSongStore, watchDownload } from '../../shell/songs';
 import { playTitleMusic } from '../../sound';
 import { palPicture } from '../pals/pal-svg';
-import { ClosedRecordBox } from './ClosedRecordBox';
 import { Record, Stars } from './record';
 import type { FamilyKey, IndexSong } from '../../model';
 import type { Accessor, JSX } from 'solid-js';
@@ -12,8 +11,8 @@ import type { Accessor, JSX } from 'solid-js';
 // The song list (spec, "Screens"): only the ready songs, in the order of the song index (by title). Each card has
 // the picture, a record of the record color next to the 3 stars, and the title for the Parent. One tap on the
 // picture starts the song. A song shows when all its files are in the cache, so the list fills during a download.
-// With no ready song, the pals stand next to a closed record box. The title music plays on, and a tap starts it
-// again when it does not play.
+// The title screen opens the list only when a song is ready. The title music plays on, and a tap starts it again
+// when it does not play.
 
 type Card = { song: IndexSong; picture: string | undefined };
 
@@ -22,7 +21,6 @@ export type SongChoice = { readonly song: IndexSong; readonly key: FamilyKey };
 
 type Cards = {
   readonly cards: Accessor<readonly Card[]>;
-  readonly read: Accessor<boolean>;
   readonly key: () => FamilyKey | undefined;
 };
 
@@ -41,7 +39,6 @@ export const pictureOf = async (key: FamilyKey, song: IndexSong): Promise<string
  */
 const readyCards = (): Cards => {
   const [cards, setCards] = createSignal<readonly Card[]>([]);
-  const [read, setRead] = createSignal(false);
   /** The songs with a card or with a card on the way, so 2 progress events never make 2 cards. */
   const seen = new Set<string>();
   let key: FamilyKey | undefined;
@@ -79,11 +76,9 @@ const readyCards = (): Cards => {
       }
     });
     // With no key, no network, or no store, the list has no songs.
-    loadCards()
-      .catch(ignore)
-      .finally(() => setRead(true));
+    loadCards().catch(ignore);
   });
-  return { cards, read, key: () => key };
+  return { cards, key: () => key };
 };
 
 /** A home, drawn as a house. */
@@ -126,7 +121,7 @@ const SongCard = (props: { readonly card: Card; readonly onTap: () => void }): J
 type SongListProps = { readonly onHome: () => void; readonly onPlay: (choice: SongChoice) => void };
 
 export const SongList = (props: SongListProps): JSX.Element => {
-  const { cards, read, key } = readyCards();
+  const { cards, key } = readyCards();
   onMount(() => {
     playTitleMusic();
     document.addEventListener('pointerup', playTitleMusic, { passive: true });
@@ -143,9 +138,6 @@ export const SongList = (props: SongListProps): JSX.Element => {
       <button type="button" class="song-home" aria-label="Home" onClick={() => props.onHome()}>
         <HomeIcon />
       </button>
-      <Show when={read() && cards().length === 0}>
-        <ClosedRecordBox />
-      </Show>
       <ul class="song-cards">
         <For each={cards()}>{(card) => <SongCard card={card} onTap={() => play(card.song)} />}</For>
       </ul>

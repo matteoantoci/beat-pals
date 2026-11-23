@@ -110,6 +110,8 @@ const pauseAndReturn = async (page: Page, audio: AudioRecord): Promise<void> => 
 /** The test song is in the list with a bronze record and 3 stars, and a tap starts it with running audio. The
  * context runs since the title tap, so it shows no change, or a change that ends in `running`. */
 const startSong = async (page: Page, audio: AudioRecord, shots: string | undefined): Promise<boolean> => {
+  check('title screen: the play button shows with a ready song', await shows(page, '.title-play'));
+  await shot(page, shots, 'title-portrait');
   await tap(page, '.title');
   check('song list: the test song shows', await shows(page, '.song-card'));
   check(

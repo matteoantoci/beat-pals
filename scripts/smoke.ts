@@ -18,7 +18,7 @@ import { allowModelImports } from './prepare/model-imports.ts';
 import { recordAudio } from './smoke-audio.ts';
 import { demoChecks } from './smoke-demo.ts';
 import { offlineChecks } from './smoke-offline.ts';
-import { check, checkLines, setVisibility, shot, shows, tap, wait } from './smoke-page.ts';
+import { check, checkLines, setVisibility, shot, tap, wait } from './smoke-page.ts';
 import { parentSections } from './smoke-parent.ts';
 import { playChecks } from './smoke-play.ts';
 import { autoDownload, installStep, songSetup } from './smoke-setup.ts';
@@ -102,7 +102,10 @@ const countWakeLocks = (): void => {
   };
 };
 
-/** One tap on the title screen starts the music and opens the song list. With no songs, it shows the closed record box. */
+/**
+ * One tap on the title screen starts the music. With no songs, the play button does not show and the title screen
+ * stays, so the child never sees an empty song list.
+ */
 const titleTap = async (page: Page, audio: AudioRecord): Promise<void> => {
   check('standalone display mode', await page.evaluate(() => matchMedia('(display-mode: standalone)').matches));
   check('title screen shows the logo', (await page.$('.title .logo')) !== null);
@@ -111,30 +114,25 @@ const titleTap = async (page: Page, audio: AudioRecord): Promise<void> => {
   await wait(1500);
   check('title tap: context runs', audio.contexts().endsWith('running'), audio.contexts());
   check('title tap: music plays', audio.sources() > 0, `${String(audio.sources())} sources`);
-  check('title tap: song list shows', (await page.$('.song-list')) !== null);
-  check('no songs yet: the closed record box shows', await shows(page, '.song-closed-box', 2000));
-  await shot(page, SHOTS, 'songs-empty-portrait');
+  check('no songs yet: no play button', (await page.$('.title-play')) === null);
+  check('no songs yet: the title screen stays', (await page.$('.song-list')) === null);
+  await shot(page, SHOTS, 'title-no-songs-portrait');
 };
 
-/**
- * A trip to the background marks the context stale. The next tap on the song list replaces it, and the title music
- * starts again. Then the home button goes back to the title screen.
- */
-const songListAfterBackground = async (page: Page, audio: AudioRecord): Promise<void> => {
+/** A trip to the background marks the context stale. The next tap on the title screen replaces it, and the title
+ * music starts again. */
+const titleAfterBackground = async (page: Page, audio: AudioRecord): Promise<void> => {
   await page.evaluate(setVisibility, 'hidden');
   await wait(300);
   await page.evaluate(setVisibility, 'visible');
   await wait(300);
   audio.reset();
-  await tap(page, '.song-list');
+  await tap(page, '.title');
   await wait(1500);
   const states = audio.contexts();
   check('background trip: tap replaces the context', states.includes('closed') && states.includes('new'), states);
   check('background trip: new context runs', states.includes('running'), states);
   check('background trip: music plays again', audio.sources() > 0, `${String(audio.sources())} sources`);
-  await tap(page, '.song-home');
-  await wait(300);
-  check('home: title screen shows', (await page.$('.title .logo')) !== null);
 };
 
 const runAll = async (browser: Browser, server: Server, keyCode: string): Promise<void> => {
@@ -148,7 +146,7 @@ const runAll = async (browser: Browser, server: Server, keyCode: string): Promis
   const audio = await recordAudio(await page.createCDPSession());
   await page.goto(server.url, { waitUntil: 'networkidle2' });
   await titleTap(page, audio);
-  await songListAfterBackground(page, audio);
+  await titleAfterBackground(page, audio);
   await songSetup(page, keyCode);
   await autoDownload(page);
   await playChecks(page, audio, SHOTS);
