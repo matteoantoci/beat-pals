@@ -19,13 +19,18 @@ let stale = false;
 
 let context: AudioContext | undefined;
 let decoder: OfflineAudioContext | undefined;
+/** The end of the last decode. Each decode waits for it, so decodes never run in parallel. */
+let decoding: Promise<unknown> = Promise.resolve();
 const loading = new Map<string, Promise<AudioBuffer>>();
+/** The code to run after a tap replaced the context. */
+const replacedListeners = new Set<() => void>();
 
 /** A resume outside a user gesture can fail. The next gesture tries again, so the failure needs no action. */
 const ignore = (): undefined => undefined;
 
-/** iOS can drop the audio session type in the background, so each new context sets it again. */
-const audio = (): AudioContext => {
+/** The current context. It makes a new context if none exists. Call it from a tap, or after the first tap.
+ * iOS can drop the audio session type in the background, so each new context sets it again. */
+export const currentContext = (): AudioContext => {
   if (!context && navigator.audioSession) {
     navigator.audioSession.type = 'playback';
   }
@@ -33,25 +38,43 @@ const audio = (): AudioContext => {
   return context;
 };
 
+/** Calls `listener` each time a tap replaces the context. Gives the function that removes the listener. */
+export const onReplaced = (listener: () => void): (() => void) => {
+  replacedListeners.add(listener);
+  return () => {
+    replacedListeners.delete(listener);
+  };
+};
+
 /** Starts the context, or ends an "interrupted" state. After a return from the background, it replaces the
  * context first. Call it from a user gesture. */
 const unlockAudio = (): void => {
+  const replaced = stale;
   if (stale) {
     stale = false;
     context?.close().catch(ignore);
     context = undefined;
   }
-  const ctx = audio();
+  const ctx = currentContext();
   if (ctx.state !== 'running') {
     ctx.resume().catch(ignore);
   }
+  if (!replaced) {
+    return;
+  }
+  for (const listener of replacedListeners) {
+    listener();
+  }
 };
 
-/** An AudioBuffer works in each AudioContext. So an offline context decodes before the first touch,
- * and the buffers stay good after the unlock makes a new context. */
-const decode = (data: ArrayBuffer): Promise<AudioBuffer> => {
+/** An AudioBuffer works in each AudioContext. So an offline context decodes before the first touch, and the
+ * buffers stay good after the unlock makes a new context. One decode runs at a time, to keep the memory low. */
+export const decode = (data: ArrayBuffer): Promise<AudioBuffer> => {
   decoder ??= new OfflineAudioContext(1, 1, 44_100);
-  return decoder.decodeAudioData(data);
+  const offline = decoder;
+  const next = decoding.then(() => offline.decodeAudioData(data));
+  decoding = next.catch(ignore);
+  return next;
 };
 
 const download = async (file: string): Promise<AudioBuffer> => {
@@ -74,29 +97,24 @@ const loadClip = (file: string): Promise<AudioBuffer> => {
   return next;
 };
 
+/** The loop that the app wants to hear. It stays set while the file loads and after a context replacement. */
+type Loop = { readonly file: string; readonly gainDb: number };
+let wanted: Loop | undefined;
 /** The loop that plays now, and the context that plays it. */
-type Playing = { readonly file: string; readonly ctx: AudioContext; readonly source: AudioBufferSourceNode };
+type Playing = { readonly loop: Loop; readonly ctx: AudioContext; readonly source: AudioBufferSourceNode };
 let looping: Playing | undefined;
 
-/** Stops the loop, if one plays. */
-export const stopLoop = (): void => {
-  looping?.source.stop();
-  looping = undefined;
-};
-
-/**
- * Plays a file as a loop with its start silence trimmed. Call it from a tap. A loop of the same file that plays in
- * the current context continues. After a context replacement, the loop starts again in the new context.
- */
-export const playLoop = (file: string, gainDb: number): void => {
-  const ctx = audio();
-  if (looping?.file === file && looping.ctx === ctx) {
+/** Starts the wanted loop in the current context, if it does not play there yet. */
+const startLoop = (loop: Loop): void => {
+  const ctx = currentContext();
+  if (looping?.loop === loop && looping.ctx === ctx) {
     return;
   }
-  stopLoop();
-  loadClip(file)
+  looping?.source.stop();
+  looping = undefined;
+  loadClip(loop.file)
     .then((buffer) => {
-      if (ctx !== context || looping) {
+      if (wanted !== loop || ctx !== context || looping) {
         return;
       }
       const offset = soundStart(buffer.getChannelData(0), buffer.sampleRate);
@@ -106,11 +124,29 @@ export const playLoop = (file: string, gainDb: number): void => {
         loopStart: offset,
         loopEnd: buffer.duration,
       });
-      source.connect(new GainNode(ctx, { gain: 10 ** (gainDb / 20) })).connect(ctx.destination);
+      source.connect(new GainNode(ctx, { gain: 10 ** (loop.gainDb / 20) })).connect(ctx.destination);
       source.start(0, offset);
-      looping = { file, ctx, source };
+      looping = { loop, ctx, source };
     })
     .catch(ignore);
+};
+
+/** Stops the loop, if one plays. */
+export const stopLoop = (): void => {
+  wanted = undefined;
+  looping?.source.stop();
+  looping = undefined;
+};
+
+/**
+ * Plays a file as a loop with its start silence trimmed. Call it from a tap. A loop of the same file continues.
+ * After a context replacement, the loop starts again in the new context.
+ */
+export const playLoop = (file: string, gainDb: number): void => {
+  if (wanted?.file !== file || wanted.gainDb !== gainDb) {
+    wanted = { file, gainDb };
+  }
+  startLoop(wanted);
 };
 
 const markStale = (): void => {
@@ -128,6 +164,12 @@ export const installAudio = (files: readonly string[]): void => {
   for (const file of files) {
     loadClip(file).catch(ignore);
   }
+  // A replacement closes the context of the loop, so the loop starts again in the new context.
+  onReplaced(() => {
+    if (wanted) {
+      startLoop(wanted);
+    }
+  });
   // For a mouse, pointerdown is a user gesture. For a touch, only pointerup is (HTML user activation).
   document.addEventListener('pointerdown', unlockAudio, { capture: true, passive: true });
   document.addEventListener('pointerup', unlockAudio, { capture: true, passive: true });

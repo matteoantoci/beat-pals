@@ -9,6 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "smoke": "vite build && node scripts/smoke.ts",
+    "deploy": "node scripts/deploy.ts",
+    "leak-scan": "node scripts/leak-scan.ts history",
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt --check .",
     "lint": "oxlint",
