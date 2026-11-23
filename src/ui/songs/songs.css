@@ -1,37 +1,43 @@
-/* The song list (src/ui/songs/). The cards scroll; the home button stays in its corner. */
+/* The song list (src/ui/songs/), style A of the prototype. The cards scroll; the home button stays in its corner. */
 .song-list {
   position: relative;
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
+  scrollbar-width: none;
+}
+
+.song-list::-webkit-scrollbar {
+  display: none;
 }
 
 .song-home {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 16px;
+  left: 16px;
   z-index: 1;
   width: 64px;
   height: 64px;
-  padding: 14px;
+  padding: 16px;
   border: none;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 15%);
+  border-radius: var(--r-full);
+  background: var(--grape-600);
+  box-shadow: var(--block);
 }
 
 .song-home svg {
   width: 100%;
   height: 100%;
-  fill: #fff;
+  fill: var(--grape-300);
 }
 
 .song-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 20px;
+  gap: 40px 16px;
   margin: 0;
-  padding: 88px 16px 24px;
+  padding: 96px 16px 32px;
   list-style: none;
 }
 
@@ -39,25 +45,150 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  min-width: 0;
+  transform: rotate(var(--tilt));
+  --tilt: -1.5deg;
+}
+
+.song-card:nth-child(4n + 2),
+.song-card:nth-child(4n + 3) {
+  --tilt: 1.5deg;
+}
+
+.song-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-m);
+  background: none;
+  box-shadow: var(--block);
+  transition:
+    transform 0.16s var(--ease-out),
+    box-shadow 0.16s var(--ease-out);
+}
+
+.song-cover:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--grape-950);
 }
 
 .song-picture {
+  display: block;
   width: 100%;
-  aspect-ratio: 1;
-  border-radius: 16px;
+  height: 100%;
+  border-radius: var(--r-m);
   object-fit: cover;
 }
 
 .song-plain {
-  background: var(--gold);
+  display: grid;
+  place-items: center;
+  background: var(--grape-600);
+}
+
+.song-plain img {
+  width: 56%;
+}
+
+.song-shelf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.song-record {
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+
+.song-stars {
+  display: grid;
+  grid-template-columns: repeat(3, 28px);
+  gap: 4px;
+}
+
+.song-stars svg {
+  display: block;
+  width: 28px;
+  height: 28px;
 }
 
 .song-title {
-  color: #fff;
+  max-width: 100%;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--grape-300);
   font:
-    600 15px/1.2 -apple-system,
+    600 13px/16px ui-rounded,
+    -apple-system,
     system-ui,
     sans-serif;
-  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* No ready song: the pals wait next to a closed record box. */
+.song-waiting {
+  position: absolute;
+  inset: 96px 16px 32px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  margin: auto;
+  height: 120px;
+}
+
+.waiting-pal {
+  width: 88px;
+  height: 88px;
+}
+
+.waiting-box {
+  width: 120px;
+  height: 120px;
+}
+
+@media (orientation: landscape) {
+  .song-shelf {
+    gap: 4px;
+  }
+
+  .song-record {
+    width: 48px;
+    height: 48px;
+  }
+
+  .song-stars {
+    grid-template-columns: repeat(3, 24px);
+  }
+
+  .song-stars svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: 400px) {
+  .waiting-pal {
+    width: 64px;
+    height: 64px;
+  }
+
+  .waiting-box {
+    width: 88px;
+    height: 88px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .song-cover {
+    transition-duration: 0.01s;
+  }
 }

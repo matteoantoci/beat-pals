@@ -1,0 +1,78 @@
+import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+import { stopTitleMusic } from '../../sound';
+import { HoldButton } from './HoldButton';
+import { PauseScreen } from './PauseScreen';
+import { startSession, type Session } from './session';
+import type { SongChoice } from '../songs/SongList';
+import type { JSX } from 'solid-js';
+
+// The play screen (spec, "Screens"): the PixiJS canvas, the 3 pals as HTML pictures above it, the pause button, and
+// the progress beads of the song. A tap starts the song from the song list, so the title music stops here. At each
+// hit, `data-last-hit` on this element gets the lane, the grade, and the song time (spec, "Testing Decisions").
+
+const BEADS = 10;
+
+type PlayScreenProps = {
+  readonly choice: SongChoice;
+  /** The hit ratio at the end of the song, or null for a play with no result. */
+  readonly onEnd: (result: number | null) => void;
+};
+
+/** The pause button (a hold of 0.6 s) and the progress beads of the song, with no numbers. */
+const Hud = (props: { readonly onPause: () => void; readonly bead: (el: HTMLElement) => void }): JSX.Element => (
+  <div class="play-hud">
+    <HoldButton class="pause-button" label="Pause (parent: hold)" onHold={() => props.onPause()}>
+      <svg class="pause-icon" viewBox="0 0 20 20" aria-hidden="true">
+        <rect x="4" y="3" width="4" height="14" rx="2" />
+        <rect x="12" y="3" width="4" height="14" rx="2" />
+      </svg>
+    </HoldButton>
+    <div class="play-beads" aria-hidden="true">
+      <For each={Array.from({ length: BEADS })}>{() => <i ref={(el) => props.bead(el)} />}</For>
+    </div>
+    <div class="play-spacer" />
+  </div>
+);
+
+export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
+  const [paused, setPaused] = createSignal(false);
+  let root: HTMLElement | undefined;
+  const pals: HTMLImageElement[] = [];
+  const beads: HTMLElement[] = [];
+  let session: Session | undefined;
+  onMount(() => {
+    stopTitleMusic();
+    const canvas = root?.querySelector('canvas');
+    const probe = root?.querySelector<HTMLElement>('.play-probe');
+    if (root === undefined || !canvas || !probe) {
+      return;
+    }
+    session = startSession({ root, canvas, probe, pals, beads }, props.choice, {
+      onPause: () => setPaused(true),
+      onEnd: (result) => props.onEnd(result),
+    });
+    onCleanup(() => session?.stop());
+  });
+  const resume = (): void => {
+    setPaused(false);
+    session?.resume();
+  };
+  return (
+    <main
+      class="play"
+      ref={(el) => {
+        root = el;
+      }}
+    >
+      <canvas class="play-stage" />
+      <For each={[0, 1, 2]}>
+        {() => <img class="play-pal" alt="" hidden draggable={false} ref={(el) => pals.push(el)} />}
+      </For>
+      <div class="play-probe" />
+      <Hud onPause={() => session?.pause()} bead={(el) => beads.push(el)} />
+      <Show when={paused()}>
+        <PauseScreen onPlay={resume} onHome={() => session?.quit()} />
+      </Show>
+    </main>
+  );
+};

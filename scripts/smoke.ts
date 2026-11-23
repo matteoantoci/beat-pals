@@ -1,22 +1,31 @@
 // Browser smoke run of the built app: `pnpm smoke`. It is a dev tool, not a test of the game model.
-// The `smoke` script in package.json runs `vite build` first. This file serves dist/ with `vite preview` through
-// portless, under a name unique to the run, so 2 checkouts can run it at the same time.
+// The `smoke` script in package.json runs `vite build` first. This file puts the test store into dist/songs/ and
+// serves dist/ with `vite preview` through portless, under a name unique to the run, so 2 checkouts can run it at the
+// same time.
 // Chromium cannot show the iOS audio rules (see the Pile Pals docs/agents/ios-device.md), so a pass here does not
 // prove the iPhone behaviour. It uses the default install of Google Chrome on macOS.
+// SMOKE_SHOTS=<folder> saves screenshots of the screens there. SMOKE_NAME=<name> gives the portless name of the run,
+// for a look in a browser at https://<name>.localhost while the run waits; the default is unique to the run.
 
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { launch } from 'puppeteer-core';
+import { allowModelImports } from './prepare/model-imports.ts';
 import { recordAudio } from './smoke-audio.ts';
-import { tap, wait } from './smoke-page.ts';
+import { check, checkLines, setVisibility, shot, shows, tap, wait } from './smoke-page.ts';
+import { parentArea } from './smoke-parent.ts';
+import { playChecks } from './smoke-play.ts';
 import type { AudioRecord } from './smoke-audio.ts';
 import type { ChildProcess } from 'node:child_process';
 import type { Browser, Page } from 'puppeteer-core';
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const NAME = `bp-smoke-${String(process.pid)}`;
+const NAME = process.env['SMOKE_NAME'] ?? `bp-smoke-${String(process.pid)}`;
+const SHOTS = process.env['SMOKE_SHOTS'];
 const READY_MS = 30_000;
+const DIST = join(import.meta.dirname, '..', 'dist');
 
 type Server = { readonly url: string; readonly child: ChildProcess };
 
@@ -75,12 +84,7 @@ const standalone = (): void => {
   };
 };
 
-const results: string[] = [];
-const check = (name: string, pass: boolean, detail = ''): void => {
-  results.push(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`);
-};
-
-/** One tap on the title screen starts the music and opens the song list. */
+/** One tap on the title screen starts the music and opens the song list. With no songs, the pals wait there. */
 const titleTap = async (page: Page, audio: AudioRecord): Promise<void> => {
   check('standalone display mode', await page.evaluate(() => matchMedia('(display-mode: standalone)').matches));
   check('title screen shows the logo', (await page.$('.title .logo')) !== null);
@@ -90,11 +94,8 @@ const titleTap = async (page: Page, audio: AudioRecord): Promise<void> => {
   check('title tap: context runs', audio.contexts().endsWith('running'), audio.contexts());
   check('title tap: music plays', audio.sources() > 0, `${String(audio.sources())} sources`);
   check('title tap: song list shows', (await page.$('.song-list')) !== null);
-};
-
-const setVisibility = (state: string): void => {
-  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
-  document.dispatchEvent(new Event('visibilitychange'));
+  check('no songs yet: the pals wait', await shows(page, '.song-waiting', 2000));
+  await shot(page, SHOTS, 'songs-empty-portrait');
 };
 
 /**
@@ -118,47 +119,7 @@ const songListAfterBackground = async (page: Page, audio: AudioRecord): Promise<
   check('home: title screen shows', (await page.$('.title .logo')) !== null);
 };
 
-/** Taps the digits on the pad of the parent check, one after the other. Digit 0 is button 11 of the pad. */
-const typeDigits = async (page: Page, digits: string): Promise<void> => {
-  const [digit] = digits;
-  if (digit === undefined) {
-    return;
-  }
-  await tap(page, `.parent-pad button:nth-child(${digit === '0' ? '11' : digit})`);
-  await wait(150);
-  await typeDigits(page, digits.slice(1));
-};
-
-/** A press of 3.2 s on the logo opens the parent check. The right answer opens the parent area. */
-const parentCheck = async (page: Page): Promise<void> => {
-  const box = await (await page.$('.logo'))?.boundingBox();
-  if (!box) {
-    check('parent check: logo shows', false);
-    return;
-  }
-  await page.touchscreen.touchStart(box.x + box.width / 2, box.y + box.height / 2);
-  await wait(3200);
-  await page.touchscreen.touchEnd();
-  check('logo hold: parent check shows', (await page.$('.parent-check')) !== null);
-  const answer = await page.$eval('.parent-problem', (el) => {
-    const [left = 0, right = 0] = (el.textContent.match(/\d+/gu) ?? []).map(Number);
-    return String(left * right);
-  });
-  await wait(300);
-  check(
-    'hold release: answer field is empty',
-    (await page.$eval('.parent-problem output', (el) => el.textContent)) === '?'
-  );
-  await typeDigits(page, answer);
-  await tap(page, '.parent-ok');
-  await wait(300);
-  check('right answer: parent area shows', (await page.$('.parent-area')) !== null);
-  await tap(page, '.parent-bar button');
-  await wait(300);
-  check('Done: title screen shows', (await page.$('.title .logo')) !== null);
-};
-
-const runAll = async (browser: Browser, url: string): Promise<void> => {
+const runAll = async (browser: Browser, url: string, keyCode: string): Promise<void> => {
   const page = await browser.newPage();
   await page.setViewport({ width: 390, height: 763, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   await page.evaluateOnNewDocument(standalone);
@@ -166,27 +127,32 @@ const runAll = async (browser: Browser, url: string): Promise<void> => {
   await page.goto(url, { waitUntil: 'networkidle2' });
   await titleTap(page, audio);
   await songListAfterBackground(page, audio);
-  await parentCheck(page);
+  await parentArea(page, keyCode);
+  await playChecks(page, audio, SHOTS);
 };
 
-const smoke = async (url: string): Promise<void> => {
+const smoke = async (url: string, keyCode: string): Promise<void> => {
   const browser = await launch({ executablePath: CHROME, headless: true });
   try {
-    await runAll(browser, url);
+    await runAll(browser, url, keyCode);
   } finally {
     await browser.close();
   }
 };
 
+allowModelImports();
+// A dynamic import: the resolve hook of allowModelImports must be in place before Node resolves the game model.
+const { buildSmokeStore } = await import('./smoke-store.ts');
+const keyCode = await buildSmokeStore(DIST);
 const server = await startPreview();
 try {
-  await smoke(server.url);
+  await smoke(server.url, keyCode);
 } finally {
   await stopPreview(server);
 }
 
-console.log(results.join('\n'));
-const failures = results.filter((line) => line.startsWith('FAIL'));
+console.log(checkLines().join('\n'));
+const failures = checkLines().filter((line) => line.startsWith('FAIL'));
 if (failures.length > 0) {
   throw new Error(`${String(failures.length)} smoke checks failed.`);
 }

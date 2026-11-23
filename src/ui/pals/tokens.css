@@ -1,0 +1,17 @@
+/* The colour tokens of style A (C27), the same values as src/ui/pals/color.ts. */
+:root {
+  --grape-950: oklch(0.19 0.09 285);
+  --grape-800: oklch(0.3 0.14 285);
+  --grape-600: oklch(0.46 0.18 283);
+  --grape-300: oklch(0.82 0.08 285);
+  --berry: oklch(0.72 0.19 3);
+  --lemon: oklch(0.89 0.16 96);
+  --mint: oklch(0.83 0.13 172);
+  /* One radius scale (C29): 8, 16, full. */
+  --r-s: 8px;
+  --r-m: 16px;
+  --r-full: 1000px;
+  /* The "block" shadow of cards and big buttons. The HUD has no shadow. */
+  --block: 0 4px 0 var(--grape-950);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
