@@ -42,6 +42,14 @@ const ENERGY_SHOTS: readonly Shot[] = ['0', '1', '2', '3', 'gold'].map((step) =>
   query: `demo=platinum.1&energy=${step}&t=${String(T_HIT)}&sim`,
 }));
 
+/** The level-up moments of a perfect platinum play, 0.2 s after each step up, with the energy of the play (no energy in the query). */
+const LEVEL_UP_SHOTS: readonly Shot[] = [
+  { step: '1', at: 4.2 },
+  { step: '2', at: 8.2 },
+  { step: '3', at: 16.2 },
+  { step: 'gold', at: 30.7 },
+].map(({ step, at }) => ({ name: `level-up-${step}`, query: `demo=platinum.1&t=${String(at)}&sim` }));
+
 const OTHER_SHOTS: readonly Shot[] = [
   { name: 'hit-later-platinum', query: `demo=platinum.1&energy=0&t=${String(T_LATER)}&sim` },
   { name: 'hit-gone-bronze', query: `demo=bronze.0&energy=0&t=${String(T_GONE)}&sim` },
@@ -68,7 +76,7 @@ const saveShot = async (page: Page, url: string, { shot: { name, query }, folder
 /** The screenshots, one after the other: the page shows one demo at a time. */
 const saveShots = async (page: Page, url: string, folder: string): Promise<void> => {
   const shots = (['portrait', 'landscape'] as const).flatMap((size) =>
-    [...COLOR_SHOTS, ...ENERGY_SHOTS, ...OTHER_SHOTS].map((shot) => ({ shot, folder, size }))
+    [...COLOR_SHOTS, ...ENERGY_SHOTS, ...LEVEL_UP_SHOTS, ...OTHER_SHOTS].map((shot) => ({ shot, folder, size }))
   );
   await shots.reduce(async (done, shot) => {
     await done;
