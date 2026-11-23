@@ -4,13 +4,16 @@
 
 import { EFFECT_SEC, makeHit, type HitRecord } from './effects';
 import { LOOK_AHEAD } from './geometry';
+import { HOLD, makeHolds } from './held';
 import { hitNote } from './hits';
-import type { ChildChart, Lane, PlayEvent, SongFacts } from '../../model';
+import type { Action, ChildChart, Lane, PlayEvent, SongFacts } from '../../model';
 
 /** The ring and the pal of a lane get ready this long before a note. */
 const READY_SEC = 0.55;
 /** A missed note fades for this long after its time. */
 export const MISS_FADE_SEC = 0.3;
+/** A held note is one of this many notes from the first note that still shows. */
+const HELD_REACH = 4;
 
 type Beat = SongFacts['beats'][number];
 
@@ -23,7 +26,14 @@ export type LaneState = {
   readonly great: boolean;
   /** The lean side of the last hit. */
   readonly side: 1 | -1;
+  /** True while a finger holds a soft hold of the lane. */
+  readonly held: boolean;
+  /** The seconds since the last soft hold of the lane was done, or Infinity. */
+  readonly doneAge: number;
 };
+
+/** A soft hold that is done: its note and the song time. */
+type HoldDone = { readonly note: number; readonly at: number };
 
 /** The first note, beat, and hit that can still show. */
 type Windows = { readonly note: number; readonly beat: number; readonly hit: number };
@@ -34,6 +44,10 @@ export type View = {
   readonly beats: readonly Beat[];
   /** 1 for each note of the chart that a tap hit. */
   readonly hitNotes: Uint8Array;
+  /** The `HOLD` state of each note of the chart. */
+  readonly holds: Uint8Array;
+  /** The soft holds that are done, in time order. */
+  readonly dones: readonly HoldDone[];
   readonly hits: readonly HitRecord[];
   /** Pip, Dot, and Bo. */
   readonly lanes: readonly [LaneState, LaneState, LaneState];
@@ -45,13 +59,23 @@ export type View = {
 /** The view, and the 2 changes that the player makes to it. */
 export type LiveView = {
   readonly view: () => View;
-  /** Remembers a hit of the play model at the tap time `t`. */
-  readonly record: (hit: Extract<PlayEvent, { type: 'hit' }>, t: number) => void;
+  /**
+   * Follows an action and its events at song time `t`: it remembers each hit (and the soft hold that the pointer of
+   * the press holds), lets go of the soft hold of a released pointer, and remembers each done hold.
+   */
+  readonly track: (action: Action, events: readonly PlayEvent[], t: number) => void;
   /** Moves the view to song time `t`. */
   readonly update: (t: number) => void;
 };
 
-const IDLE: LaneState = { near: 0, hitAge: Number.POSITIVE_INFINITY, great: false, side: 1 };
+const IDLE: LaneState = {
+  near: 0,
+  hitAge: Number.POSITIVE_INFINITY,
+  great: false,
+  side: 1,
+  held: false,
+  doneAge: Number.POSITIVE_INFINITY,
+};
 
 /** The first index from `start` whose time is not before `from`. */
 const firstFrom = (times: (at: number) => number | undefined, start: number, from: number): number => {
@@ -63,7 +87,15 @@ const firstFrom = (times: (at: number) => number | undefined, start: number, fro
 };
 
 const windowsAt = (view: View, t: number): Windows => ({
-  note: firstFrom((at) => view.chart.notes[at]?.t, view.first.note, t - MISS_FADE_SEC),
+  // A soft hold shows to its end. Holds end before the next note, so the end times stay in order.
+  note: firstFrom(
+    (at) => {
+      const note = view.chart.notes[at];
+      return note === undefined ? undefined : note.t + note.holdSec;
+    },
+    view.first.note,
+    t - MISS_FADE_SEC
+  ),
   beat: firstFrom((at) => view.beats[at]?.t, view.first.beat, t - MISS_FADE_SEC),
   hit: firstFrom((at) => view.hits[at]?.at, view.first.hit, t - EFFECT_SEC),
 });
@@ -96,19 +128,52 @@ const latestHit = (view: View, lane: Lane): HitRecord | undefined => {
   return at >= view.first.hit ? view.hits[at] : undefined;
 };
 
+/** True while a finger holds a soft hold of the lane before its end. */
+const isHeld = (view: View, lane: Lane): boolean =>
+  // A held note still shows, and at most 2 notes that still show come before it: notes are 0.2 s apart or more.
+  view.chart.notes
+    .slice(view.first.note, view.first.note + HELD_REACH)
+    .some(
+      (note, at) =>
+        view.holds[view.first.note + at] === HOLD.held &&
+        note.lanes[0] === lane &&
+        note.t <= view.t &&
+        view.t < note.t + note.holdSec
+    );
+
+/** The seconds since the last soft hold of the lane was done, or Infinity. */
+const doneAge = (view: View, lane: Lane): number => {
+  const last = view.dones.findLast((done) => view.chart.notes[done.note]?.lanes[0] === lane && done.at <= view.t);
+  return last === undefined ? Number.POSITIVE_INFINITY : view.t - last.at;
+};
+
 const laneState = (view: View, lane: Lane): LaneState => {
   const hit = latestHit(view, lane);
-  const near = nearness(view, lane);
-  return hit === undefined ? { ...IDLE, near } : { near, hitAge: view.t - hit.at, great: hit.great, side: hit.side };
+  const held = { near: nearness(view, lane), held: isHeld(view, lane), doneAge: doneAge(view, lane) };
+  return hit === undefined
+    ? { ...IDLE, ...held }
+    : { ...held, hitAge: view.t - hit.at, great: hit.great, side: hit.side };
 };
 
 export const makeView = (chart: ChildChart, beats: readonly Beat[]): LiveView => {
   const hitNotes = new Uint8Array(chart.notes.length);
+  const holds = makeHolds(chart.notes.length);
   const hits: HitRecord[] = [];
+  const dones: HoldDone[] = [];
+  const record = (hit: Extract<PlayEvent, { type: 'hit' }>, t: number, action: Action): void => {
+    const note = hitNote(chart, hit);
+    hitNotes[note] = 1;
+    if ((chart.notes[note]?.holdSec ?? 0) > 0 && action.type === 'press') {
+      holds.grab(note, action.pointerId);
+    }
+    hits.push(makeHit({ lane: hit.lane, at: t, great: hit.grade === 'great', side: hits.length % 2 === 0 ? 1 : -1 }));
+  };
   let view: View = {
     chart,
     beats,
     hitNotes,
+    holds: holds.holds,
+    dones,
     hits,
     lanes: [IDLE, IDLE, IDLE],
     first: { note: 0, beat: 0, hit: 0 },
@@ -116,9 +181,14 @@ export const makeView = (chart: ChildChart, beats: readonly Beat[]): LiveView =>
   };
   return {
     view: () => view,
-    record: (hit, t) => {
-      hitNotes[hitNote(chart, hit)] = 1;
-      hits.push(makeHit({ lane: hit.lane, at: t, great: hit.grade === 'great', side: hits.length % 2 === 0 ? 1 : -1 }));
+    track: (action, events, t) => {
+      for (const event of events.filter((each) => each.type === 'hit')) {
+        record(event, t, action);
+      }
+      dones.push(...events.flatMap((event) => (event.type === 'holdDone' ? [{ note: event.note, at: t }] : [])));
+      if (action.type === 'release') {
+        holds.letGo(action.pointerId);
+      }
     },
     update: (t) => {
       const moved: View = { ...view, t, first: windowsAt(view, t) };

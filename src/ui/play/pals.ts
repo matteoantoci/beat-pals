@@ -113,10 +113,17 @@ const happyPose = (lane: LaneState, reduced: boolean): Pose => {
   return { state: 'happy', ty: jump, rot, sx: 1 - squash * 0.6, sy: 1 + squash };
 };
 
-/** The pose of a band pal: happy after a hit, ready before its note, else its idle dance. */
+/**
+ * The pose of a band pal: happy after a hit, held while a finger holds a soft hold (with a small hop when the star
+ * bead pops), ready before its note, else its idle dance.
+ */
 const poseOf = (lane: LaneState, idle: Pose, reduced: boolean): Pose => {
   if (lane.hitAge < HAPPY_SEC) {
     return happyPose(lane, reduced);
+  }
+  if (lane.held) {
+    const hops = !reduced && lane.doneAge < HOP_SEC;
+    return { state: 'held', ...STILL, ty: hops ? -Math.sin((lane.doneAge / HOP_SEC) * Math.PI) * HOP_PX : 0 };
   }
   if (lane.near > 0) {
     const stretch = reduced ? 0 : lane.near;

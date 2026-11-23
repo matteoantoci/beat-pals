@@ -2,6 +2,7 @@
 // layers, hit effects, and the band energy) is painted one time for each layout into one 2D canvas. A simple shelf
 // packer places the shapes in rows. Each shape paints around (0, 0), so its sprite takes the anchor 0.5.
 
+import { holdKey, holdShapes, linkShapes, POP_SHARE } from './hold-shapes';
 import { laneCss, LEMON, paintBubble, paintCircleLine, paintDisc, paintPill, WHITE } from './paint';
 import {
   GLOW_R,
@@ -31,6 +32,7 @@ import {
   SPRINKLE_SIZE,
   sprinkleColors,
 } from './paint-fx';
+import { paintHeldBands, paintPopStar } from './paint-holds';
 import { CHUTE_SHARE } from './paint-stage';
 import type { Lane } from '../../model';
 import type { Geometry } from './geometry';
@@ -60,10 +62,13 @@ export const shapeKey = {
   ringHalo: (lane: Lane): string => `ring halo ${String(lane)}`,
   ringBands: (lane: Lane): string => `ring bands ${String(lane)}`,
   ringNear: (lane: Lane): string => `ring near ${String(lane)}`,
+  /** The white bands of a ring while a finger holds a soft hold. */
+  ringHeld: (lane: Lane): string => `ring held ${String(lane)}`,
   studs: (lane: Lane): string => `studs ${String(lane)}`,
   wave: (lane: Lane): string => `wave ${String(lane)}`,
   /** A sprinkle kind of the lane, in its own colour (see `SPRINKLE_KINDS`). */
   sprinkle: (lane: Lane, kind: number): string => `sprinkle ${String(lane)} ${String(kind)}`,
+  ...holdKey,
   core: 'core',
   whiteStuds: 'white studs',
   musicNote: 'music note',
@@ -115,6 +120,7 @@ const ringShapes = (r: number, lane: Lane): Shape[] => {
     square(shapeKey.ringHalo(lane), 2 * (r + HALO_GAP + 8), (ctx) => paintHalo(ctx, lane, r)),
     square(shapeKey.ringBands(lane), ring, (ctx) => paintRingBands(ctx, lane, { r, light: false })),
     square(shapeKey.ringNear(lane), ring, (ctx) => paintRingBands(ctx, lane, { r, light: true })),
+    square(shapeKey.ringHeld(lane), ring, (ctx) => paintHeldBands(ctx, r)),
     square(shapeKey.studs(lane), ring, (ctx) => paintStuds(ctx, r, laneCss(lane).light)),
     square(shapeKey.wave(lane), 2 * (r + WAVE_GAP + 2), (ctx) =>
       paintCircleLine(ctx, r + WAVE_GAP, { width: 2, color: laneCss(lane).base })
@@ -138,6 +144,7 @@ const shapesOf = (geometry: Geometry, band: readonly Lane[]): Shape[] => {
       square(shapeKey.bubble(lane), bubble, (ctx) => paintBubble(ctx, lane, geometry.noteS)),
       ...pillShapes(geometry, lane),
       ...ringShapes(r, lane),
+      ...holdShapes(geometry, lane),
       ...sprinkleShapes(lane)
     );
   }
@@ -145,6 +152,10 @@ const shapesOf = (geometry: Geometry, band: readonly Lane[]): Shape[] => {
     square(shapeKey.core, 2 * CORE_R + 4, (ctx) => paintDisc(ctx, CORE_R, WHITE)),
     square(shapeKey.whiteStuds, 2 * (r + 8), (ctx) => paintStuds(ctx, r, WHITE)),
     { key: shapeKey.musicNote, w: 24 - NOTE_HEAD.x, h: 32, paint: paintMusicNote },
+    square(shapeKey.popStar, 2 * geometry.noteS * POP_SHARE * 1.4 + 8, (ctx) =>
+      paintPopStar(ctx, geometry.noteS * POP_SHARE)
+    ),
+    ...linkShapes(geometry),
     ...energyShapes(geometry, band)
   );
   return shapes;

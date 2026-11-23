@@ -1,7 +1,8 @@
 // The ring of a lane (prototype play-style A, `drawRing`): round, in the lane colour, with 4 studs, a double band,
 // and the pal mark. When a note comes near, the bands turn to the light colour, the studs turn white, and a soft
 // halo grows. A hit pops the ring (1 to 1.15 to 1 in 150 ms), fills it softly in the lane colour, and a great hit
-// adds a small white core. The layers are sprites of the atlas: a frame only fades and scales them.
+// adds a small white core. While a finger holds a soft hold, the bands turn white. The layers are sprites of the
+// atlas: a frame only fades and scales them.
 
 import { Container, Sprite } from 'pixi.js';
 import { shapeKey } from './atlas';
@@ -16,6 +17,8 @@ type RingState = {
   /** The seconds since the last hit in the lane, or Infinity. */
   hitAge: number;
   great: boolean;
+  /** True while a finger holds a soft hold of the lane. */
+  held: boolean;
 };
 
 const POP_SEC = 0.15;
@@ -30,7 +33,7 @@ export type Ring = {
 };
 
 /** The layers from the bottom up. */
-const LAYERS = ['floor', 'fill', 'core', 'halo', 'bands', 'near', 'studs', 'white'] as const;
+const LAYERS = ['floor', 'fill', 'core', 'halo', 'bands', 'near', 'held', 'studs', 'white'] as const;
 type LayerName = (typeof LAYERS)[number];
 
 /** The atlas shape of each layer. */
@@ -41,6 +44,7 @@ const LAYER_SHAPES: Readonly<Record<LayerName, (lane: Lane) => string>> = {
   halo: shapeKey.ringHalo,
   bands: shapeKey.ringBands,
   near: shapeKey.ringNear,
+  held: shapeKey.ringHeld,
   studs: shapeKey.studs,
   white: () => shapeKey.whiteStuds,
 };
@@ -68,6 +72,7 @@ export const makeRing = (lane: Lane): Ring => {
   const core = sprite('core');
   const halo = sprite('halo');
   const near = sprite('near');
+  const heldBands = sprite('held');
   const studs = sprite('studs');
   const white = sprite('white');
   let ringR = 1;
@@ -79,7 +84,10 @@ export const makeRing = (lane: Lane): Ring => {
         sprite(name).texture = textures.shape(LAYER_SHAPES[name](lane));
       }
     },
-    update: ({ near: nearness, hitAge, great }, reduced) => {
+    update: ({ near: closeness, hitAge, great, held }, reduced) => {
+      // While a finger holds a soft hold, the ring stays fully near and its bands turn white.
+      const nearness = held ? 1 : closeness;
+      heldBands.visible = held;
       container.scale.set(!reduced && hitAge < POP_SEC ? 1 + 0.15 * Math.sin((hitAge / POP_SEC) * Math.PI) : 1);
       fill.alpha = fillAlpha(hitAge);
       core.alpha = great && hitAge < CORE_SEC ? 1 - hitAge / CORE_SEC : 0;

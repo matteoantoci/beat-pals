@@ -9,6 +9,8 @@ type Look = {
   readonly y: number;
   readonly alpha: number;
   readonly scale?: number;
+  /** The vertical scale, when it differs from `scale` (a stretched strip). */
+  readonly scaleY?: number;
   readonly rotation?: number;
 };
 
@@ -43,7 +45,7 @@ export const makePool = (parent: Container): Pool => {
       sprite.visible = look.alpha > 0;
       sprite.alpha = look.alpha;
       sprite.position.set(look.x, look.y);
-      sprite.scale.set(look.scale ?? 1);
+      sprite.scale.set(look.scale ?? 1, look.scaleY ?? look.scale ?? 1);
       sprite.rotation = look.rotation ?? 0;
     },
     begin: () => {
