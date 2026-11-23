@@ -1,0 +1,173 @@
+/* The play screen (src/ui/play/), style A of the prototype. The canvas and the pals fill the screen; the HUD and the
+   controls stay inside the safe area + 16 px (C24). */
+.play {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--grape-800);
+  touch-action: none;
+}
+
+.play-stage {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.play-pal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.play-probe {
+  position: fixed;
+  visibility: hidden;
+  pointer-events: none;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.play-hud {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 16px);
+  right: calc(env(safe-area-inset-right) + 16px);
+  left: calc(env(safe-area-inset-left) + 16px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.play-beads {
+  display: flex;
+  gap: 8px;
+}
+
+.play-beads i {
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--grape-300);
+  border-radius: var(--r-full);
+}
+
+.play-beads i.full {
+  border-color: var(--lemon);
+  background: var(--lemon);
+}
+
+.play-spacer {
+  width: 44px;
+}
+
+/* A press-and-hold button: a lemon ring fills around it during the hold. */
+.hold-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-full);
+  background: var(--grape-600);
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+.hold-ring {
+  position: absolute;
+  inset: -8px;
+  width: calc(100% + 16px);
+  height: calc(100% + 16px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.hold-track {
+  fill: none;
+  stroke: none;
+}
+
+.hold-fill {
+  fill: none;
+  stroke: var(--lemon);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: 100;
+  opacity: 0;
+}
+
+.holding .hold-fill {
+  stroke-dashoffset: 0;
+  opacity: 1;
+  transition: stroke-dashoffset 0.6s linear;
+}
+
+.pause-button {
+  width: 44px;
+  height: 44px;
+}
+
+.pause-icon {
+  width: 20px;
+  height: 20px;
+  fill: var(--grape-300);
+}
+
+/* The pause screen covers the play, so no tap reaches a lane. */
+.pause-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  background: color-mix(in oklch, var(--grape-950) 60%, transparent);
+  touch-action: none;
+}
+
+.pause-play {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-full);
+  background: var(--lemon);
+  box-shadow: var(--block);
+}
+
+.pause-play svg {
+  width: 40px;
+  height: 40px;
+  margin-left: 4px;
+  fill: var(--grape-950);
+}
+
+.pause-home {
+  width: 64px;
+  height: 64px;
+  box-shadow: var(--block);
+}
+
+.pause-home .pause-icon {
+  width: 28px;
+  height: 28px;
+}
+
+@media (orientation: landscape) {
+  .play-spacer {
+    display: none;
+  }
+}

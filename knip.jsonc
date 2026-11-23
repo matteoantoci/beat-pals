@@ -6,18 +6,4 @@
     // prepare-song runs ffmpeg from the Mac (Homebrew), not from a package of the repo.
     "ffmpeg",
   ],
-  "ignoreDependencies": [
-    // The play screen draws with PixiJS. Ticket 01 sets the stack; the play screen imports the package.
-    "pixi.js",
-  ],
-  "ignoreIssues": {
-    // The song handle (loadSong, Song, SongEvents) is for the play screen of ticket 10, and nothing imports it
-    // before that. Remove these 2 entries when the play screen imports it.
-    "src/sound/index.ts": ["exports", "types"],
-    "src/sound/song.ts": ["exports", "types"],
-    // The song reader (readSongFiles, SongFiles) is for the play screen of ticket 10, and nothing imports it before
-    // that. Remove these 2 entries when the play screen imports it.
-    "src/shell/songs/index.ts": ["exports", "types"],
-    "src/shell/songs/song-files.ts": ["exports", "types"],
-  },
 }
