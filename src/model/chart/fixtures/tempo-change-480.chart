@@ -1,0 +1,18 @@
+[Song]
+{
+  Name = "Test Tune"
+  Resolution = 480
+  Offset = 0
+}
+[SyncTrack]
+{
+  0 = TS 4
+  0 = B 120000
+  1920 = B 60000
+}
+[ExpertSingle]
+{
+  1440 = N 1 960
+  1920 = N 0 0
+  2400 = N 2 480
+}

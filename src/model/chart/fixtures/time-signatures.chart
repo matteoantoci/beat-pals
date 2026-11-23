@@ -1,0 +1,16 @@
+[Song]
+{
+  Name = "Test Tune"
+  Resolution = 480
+}
+[SyncTrack]
+{
+  0 = TS 3
+  0 = B 120000
+  2880 = TS 6 3
+}
+[ExpertSingle]
+{
+  0 = N 0 0
+  4080 = N 1 0
+}
