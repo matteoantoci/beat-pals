@@ -1,8 +1,9 @@
-// The play part of the smoke run (scripts/smoke.ts): the song list with the test song, a play with a running audio
-// context, a hit seen through `data-last-hit` (the hit effects are PixiJS drawings), the layout in portrait and in
-// landscape, the pause hold, the sound after a return from the background, home from the pause screen, and a play
-// to the end of the song with its end scene (smoke-end.ts). SMOKE_SHOTS=<folder> also saves screenshots of the song
-// list, the play in portrait and in landscape, the pause screen, and the end scene.
+// The play part of the smoke run (scripts/smoke.ts): the title screen with a ready song in portrait and in
+// landscape, the song list with the test song, a play with a running audio context, a hit seen through
+// `data-last-hit` (the hit effects are PixiJS drawings), the layout in portrait and in landscape, the pause hold, the
+// sound after a return from the background, home from the pause screen, and a play to the end of the song with its
+// end scene (smoke-end.ts). SMOKE_SHOTS=<folder> also saves screenshots of the title screen, the song list, the play
+// in portrait and in landscape, the pause screen, and the end scene.
 
 import { endScene } from './smoke-end.ts';
 import { check, setVisibility, shot, shows, tap, touchHold, wait } from './smoke-page.ts';
@@ -107,11 +108,38 @@ const pauseAndReturn = async (page: Page, audio: AudioRecord): Promise<void> => 
   check('background trip: a tap hits again', hitTime(await lastHit(page)) > before);
 };
 
+/** The gap from the wordmark down to the pals, and whether the play button is whole on the screen. Runs in the
+ * page. */
+const titleSpace = (): { gap: number; playInside: boolean } => {
+  const word = document.querySelector('.title-word')?.getBoundingClientRect();
+  const pal = document.querySelector('.title-pal')?.getBoundingClientRect();
+  const play = document.querySelector('.title-play')?.getBoundingClientRect();
+  const inside =
+    play !== undefined && play.top >= 0 && play.left >= 0 && play.bottom <= innerHeight && play.right <= innerWidth;
+  return { gap: word && pal ? pal.top - word.bottom : -1, playInside: inside };
+};
+
+/** The title screen in landscape, with the safe areas of the iPhone 12 (47 px at the sides, 21 px at the bottom)
+ * set on #app as env() gives them on the device: the wordmark stays clear of the pals, and the play button fits. */
+const titleLandscape = async (page: Page, shots: string | undefined): Promise<void> => {
+  await page.setViewport(LANDSCAPE);
+  await page.evaluate(() => document.querySelector<HTMLElement>('#app')?.style.setProperty('padding', '0 47px 21px'));
+  await wait(500);
+  const { gap, playInside } = await page.evaluate(titleSpace);
+  check('title landscape: the wordmark is clear of the pals', gap >= 12, `${String(Math.round(gap))} px`);
+  check('title landscape: the play button is on the screen', playInside);
+  await shot(page, shots, 'title-landscape');
+  await page.evaluate(() => document.querySelector<HTMLElement>('#app')?.style.removeProperty('padding'));
+  await page.setViewport(PORTRAIT);
+  await wait(300);
+};
+
 /** The test song is in the list with a bronze record and 3 stars, and a tap starts it with running audio. The
  * context runs since the title tap, so it shows no change, or a change that ends in `running`. */
 const startSong = async (page: Page, audio: AudioRecord, shots: string | undefined): Promise<boolean> => {
   check('title screen: the play button shows with a ready song', await shows(page, '.title-play'));
   await shot(page, shots, 'title-portrait');
+  await titleLandscape(page, shots);
   await tap(page, '.title');
   check('song list: the test song shows', await shows(page, '.song-card'));
   check(
