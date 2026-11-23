@@ -120,10 +120,14 @@ const transformOf = (geometry: Geometry, centre: number, pose: Pose): string => 
   return `translate(${x}px, ${y}px) rotate(${pose.rot.toFixed(2)}deg) scale(${pose.sx.toFixed(3)}, ${pose.sy.toFixed(3)})`;
 };
 
+/** The name of the pal of each picture, by lane, for tests that need one pal. */
+const PAL_NAMES = ['pip', 'dot', 'bo'] as const;
+
 /** Shows every pal picture at the pal size: the band and the waiting pals. */
 const showAll = (images: readonly HTMLImageElement[], size: number): void => {
-  for (const image of images) {
+  for (const [lane, image] of images.entries()) {
     image.hidden = false;
+    image.dataset['pal'] = PAL_NAMES[lane];
     image.style.width = `${String(size)}px`;
     image.style.height = `${String(size)}px`;
   }
