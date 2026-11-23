@@ -25,6 +25,7 @@ export type EnergyLook = {
 export type EnergyTrack = {
   /** Remembers a step change at song time `t`. True for a step up. */
   readonly record: (step: EnergyStep, t: number) => boolean;
+  /** The look at song time `t`. Each call fills the same look object, so a frame makes no object (C20). */
   readonly at: (t: number) => EnergyLook;
 };
 
@@ -51,25 +52,39 @@ const fadeAt = (fade: Fade, t: number): number => {
 export const makeEnergyTrack = (): EnergyTrack => {
   let current = 0;
   let fades: Four<Fade> = [OFF, OFF, OFF, OFF];
-  let lastUp: { readonly to: number; readonly at: number } | undefined;
+  /** The last step up: the step that she reached and the song time. */
+  const lastUp = { to: 0, at: Number.NEGATIVE_INFINITY };
+  const lookFades: [number, number, number, number] = [0, 0, 0, 0];
+  const levelUp = { to: 0, age: 0, progress: 0 };
+  const look: { step: number; fades: Four<number>; levelUp: typeof levelUp | undefined } = {
+    step: 0,
+    fades: lookFades,
+    levelUp: undefined,
+  };
   return {
     record: (step, t) => {
       const next = step === 'gold' ? GOLD : step;
       const up = next > current;
       fades = mapFour(fades, (fade, at) => ({ from: fadeAt(fade, t), since: t, on: at < next }));
       current = next;
-      lastUp = up ? { to: next, at: t } : lastUp;
+      if (up) {
+        lastUp.to = next;
+        lastUp.at = t;
+      }
       return up;
     },
     at: (t) => {
-      const up = lastUp;
-      const age = t - (up?.at ?? Number.NEGATIVE_INFINITY);
-      const life = up?.to === GOLD ? GOLD_UP_SEC : LEVEL_UP_SEC;
-      return {
-        step: current,
-        fades: mapFour(fades, (fade) => fadeAt(fade, t)),
-        levelUp: up !== undefined && age >= 0 && age < life ? { to: up.to, age, progress: age / life } : undefined,
-      };
+      const age = t - lastUp.at;
+      const life = lastUp.to === GOLD ? GOLD_UP_SEC : LEVEL_UP_SEC;
+      look.step = current;
+      for (let at = 0; at < 4; at += 1) {
+        lookFades[at] = fadeAt(fades[at] ?? OFF, t);
+      }
+      levelUp.to = lastUp.to;
+      levelUp.age = age;
+      levelUp.progress = age / life;
+      look.levelUp = age >= 0 && age < life ? levelUp : undefined;
+      return look;
     },
   };
 };

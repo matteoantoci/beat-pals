@@ -1,5 +1,6 @@
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { bandOf, danceOf, RECORD_COLORS } from '../../model';
+import { reducedMotion, watchReducedMotion } from '../play/reduced-motion';
 import { pictureOf, type SongChoice } from '../songs/SongList';
 import { playScene, sceneLength, type ScenePlan, type SceneParts } from './motion';
 import { Band, Sleeve, StarRow, type Refs } from './parts';
@@ -26,7 +27,6 @@ type EndSceneProps = {
   readonly onDone: () => void;
 };
 
-const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const ignore = (): void => undefined;
 
 const sceneParts = (refs: Refs): SceneParts | undefined => {
@@ -85,7 +85,9 @@ export const EndScene = (props: EndSceneProps): JSX.Element => {
     pictureOf(props.choice.key, props.choice.song).then(setPicture, ignore);
     onCleanup(() => URL.revokeObjectURL(picture() ?? ''));
     const parts = sceneParts(refs);
-    skip = parts === undefined ? ignore : playScene(parts, plan, reducedMotion.matches);
+    skip = parts === undefined ? ignore : playScene(parts, plan, reducedMotion());
+    // A change to reduced motion during the scene stops each motion: the parts jump to their final state.
+    onCleanup(watchReducedMotion((reduced) => reduced && skip()));
     const timer = setTimeout(finish, sceneLength(plan) * 1000);
     onCleanup(() => clearTimeout(timer));
   });

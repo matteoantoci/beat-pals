@@ -82,11 +82,14 @@ const SONG_EVENTS: SongEvents = {
 const factsOf = (files: SongFiles | undefined): SongFacts | undefined =>
   files === undefined ? undefined : readFacts(files.factsJson);
 
-/** A turn of the device paints the stage again for the new size. */
-const watchResize = (
-  elements: PlayElements,
-  stage: Stage,
-  pals: Pals
+/**
+ * A turn of the device paints the stage again for the new size and places the pals again. `redraw` draws a frame
+ * after that, for a screen with no frame loop (the demo route).
+ */
+export const watchResize = (
+  elements: Pick<PlayElements, 'root' | 'probe'>,
+  { stage, pals }: { readonly stage: Stage; readonly pals: Pals },
+  redraw: () => void = () => undefined
 ): { geometry: () => Geometry; unresize: () => void } => {
   let geometry = measure(elements);
   pals.layout(geometry);
@@ -94,6 +97,7 @@ const watchResize = (
     geometry = measure(elements);
     stage.resize(geometry);
     pals.layout(geometry);
+    redraw();
   };
   window.addEventListener('resize', onResize);
   return { geometry: () => geometry, unresize: () => window.removeEventListener('resize', onResize) };
@@ -116,7 +120,7 @@ const load = async (elements: PlayElements, choice: SongChoice, id: number): Pro
     return undefined;
   }
   const pals = makePals(elements.pals, chart.band, facts.beats);
-  return { chart, song, stage, pals, view: makeView(chart, facts.beats), ...watchResize(elements, stage, pals) };
+  return { chart, song, stage, pals, view: makeView(chart, facts.beats), ...watchResize(elements, { stage, pals }) };
 };
 
 /** Loads the song of the choice and starts its play at the record color and speed step of its progress. */

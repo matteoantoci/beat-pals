@@ -18,6 +18,9 @@ const SPRINKLE_SEC = 0.6;
 const NOTE_SEC = 0.8;
 const CLAP_SEC = 0.4;
 const GRAVITY = 760;
+/** The hit wave grows by this share of its size: a great hit makes the bigger wave (C8). The great wave stays inside
+ * 1.4 ring radii (C5). */
+const WAVE_GROW = { good: 0.2, great: 0.36 } as const;
 
 type Sprinkle = {
   readonly angle: number;
@@ -70,12 +73,10 @@ export type EffectScene = {
 
 const drawWave = (scene: EffectScene, hit: HitRecord): void => {
   const k = (scene.t - hit.at) / WAVE_SEC;
-  scene.pool.show(scene.textures.shape(shapeKey.wave(hit.lane)), {
-    x: laneX(scene.geometry, hit.lane),
-    y: scene.geometry.hitY,
-    alpha: 1 - k,
-    scale: scene.reduced ? 1 : 1 + 0.36 * easeOut(k),
-  });
+  const texture = scene.textures.shape(shapeKey.wave(hit.lane));
+  const wave = scene.pool.show(texture, 1 - k);
+  wave.position.set(laneX(scene.geometry, hit.lane), scene.geometry.hitY);
+  wave.scale.set(scene.reduced ? 1 : 1 + (hit.great ? WAVE_GROW.great : WAVE_GROW.good) * easeOut(k));
 };
 
 /** True when the point (`dx` from the middle of the lane) is inside the effect box of the lane. */
@@ -94,13 +95,12 @@ const drawSprinkle = (scene: EffectScene, hit: HitRecord, sprinkle: Sprinkle): v
   const fall = reduced ? 0 : GRAVITY * age * age;
   const y = geometry.hitY + Math.sin(angle) * (start * 0.8 + travel) + fall;
   const fade = reduced ? Math.sin((Math.PI * age) / life) : clamp01((life - age) / (life * 0.4));
-  scene.pool.show(scene.textures.shape(shapeKey.sprinkle(hit.lane, sprinkle.kind)), {
-    x: laneX(geometry, hit.lane) + dx,
-    y,
-    alpha: age < life && inLane(geometry, dx, y) ? fade : 0,
-    scale: sprinkle.scale,
-    rotation: sprinkle.spin * age,
-  });
+  const texture = scene.textures.shape(shapeKey.sprinkle(hit.lane, sprinkle.kind));
+  const alpha = age < life && inLane(geometry, dx, y) ? fade : 0;
+  const shown = scene.pool.show(texture, alpha);
+  shown.position.set(laneX(geometry, hit.lane) + dx, y);
+  shown.scale.set(sprinkle.scale);
+  shown.rotation = reduced ? 0 : sprinkle.spin * age;
 };
 
 const drawSprinkles = (scene: EffectScene, hit: HitRecord): void => {
@@ -113,11 +113,12 @@ const drawSprinkles = (scene: EffectScene, hit: HitRecord): void => {
 const drawMusicNote = (scene: EffectScene, hit: HitRecord): void => {
   const { geometry, reduced } = scene;
   const k = (scene.t - hit.at) / NOTE_SEC;
-  scene.pool.show(scene.textures.shape(shapeKey.musicNote), {
-    x: laneX(geometry, hit.lane) + geometry.palH / 2 - 8 - NOTE_HEAD.x,
-    y: geometry.floorY - geometry.palH * 0.55 - (reduced ? 0 : easeOut(k) * 16) - NOTE_HEAD.y,
-    alpha: 1 - k * k,
-  });
+  scene.pool
+    .show(scene.textures.shape(shapeKey.musicNote), 1 - k * k)
+    .position.set(
+      laneX(geometry, hit.lane) + geometry.palH / 2 - 8 - NOTE_HEAD.x,
+      geometry.floorY - geometry.palH * 0.55 - (reduced ? 0 : easeOut(k) * 16) - NOTE_HEAD.y
+    );
 };
 
 /**
@@ -134,16 +135,14 @@ const drawClap = (scene: EffectScene, hit: HitRecord, age: number): void => {
   const y = geometry.hitY;
   const reach = reduced ? 14 : 10 + 22 * easeOut(k);
   if (hit.side > 0) {
-    scene.pool.show(scene.textures.shape(shapeKey.clapGlow), { x, y, alpha: 0.4 * (1 - k) });
+    scene.pool.show(scene.textures.shape(shapeKey.clapGlow), 0.4 * (1 - k)).position.set(x, y);
   }
   for (let pill = -2; pill <= 2; pill += 1) {
     const angle = (hit.side > 0 ? Math.PI : 0) + pill * 0.45;
-    scene.pool.show(scene.textures.shape(shapeKey.clapPill(pill % 2 !== 0)), {
-      x: x + Math.cos(angle) * reach,
-      y: y + Math.sin(angle) * reach,
-      alpha: 1 - k * k,
-      rotation: angle,
-    });
+    const texture = scene.textures.shape(shapeKey.clapPill(pill % 2 !== 0));
+    const shown = scene.pool.show(texture, 1 - k * k);
+    shown.position.set(x + Math.cos(angle) * reach, y + Math.sin(angle) * reach);
+    shown.rotation = angle;
   }
 };
 

@@ -33,13 +33,13 @@ const RecordMark = (props: { readonly color: RecordColor; readonly shine: string
     return (
       <path
         d="M44 10 Q44 18 52 18 Q44 18 44 26 Q44 18 36 18 Q44 18 44 10Z M20 40 Q20 45 25 45 Q20 45 20 50 Q20 45 15 45 Q20 45 20 40Z"
-        fill="#fff"
+        fill={css(TOKENS.white)}
       />
     );
   }
   if (props.color === 'platinum') {
     return (
-      <path d="M46 50 A22 22 0 0 0 54 38" fill="none" stroke={props.shine} stroke-width="4" stroke-linecap="round" />
+      <path d="M46 50 A22 22 0 0 0 54 38" fill="none" stroke={props.shine} stroke-width="2" stroke-linecap="round" />
     );
   }
   return null;
@@ -60,7 +60,7 @@ export const Record = (props: { readonly color: RecordColor }): JSX.Element => {
         d="M10 24 A23 23 0 0 1 24 10"
         fill="none"
         stroke={shine()}
-        stroke-width="4"
+        stroke-width="2"
         stroke-linecap="round"
         opacity=".7"
       />

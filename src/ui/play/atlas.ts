@@ -2,7 +2,7 @@
 // layers, hit effects, and the band energy) is painted one time for each layout into one 2D canvas. A simple shelf
 // packer places the shapes in rows. Each shape paints around (0, 0), so its sprite takes the anchor 0.5.
 
-import { clapShapes, holdKey, holdShapes, linkShapes, POP_SHARE } from './hold-shapes';
+import { clapShapes, holdKey, holdShapes, keyOf, laneKeys, linkShapes, POP_SHARE } from './hold-shapes';
 import { laneCss, LEMON, paintBubble, paintCircleLine, paintDisc, paintPill, WHITE } from './paint';
 import {
   GLOW_R,
@@ -49,25 +49,30 @@ const PAD = 2;
 /** The beat pill of a downbeat is wider. */
 const PILL_SHARE = { beat: 0.32, downbeat: 0.46 } as const;
 /** The white core of a great hit. */
-const CORE_R = 14;
+const CORE_R = 16;
 /** The hit wave starts at the outer edge of the ring. */
 const WAVE_GAP = 3;
 
-/** The keys of the shapes. */
+const SPRINKLE_KEYS = LANES.flatMap((lane) =>
+  SPRINKLE_KINDS.map((_, kind) => `sprinkle ${String(lane)} ${String(kind)}`)
+);
+const PILL_KEYS = { beat: laneKeys('pill beat'), down: laneKeys('pill down') } as const;
+
+/** The keys of the shapes. Each key string is made one time here, so a frame builds no string (C20). */
 export const shapeKey = {
-  bubble: (lane: Lane): string => `bubble ${String(lane)}`,
-  pill: (lane: Lane, downbeat: boolean): string => `pill ${String(lane)} ${downbeat ? 'down' : 'beat'}`,
-  ringFloor: (lane: Lane): string => `ring floor ${String(lane)}`,
-  ringHit: (lane: Lane): string => `ring hit ${String(lane)}`,
-  ringHalo: (lane: Lane): string => `ring halo ${String(lane)}`,
-  ringBands: (lane: Lane): string => `ring bands ${String(lane)}`,
-  ringNear: (lane: Lane): string => `ring near ${String(lane)}`,
+  bubble: keyOf('bubble'),
+  pill: (lane: Lane, downbeat: boolean): string => (downbeat ? PILL_KEYS.down : PILL_KEYS.beat)[lane],
+  ringFloor: keyOf('ring floor'),
+  ringHit: keyOf('ring hit'),
+  ringHalo: keyOf('ring halo'),
+  ringBands: keyOf('ring bands'),
+  ringNear: keyOf('ring near'),
   /** The white bands of a ring while a finger holds a soft hold. */
-  ringHeld: (lane: Lane): string => `ring held ${String(lane)}`,
-  studs: (lane: Lane): string => `studs ${String(lane)}`,
-  wave: (lane: Lane): string => `wave ${String(lane)}`,
+  ringHeld: keyOf('ring held'),
+  studs: keyOf('studs'),
+  wave: keyOf('wave'),
   /** A sprinkle kind of the lane, in its own colour (see `SPRINKLE_KINDS`). */
-  sprinkle: (lane: Lane, kind: number): string => `sprinkle ${String(lane)} ${String(kind)}`,
+  sprinkle: (lane: Lane, kind: number): string => SPRINKLE_KEYS[lane * SPRINKLE_KINDS.length + kind] ?? '',
   ...holdKey,
   core: 'core',
   whiteStuds: 'white studs',
@@ -109,7 +114,7 @@ const energyShapes = (geometry: Geometry, band: readonly Lane[]): Shape[] => {
 const pillShapes = (geometry: Geometry, lane: Lane): Shape[] =>
   [false, true].map((downbeat) => {
     const width = geometry.laneW * (downbeat ? PILL_SHARE.downbeat : PILL_SHARE.beat);
-    return { key: shapeKey.pill(lane, downbeat), w: width + 12, h: 18, paint: (ctx) => paintPill(ctx, lane, width) };
+    return { key: shapeKey.pill(lane, downbeat), w: width + 12, h: 20, paint: (ctx) => paintPill(ctx, lane, width) };
   });
 
 const ringShapes = (r: number, lane: Lane): Shape[] => {

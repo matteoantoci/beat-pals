@@ -87,8 +87,9 @@ export const palMark = (ctx: Ctx, lane: Lane, size: number): void => {
 /** A note without its halo: a light bubble in the lane colour, a light rim, and one highlight (no gloss). */
 const paintBubbleBody = (ctx: Ctx, lane: Lane, r: number): void => {
   const colors = laneCss(lane);
-  const rim = Math.max(1.5, r * 0.08);
-  const core = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+  // The 2 px small outline (C29). The light comes from the top left, as on every lit shape.
+  const rim = 2;
+  const core = ctx.createRadialGradient(-r * 0.35, -r * 0.35, 0, 0, 0, r);
   core.addColorStop(0, colors.light);
   core.addColorStop(0.62, colors.base);
   core.addColorStop(1, colors.base);
@@ -103,7 +104,7 @@ const paintBubbleBody = (ctx: Ctx, lane: Lane, r: number): void => {
   ctx.fill();
 };
 
-/** A note: the bubble with a small still halo. The light comes from the centre. */
+/** A note: the bubble with a small still halo. The light comes from the top left (C29). */
 export const paintBubble = (ctx: Ctx, lane: Lane, size: number): void => {
   const r = size / 2;
   const halo = ctx.createRadialGradient(0, 0, r * 0.9, 0, 0, r * 1.45);
@@ -120,11 +121,11 @@ export const paintPill = (ctx: Ctx, lane: Lane, width: number): void => {
   const colors = laneCss(lane);
   style(ctx, { globalAlpha: 0.08, fillStyle: colors.base });
   ctx.beginPath();
-  ctx.roundRect(-width / 2 - 4, -7, width + 8, 14, 7);
+  ctx.roundRect(-width / 2 - 4, -8, width + 8, 16, 8);
   ctx.fill();
   style(ctx, { globalAlpha: 0.55, fillStyle: colors.light });
   ctx.beginPath();
-  ctx.roundRect(-width / 2, -3, width, 6, 3);
+  ctx.roundRect(-width / 2, -2, width, 4, 2);
   ctx.fill();
   style(ctx, { globalAlpha: 1 });
 };

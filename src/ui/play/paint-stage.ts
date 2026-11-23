@@ -10,13 +10,13 @@ import { palX } from './pals';
 import type { Geometry } from './geometry';
 import type { Ctx } from './paint';
 
-const SKY_TOP = css([0.45, 0.18, 286]);
+const SKY_TOP = css(TOKENS.g600);
 const SKY = css(TOKENS.g800);
-const BACKDROP_DOT = css([0.5, 0.17, 284], 0.14);
+const BACKDROP_DOT = css(TOKENS.g600, 0.16);
 const PLATE = css(TOKENS.g950, 0.4);
 const PLATE_TOP = css(TOKENS.g950, 0);
-const FLOOR_WIDE = css([0.2, 0.09, 285], 0.55);
-const FLOOR_PAL = css([0.16, 0.08, 285], 0.6);
+const FLOOR_WIDE = css(TOKENS.g950, 0.55);
+const FLOOR_PAL = css(TOKENS.g950, 0.75);
 const DOTS = 9;
 const PALS: readonly Lane[] = [0, 1, 2];
 
@@ -89,7 +89,7 @@ export const paintFloor = (ctx: Ctx, geometry: Geometry, band: readonly Lane[]):
   style(ctx, { fillStyle: FLOOR_PAL });
   for (const lane of PALS) {
     ctx.beginPath();
-    ctx.ellipse(palX(geometry, band, lane), geometry.floorY, geometry.palH * 0.42, 7, 0, 0, TAU);
+    ctx.ellipse(palX(geometry, band, lane), geometry.floorY, geometry.palH * 0.42, 8, 0, 0, TAU);
     ctx.fill();
   }
 };

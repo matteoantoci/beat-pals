@@ -1,5 +1,6 @@
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { stopTitleMusic } from '../../sound';
+import { BEADS } from './beads';
 import { HoldButton } from './HoldButton';
 import { PauseScreen } from './PauseScreen';
 import { loadPlay, type PlayHandle } from './play-load';
@@ -9,8 +10,6 @@ import type { JSX } from 'solid-js';
 // The play screen (spec, "Screens"): the PixiJS canvas, the 3 pals as HTML pictures above it, the pause button, and
 // the progress beads of the song. A tap starts the song from the song list, so the title music stops here. At each
 // hit, `data-last-hit` on this element gets the lane, the grade, and the song time (spec, "Testing Decisions").
-
-const BEADS = 10;
 
 type PlayScreenProps = {
   readonly choice: SongChoice;

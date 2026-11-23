@@ -1,6 +1,6 @@
 // The ring of a lane (prototype play-style A, `drawRing`): round, in the lane colour, with 4 studs, a double band,
 // and the pal mark. When a note comes near, the bands turn to the light colour, the studs turn white, and a soft
-// halo grows. A hit pops the ring (1 to 1.15 to 1 in 150 ms), fills it softly in the lane colour, and a great hit
+// halo grows. A hit pops the ring (1 to 1.08 to 1 in 150 ms, to 1.15 for a great hit), fills it softly in the lane colour, and a great hit
 // adds a small white core. While a finger holds a soft hold, the bands turn white. The layers are sprites of the
 // atlas: a frame only fades and scales them.
 
@@ -22,6 +22,8 @@ type RingState = {
 };
 
 const POP_SEC = 0.15;
+/** The ring pop grows by this share: a great hit pops bigger (C8). */
+const POP_GROW = { good: 0.08, great: 0.15 } as const;
 const FILL_SEC = 0.35;
 const CORE_SEC = 0.12;
 
@@ -88,11 +90,13 @@ export const makeRing = (lane: Lane): Ring => {
       // While a finger holds a soft hold, the ring stays fully near and its bands turn white.
       const nearness = held ? 1 : closeness;
       heldBands.visible = held;
-      container.scale.set(!reduced && hitAge < POP_SEC ? 1 + 0.15 * Math.sin((hitAge / POP_SEC) * Math.PI) : 1);
+      const grow = great ? POP_GROW.great : POP_GROW.good;
+      container.scale.set(!reduced && hitAge < POP_SEC ? 1 + grow * Math.sin((hitAge / POP_SEC) * Math.PI) : 1);
       fill.alpha = fillAlpha(hitAge);
       core.alpha = great && hitAge < CORE_SEC ? 1 - hitAge / CORE_SEC : 0;
       halo.alpha = 0.45 * nearness;
-      halo.scale.set((ringR + 9 + 3 * nearness) / (ringR + HALO_GAP));
+      // With reduced motion, the halo only fades (C16).
+      halo.scale.set((ringR + (reduced ? HALO_GAP : 9 + 3 * nearness)) / (ringR + HALO_GAP));
       near.alpha = nearness;
       white.visible = nearness > 0.5;
       studs.visible = !white.visible;

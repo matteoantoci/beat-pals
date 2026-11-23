@@ -1,14 +1,12 @@
 /* The demo route (src/ui/demo/). With `sim`, the screen is an iPhone 12: 390 x 844 in portrait, 844 x 390 in
    landscape. The notch, the home indicator, and the round corners cover the screen, and the safe areas of that
-   phone replace env(safe-area-inset-*), which a desktop browser gives as 0. */
-.demo-sim .play-probe {
-  padding: 47px 0 34px;
-}
-
-.demo-sim .play-hud {
-  top: 63px;
-  right: 16px;
-  left: 16px;
+   phone replace env(safe-area-inset-*), which a desktop browser gives as 0: the play screen reads them from its
+   --inset-* properties (src/ui/play/play.css). */
+.play.demo-sim {
+  --inset-top: 47px;
+  --inset-right: 0px;
+  --inset-bottom: 34px;
+  --inset-left: 0px;
 }
 
 .demo-device {
@@ -55,14 +53,11 @@
 }
 
 @media (orientation: landscape) {
-  .demo-sim .play-probe {
-    padding: 0 47px 21px;
-  }
-
-  .demo-sim .play-hud {
-    top: 16px;
-    right: 63px;
-    left: 63px;
+  .play.demo-sim {
+    --inset-top: 0px;
+    --inset-right: 47px;
+    --inset-bottom: 21px;
+    --inset-left: 47px;
   }
 
   .demo-notch {

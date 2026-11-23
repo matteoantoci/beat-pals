@@ -13,7 +13,7 @@ const BAND_GAP = 6;
 const BAND = 6;
 /** The near halo is drawn at this distance outside the ring and scaled with the nearness. */
 export const HALO_GAP = 12;
-const STUD_R = 3.2;
+const STUD_R = 4;
 
 /** The ring floor: the dark fill and the flat pal mark of the lane (C17). */
 export const paintRingFloor = (ctx: Ctx, lane: Lane, r: number): void => {
@@ -48,7 +48,7 @@ export const paintStuds = (ctx: Ctx, r: number, color: string): void => {
 
 /** The soft halo around a ring when a note comes near. */
 export const paintHalo = (ctx: Ctx, lane: Lane, r: number): void => {
-  paintCircleLine(ctx, r + HALO_GAP, { width: 12, color: laneCss(lane).base });
+  paintCircleLine(ctx, r + HALO_GAP, { width: BAND, color: laneCss(lane).base });
 };
 
 /** The kinds of sprinkle (style A): a small star, a dot, and a stick. Each paints at the reference size 8. */
@@ -105,10 +105,10 @@ export const paintClapGlow = (ctx: Ctx): void => {
   ctx.fill();
 };
 
-/** A short pill of the clap burst, 10 by 4 px, along the x axis. */
+/** A short pill of the clap burst, 12 by 4 px, along the x axis. */
 export const paintClapPill = (ctx: Ctx, color: string): void => {
   style(ctx, { fillStyle: color });
   ctx.beginPath();
-  ctx.roundRect(-5, -2, 10, 4, 2);
+  ctx.roundRect(-6, -2, 12, 4, 2);
   ctx.fill();
 };

@@ -13,30 +13,30 @@
 }
 
 .logo-record {
-  fill: #2b2340;
+  fill: var(--grape-950);
 }
 
 .logo-groove {
   fill: none;
-  stroke: #463a66;
+  stroke: var(--grape-800);
   stroke-width: 2;
 }
 
 .logo-label {
-  fill: var(--gold);
+  fill: var(--lemon);
 }
 
 .logo-eye {
-  fill: #fff;
+  fill: var(--white);
 }
 
 .logo-pupil {
-  fill: #2b2340;
+  fill: var(--grape-950);
 }
 
 .logo-smile {
   fill: none;
-  stroke: #2b2340;
-  stroke-width: 3;
+  stroke: var(--grape-950);
+  stroke-width: 4;
   stroke-linecap: round;
 }

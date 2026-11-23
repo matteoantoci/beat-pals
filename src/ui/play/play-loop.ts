@@ -6,9 +6,12 @@
 import { apply, result, startPlay } from '../../model';
 import { watchLifecycle } from '../../shell/lifecycle';
 import { keepScreenOn } from '../../shell/wake-lock';
+import { fillBeads, fullBeads } from './beads';
 import { makeEnergyTrack } from './energy';
+import { actionTime, follow, type Followers } from './follow';
+import { reducedMotion } from './reduced-motion';
 import { watchTaps } from './taps';
-import type { Action, ChildChart, EnergyStep, PlayEvent, PlayState } from '../../model';
+import type { Action, ChildChart, PlayEvent, PlayState } from '../../model';
 import type { Song } from '../../sound';
 import type { Geometry } from './geometry';
 import type { Pals } from './pals';
@@ -18,8 +21,6 @@ import type { LiveView } from './view';
 /** A clock that does not move for this long while the song should play needs a tap (an audio context that does not
  * run): the play pauses, and the play button gives that tap. */
 const STALL_MS = 1000;
-const BEADS = 10;
-
 /** What the play loop draws, plays, and calls. */
 export type PlayLoopParts = {
   readonly root: HTMLElement;
@@ -45,8 +46,8 @@ export type PlayLoop = {
   readonly stop: () => void;
 };
 
-const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const nothing = (): void => undefined;
+const NO_EVENTS: readonly PlayEvent[] = [];
 
 let play: PlayState | undefined;
 /** The pointers that are down in a lane. */
@@ -59,38 +60,33 @@ let beadsFull = -1;
 let sleep = nothing;
 let unwatch = nothing;
 let energy = makeEnergyTrack();
+let followers: Followers | undefined;
+let tick: FrameRequestCallback = nothing;
+/** The advance action of each frame: the model only reads it, so each frame fills in the same object (C20). */
+const advance = { type: 'advance' as const, t: 0 };
 
-/** A step change of the band energy: the stage and the pals draw it, and a step up plays its level-up sound. */
-const energize = (parts: PlayLoopParts, step: EnergyStep, t: number): void => {
-  if (energy.record(step, t) && step !== 0) {
-    parts.song.levelUp(step, t);
-  }
-};
-
-/** Shows the events of an action at song time `t`. */
-const show = (
-  parts: PlayLoopParts,
-  events: readonly PlayEvent[],
-  { t, action }: { t: number; action: Action }
-): void => {
-  // `faded` has no picture: a missed note only fades.
-  parts.view.track(action, events, t);
-  for (const event of events.filter((each) => each.type === 'hop')) {
+/** Shows one event at song time `t`: a hop of a waiting pal, or the sound of a hit. */
+const showEvent = (parts: PlayLoopParts, event: PlayEvent, t: number): void => {
+  if (event.type === 'hop') {
     parts.pals.hop(event.lane, t);
-  }
-  for (const event of events.filter((each) => each.type === 'hit')) {
+  } else if (event.type === 'hit') {
     parts.song.clap(event.soundAt, event.grade === 'great');
     parts.root.setAttribute('data-last-hit', `${String(event.lane)} ${event.grade} ${t.toFixed(3)}`);
   }
-  for (const event of events.filter((each) => each.type === 'energy')) {
-    energize(parts, event.step, t);
-  }
 };
 
-const act = (parts: PlayLoopParts, action: Action, t: number): void => {
+/** Applies an action to the play, and shows its events: the hops, the hit sounds, and through `follow` the view and
+ * the band energy (a step up plays its level-up sound). `faded` has no picture: a missed note only fades. */
+const act = (parts: PlayLoopParts, action: Action): void => {
   const outcome = play === undefined ? undefined : apply(play, action);
+  const events = outcome?.events ?? NO_EVENTS;
   play = outcome?.state;
-  show(parts, outcome?.events ?? [], { t, action });
+  if (followers) {
+    follow(followers, action, events);
+  }
+  for (const event of events) {
+    showEvent(parts, event, actionTime(action));
+  }
 };
 
 /** Stops the loop and the song, and lets go of each finger. */
@@ -102,7 +98,7 @@ const halt = (parts: PlayLoopParts): void => {
   sleep = nothing;
   parts.song.pause();
   for (const pointerId of down) {
-    act(parts, { type: 'release', t, pointerId }, t);
+    act(parts, { type: 'release', t, pointerId });
   }
   down.clear();
 };
@@ -122,10 +118,10 @@ const pause = (parts: PlayLoopParts): void => {
 };
 
 const drawBeads = (parts: PlayLoopParts, t: number): void => {
-  const full = Math.max(0, Math.min(BEADS, Math.floor((t / parts.song.duration) * BEADS)));
+  const full = fullBeads(t, parts.song.duration);
   if (full !== beadsFull) {
     beadsFull = full;
-    parts.beads.forEach((bead, at) => bead.classList.toggle('full', at < full));
+    fillBeads(parts.beads, full);
   }
 };
 
@@ -146,20 +142,22 @@ const frame = (parts: PlayLoopParts, now: number): void => {
     pause(parts);
     return;
   }
-  act(parts, { type: 'advance', t }, t);
-  parts.view.update(t);
+  advance.t = t;
+  act(parts, advance);
+  const view = parts.view.view();
   const look = energy.at(t);
-  parts.stage.draw(parts.view.view(), reducedMotion.matches, look);
-  parts.pals.update(parts.view.view(), reducedMotion.matches, look);
+  parts.stage.draw(view, reducedMotion(), look);
+  parts.pals.update(view, reducedMotion(), look);
   drawBeads(parts, t);
-  frameId = requestAnimationFrame((next) => frame(parts, next));
+  frameId = requestAnimationFrame(tick);
 };
 
 const run = (parts: PlayLoopParts): void => {
   running = true;
   stillSince = performance.now();
   sleep = keepScreenOn();
-  frameId = requestAnimationFrame((now) => frame(parts, now));
+  tick = (now) => frame(parts, now);
+  frameId = requestAnimationFrame(tick);
 };
 
 /** The taps go to the model only while the play runs. The play pauses when the page hides (the app root writes the
@@ -170,11 +168,11 @@ const listen = (parts: PlayLoopParts): (() => void) => {
     geometry: () => (running ? parts.geometry() : undefined),
     press: (lane, pointerId) => {
       down.add(pointerId);
-      act(parts, { type: 'press', t: time(), lane, pointerId }, time());
+      act(parts, { type: 'press', t: time(), lane, pointerId });
     },
     release: (pointerId) => {
       if (down.delete(pointerId)) {
-        act(parts, { type: 'release', t: time(), pointerId }, time());
+        act(parts, { type: 'release', t: time(), pointerId });
       }
     },
   });
@@ -191,6 +189,7 @@ export const startPlayLoop = (parts: PlayLoopParts): PlayLoop => {
   down.clear();
   beadsFull = -1;
   energy = makeEnergyTrack();
+  followers = { view: parts.view, energy, stepUp: (step, t) => parts.song.levelUp(step, t) };
   lastT = Number.NaN;
   unwatch = listen(parts);
   parts.song.start(parts.chart.notes[0]?.t ?? Number.POSITIVE_INFINITY);
@@ -204,7 +203,7 @@ export const startPlayLoop = (parts: PlayLoopParts): PlayLoop => {
       }
     },
     quit: () => {
-      act(parts, { type: 'quit' }, parts.song.songTime());
+      act(parts, { type: 'quit' });
       finish(parts, null);
     },
     stop: () => {

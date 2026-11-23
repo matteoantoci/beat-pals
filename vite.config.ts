@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import solid from 'vite-plugin-solid';
 
 // The stage colour. Keep the same value in index.html and src/ui/styles.css.
-const STAGE = '#3B2A6B';
+const STAGE = '#2C176F';
 
 // The dev server serves the song store, songs/.site/, at /beat-pals/songs/, as GitHub Pages does (spec,
 // "Delivery"). Only the manifest and the store files: songs/ also holds the .sng files and the plain audio, so

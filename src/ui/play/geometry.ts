@@ -33,9 +33,12 @@ export type Geometry = {
   readonly speed: number;
 };
 
-const PORTRAIT = { palH: 104, ringR: 37, topGap: 72, minLane: 124, maxLane: 148 } as const;
-const LANDSCAPE = { palH: 72, ringR: 29, topGap: 12, laneW: 140 } as const;
+/** `ringEdge` is the outer radius of a ring and `noteS` the size of a note, both on the 4 px scale (C22). */
+const PORTRAIT = { palH: 104, ringEdge: 40, noteS: 60, topGap: 72, minLane: 124, maxLane: 148 } as const;
+const LANDSCAPE = { palH: 72, ringEdge: 32, noteS: 48, topGap: 12, laneW: 140 } as const;
 const FLOOR_GAP = 16;
+/** The centre line of the 6 px outer band of a ring lies half its width inside the outer edge. */
+const HALF_BAND = 3;
 /** In landscape, the chutes start above the screen, so they run off the top edge. */
 const LANDSCAPE_CHUTE_TOP = -80;
 
@@ -46,11 +49,11 @@ const portraitLane = (room: number): number =>
 export const layout = (width: number, height: number, insets: Insets): Geometry => {
   const portrait = height >= width;
   const room = width - insets.left - insets.right;
-  const palH = portrait ? PORTRAIT.palH : LANDSCAPE.palH;
-  const ringR = portrait ? PORTRAIT.ringR : LANDSCAPE.ringR;
+  const size = portrait ? PORTRAIT : LANDSCAPE;
+  const { palH, ringEdge } = size;
   const floorY = height - insets.bottom - FLOOR_GAP;
   // The pal stands right under its ring and touches it.
-  const hitY = floorY - palH - ringR + 12;
+  const hitY = floorY - palH - ringEdge + 16;
   const topY = insets.top + (portrait ? PORTRAIT.topGap : LANDSCAPE.topGap);
   return {
     width,
@@ -59,9 +62,9 @@ export const layout = (width: number, height: number, insets: Insets): Geometry 
     cx: insets.left + room / 2,
     laneW: portrait ? portraitLane(room) : LANDSCAPE.laneW,
     palH,
-    ringR,
-    ringD: 2 * (ringR + 3),
-    noteS: ringR * 1.68,
+    ringR: ringEdge - HALF_BAND,
+    ringD: 2 * ringEdge,
+    noteS: size.noteS,
     floorY,
     hitY,
     topY,
