@@ -21,6 +21,41 @@ export type ParentCheckProps = {
   readonly onClose: () => void;
 };
 
+/**
+ * The finger of the logo hold lifts over the check, and the browser makes that lift a click on the button under it.
+ * So a pointer click counts only after a pointer went down inside the check. A keyboard click (detail 0) always counts.
+ */
+const ignoreHoldRelease = (el: HTMLDivElement): void => {
+  let armed = false;
+  el.addEventListener('pointerdown', () => {
+    armed = true;
+  });
+  el.addEventListener(
+    'click',
+    (event) => {
+      if (!armed && event.detail !== 0) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+    },
+    true
+  );
+};
+
+/** The digit buttons 1 to 9 of the pad. */
+const DigitKeys = (props: {
+  readonly digits: readonly string[];
+  readonly onType: (digit: string) => void;
+}): JSX.Element => (
+  <For each={props.digits}>
+    {(digit) => (
+      <button type="button" onClick={() => props.onType(digit)}>
+        {digit}
+      </button>
+    )}
+  </For>
+);
+
 export const ParentCheck = (props: ParentCheckProps): JSX.Element => {
   const problem = parentProblem(newSeed(), last);
   last = problem;
@@ -36,7 +71,13 @@ export const ParentCheck = (props: ParentCheckProps): JSX.Element => {
     props.onClose();
   };
   return (
-    <div class="parent-check" role="dialog" aria-modal="true" aria-labelledby="parent-check-title">
+    <div
+      ref={ignoreHoldRelease}
+      class="parent-check"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="parent-check-title"
+    >
       <div class="parent-check-box">
         <h2 id="parent-check-title">For grown-ups</h2>
         <p>Give the answer to open the parent area.</p>
@@ -44,13 +85,7 @@ export const ParentCheck = (props: ParentCheckProps): JSX.Element => {
           {problem.left} × {problem.right} = <output>{answer() === '' ? '?' : answer()}</output>
         </p>
         <div class="parent-pad">
-          <For each={DIGITS}>
-            {(digit) => (
-              <button type="button" onClick={() => type(digit)}>
-                {digit}
-              </button>
-            )}
-          </For>
+          <DigitKeys digits={DIGITS} onType={type} />
           <button type="button" aria-label="Delete" onClick={() => setAnswer((typed) => typed.slice(0, -1))}>
             ⌫
           </button>
