@@ -134,6 +134,24 @@ const titleLandscape = async (page: Page, shots: string | undefined): Promise<vo
   await wait(300);
 };
 
+/** For 5 s, looks at each frame for a pal picture that shows with no source: an empty box at the top left corner
+ * of the play screen. Such a frame sets `data-bare-pal` on the root element. */
+const watchBarePals = async (page: Page): Promise<void> => {
+  await page.evaluate(() => {
+    delete document.documentElement.dataset['barePal'];
+    const end = performance.now() + 5000;
+    const look = (): void => {
+      if (document.querySelector('img.play-pal:not([hidden]):not([src])') !== null) {
+        document.documentElement.dataset['barePal'] = '';
+      }
+      if (performance.now() < end) {
+        requestAnimationFrame(look);
+      }
+    };
+    requestAnimationFrame(look);
+  });
+};
+
 /** The test song is in the list at level 0, with no record and no stars, and a tap starts it with running audio. The
  * context runs since the title tap, so it shows no change, or a change that ends in `running`. */
 const startSong = async (page: Page, audio: AudioRecord, shots: string | undefined): Promise<boolean> => {
@@ -148,6 +166,7 @@ const startSong = async (page: Page, audio: AudioRecord, shots: string | undefin
   );
   await shot(page, shots, 'songs-portrait');
   audio.reset();
+  await watchBarePals(page);
   await tap(page, '.song-cover');
   const playing = await shows(page, '.play');
   await wait(2500);
@@ -157,6 +176,7 @@ const startSong = async (page: Page, audio: AudioRecord, shots: string | undefin
     'play: the load scene closed, and the pause button shows',
     (await page.$('.load-scene')) === null && (await page.$('.play-loading')) === null
   );
+  check('play: no pal picture shows before it has a source', (await page.$('html[data-bare-pal]')) === null);
   check(
     'play: the song plays',
     (states === '' || states.endsWith('running')) && audio.sources() > 0,

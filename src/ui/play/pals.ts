@@ -63,10 +63,11 @@ const beatPhase = (view: View, at: number): number => {
 /** The name of the pal of each picture, by lane, for tests that need one pal. */
 const PAL_NAMES = ['pip', 'dot', 'bo'] as const;
 
-/** Shows every pal picture at the pal size: the band and the waiting pals. */
-const showAll = (images: readonly HTMLImageElement[], size: number): void => {
+/** Sizes every pal picture at the pal size: the band and the waiting pals. A picture shows at its first placement,
+ * not here: the layout comes during the load, and a picture with no source and no place is an empty box at the top
+ * left corner. */
+const sizeAll = (images: readonly HTMLImageElement[], size: number): void => {
   for (const [lane, image] of images.entries()) {
-    image.hidden = false;
     image.dataset['pal'] = PAL_NAMES[lane];
     image.style.width = `${String(size)}px`;
     image.style.height = `${String(size)}px`;
@@ -107,6 +108,7 @@ const makePlacer = (images: readonly HTMLImageElement[], band: readonly Lane[]) 
     next.sy = pose.sy;
     if (src !== last.src) {
       image.src = src;
+      image.hidden = false;
       last.src = src;
     }
     if (!same(next, last)) {
@@ -150,7 +152,7 @@ export const makePals = (
   return {
     layout: (next) => {
       geometry = next;
-      showAll(images, next.palH);
+      sizeAll(images, next.palH);
     },
     update,
     hop: (lane, t) => {
