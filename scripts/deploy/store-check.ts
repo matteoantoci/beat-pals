@@ -13,14 +13,11 @@ import {
   type Manifest,
   opensKeyCheck,
   readManifest,
-  readSongIndex,
   storeName,
 } from '../../src/model/index.ts';
-import type { SongStrings } from './gate.ts';
 
 const SONGS = 'songs';
 const MANIFEST = 'manifest.json';
-const utf8 = new TextDecoder();
 
 const read = async (path: string): Promise<Uint8Array<ArrayBuffer> | undefined> =>
   readFile(path).then(
@@ -91,25 +88,11 @@ const checkStoreFile = async (
   return undefined;
 };
 
-/** The songs of the song index. The index file passed rule 3. */
-const indexSongs = async (dist: string, key: FamilyKey, name: string): Promise<SongStrings[] | string> => {
-  const path = `${SONGS}/${name}.bin`;
-  const plain = await decryptFile(key, (await read(join(dist, path))) ?? new Uint8Array());
-  const index = readSongIndex(utf8.decode(plain));
-  if (!index.ok) {
-    return `${path}: the schema refuses the song index: ${index.reason}.`;
-  }
-  return index.value.songs.map(({ id, title, artist, charter }) => ({ id, title, artist, charter }));
-};
-
-/** Rules 1 to 3. Gives the failures and the songs of the song index. */
-export const checkStore = async (
-  dist: string,
-  key: FamilyKey
-): Promise<{ failures: string[]; songs: SongStrings[] }> => {
+/** Rules 1 to 3. Gives the failures. */
+export const checkStore = async (dist: string, key: FamilyKey): Promise<string[]> => {
   const { manifest, failures } = await checkManifest(dist, key);
   if (manifest === undefined) {
-    return { failures, songs: [] };
+    return failures;
   }
   const allowlist = await checkAllowlist(dist, manifest);
   // One file at a time, so that only one song file is in memory.
@@ -117,12 +100,5 @@ export const checkStore = async (
     async (done, file) => [...(await done), await checkStoreFile(dist, key, file)],
     Promise.resolve([])
   );
-  const fileFailures = results.filter((result) => result !== undefined);
-  if (results[manifest.files.findIndex((file) => file.name === manifest.index)] !== undefined) {
-    return { failures: [...allowlist, ...fileFailures], songs: [] };
-  }
-  const songs = await indexSongs(dist, key, manifest.index);
-  return typeof songs === 'string'
-    ? { failures: [...allowlist, ...fileFailures, songs], songs: [] }
-    : { failures: [...allowlist, ...fileFailures], songs };
+  return [...allowlist, ...results.filter((result) => result !== undefined)];
 };

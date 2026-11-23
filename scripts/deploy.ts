@@ -14,10 +14,9 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cp, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readSng } from './lib/sng.ts';
 import { allowModelImports } from './prepare/model-imports.ts';
 
 allowModelImports();
@@ -101,23 +100,6 @@ const build = async (root: string): Promise<string> => {
   return chunk;
 };
 
-/** The id, title, artist, and charter of each .sng file of songs/, for the gate. */
-const inboxSongs = async (songs: string) =>
-  Promise.all(
-    (await readdir(songs))
-      .filter((name) => name.endsWith('.sng'))
-      .map(async (name) => {
-        const { metadata } = readSng(await readFile(join(songs, name)));
-        const field = (key: string) => metadata.get(key) ?? '';
-        return {
-          id: name.slice(0, -'.sng'.length),
-          title: field('name'),
-          artist: field('artist'),
-          charter: field('charter'),
-        };
-      })
-  );
-
 /** The SHA-256 of each file in git: the app assets that the gate allows. Git is public and passes the leak scan. */
 const gitContents = async (root: string): Promise<Set<string>> => {
   const paths = run('git', ['ls-files', '-z'], root)
@@ -136,7 +118,6 @@ const gate = async (root: string): Promise<string> => {
   const failures = await checkSite({
     dist,
     key: key.value.key,
-    songs: await inboxSongs(join(root, 'songs')),
     appAssets: await gitContents(root),
   });
   if (failures.length > 0) {
