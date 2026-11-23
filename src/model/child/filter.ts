@@ -39,6 +39,21 @@ const nearestOn = (notes: readonly FactsNote[], beat: TimedBeat): number | undef
   return nearest;
 };
 
+/** Whether a time is on a beat: within 10% of a beat length of the nearest beat before or after it. */
+export const isOnBeat = (t: number, beats: readonly TimedBeat[]): boolean => {
+  let low = 0;
+  let high = beats.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    const before = (beats[middle]?.t ?? Number.POSITIVE_INFINITY) < t;
+    low = before ? middle + 1 : low;
+    high = before ? high : middle;
+  }
+  return [beats[low - 1], beats[low]].some(
+    (beat) => beat !== undefined && Math.abs(beat.t - t) <= beat.len * ON_BEAT_SHARE + TIME_PRECISION
+  );
+};
+
 /** The notes that the kept beats take, in time order. `notes` are in time order. */
 export const filterNotes = (notes: readonly FactsNote[], kept: readonly TimedBeat[]): FactsNote[] => {
   const taken = new Set(kept.flatMap((beat) => nearestOn(notes, beat) ?? []));

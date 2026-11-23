@@ -4,7 +4,8 @@
 
 import { filterNotes } from './filter';
 import { type Lane, mapLanes } from './lanes';
-import { keptBeats, type SpeedStep } from './speed-steps';
+import { addOffBeat } from './off-beat';
+import { keptBeats, type SpeedStep, timedBeats } from './speed-steps';
 import type { SongFacts } from '../chart/facts';
 
 /** A note of the child chart. `holdSec` is 0 for a plain note. */
@@ -35,7 +36,8 @@ export const bandOf = (color: RecordColor): readonly Lane[] => BANDS[color];
 /** The child chart of the facts for one play. */
 export const childChart = (facts: SongFacts, color: RecordColor, step: SpeedStep): ChildChart => {
   const notes = [...facts.notes, ...facts.fills.flatMap((fill) => fill.notes)].toSorted((a, b) => a.t - b.t);
-  const filtered = filterNotes(notes, keptBeats(facts.beats, step));
+  const onBeat = filterNotes(notes, keptBeats(facts.beats, step));
+  const filtered = color === 'diamond' ? addOffBeat(notes, onBeat, { beats: timedBeats(facts.beats), step }) : onBeat;
   const band = BANDS[color];
   const lanes = mapLanes(filtered, band);
   return { band, notes: filtered.map((note, at) => ({ t: note.t, lanes: [lanes[at] ?? DOT], holdSec: 0 })) };

@@ -7,13 +7,19 @@ import type { JSX } from 'solid-js';
 // has the color, so it reads at a glance. Platinum has a second shine line and diamond has white sparkles, so each
 // record differs by a mark and not only by color.
 
-type RecordShades = { readonly base: Oklch; readonly dark: Oklch; readonly groove: Oklch };
+/** `shine` is the color of the shine lines: white, but silver on the white platinum disc so that they show. */
+type RecordShades = { readonly base: Oklch; readonly dark: Oklch; readonly groove: Oklch; readonly shine?: Oklch };
 
 const RECORDS: Readonly<Record<RecordColor, RecordShades>> = {
   bronze: { base: TOKENS.bronze, dark: shade(TOKENS.bronze, -0.2, -8), groove: shade(TOKENS.bronze, -0.1, -4) },
   silver: { base: TOKENS.silver, dark: shade(TOKENS.silver, -0.26), groove: shade(TOKENS.silver, -0.14) },
   gold: { base: TOKENS.lemon, dark: shade(TOKENS.lemon, -0.2, -18), groove: shade(TOKENS.lemon, -0.09, -10) },
-  platinum: { base: TOKENS.white, dark: shade(TOKENS.silver, -0.18), groove: shade(TOKENS.silver, 0.06) },
+  platinum: {
+    base: TOKENS.white,
+    dark: shade(TOKENS.silver, -0.18),
+    groove: shade(TOKENS.silver, 0.06),
+    shine: shade(TOKENS.silver, -0.12),
+  },
   diamond: { base: TOKENS.ice, dark: shade(TOKENS.ice, -0.24, 10), groove: shade(TOKENS.ice, -0.1) },
 };
 
@@ -22,7 +28,7 @@ const STAR_PATH = 'M12 1.8l2.9 6.4 7 .8-5.2 4.7 1.5 6.9L12 17.1l-6.2 3.5 1.5-6.9
 const STAR_ON = { fill: css(TOKENS.lemon), stroke: css(shade(TOKENS.lemon, -0.15, -16)) };
 const STAR_OFF = { fill: css(TOKENS.g950, 0.4), stroke: css(TOKENS.g300) };
 
-const RecordMark = (props: { readonly color: RecordColor }): JSX.Element => {
+const RecordMark = (props: { readonly color: RecordColor; readonly shine: string }): JSX.Element => {
   if (props.color === 'diamond') {
     return (
       <path
@@ -32,13 +38,16 @@ const RecordMark = (props: { readonly color: RecordColor }): JSX.Element => {
     );
   }
   if (props.color === 'platinum') {
-    return <path d="M46 50 A22 22 0 0 0 54 38" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" />;
+    return (
+      <path d="M46 50 A22 22 0 0 0 54 38" fill="none" stroke={props.shine} stroke-width="4" stroke-linecap="round" />
+    );
   }
   return null;
 };
 
 export const Record = (props: { readonly color: RecordColor }): JSX.Element => {
   const shades = (): RecordShades => RECORDS[props.color];
+  const shine = (): string => css(shades().shine ?? TOKENS.white);
   return (
     <svg class="song-record" viewBox="0 0 64 64" role="img" aria-label={`${props.color} record`}>
       <circle cx="32" cy="34" r="30" fill={INK} />
@@ -50,12 +59,12 @@ export const Record = (props: { readonly color: RecordColor }): JSX.Element => {
       <path
         d="M10 24 A23 23 0 0 1 24 10"
         fill="none"
-        stroke="#fff"
+        stroke={shine()}
         stroke-width="4"
         stroke-linecap="round"
         opacity=".7"
       />
-      <RecordMark color={props.color} />
+      <RecordMark color={props.color} shine={shine()} />
     </svg>
   );
 };
