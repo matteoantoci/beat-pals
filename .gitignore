@@ -1,0 +1,10 @@
+.DS_Store
+
+# Local spec and tickets (issue tracker): not published
+.scratch/
+
+# Downloaded audio and tool output of the research: not published
+docs/research/.cache/
+
+# Song inbox and its songs/.prepared/ output on the Mac: owned audio, never published
+songs/
