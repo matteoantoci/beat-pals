@@ -2,8 +2,9 @@ import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { childChart, playSetup } from '../../model';
 import { loadSong } from '../../sound';
 import { decodePals } from '../pals/pal-svg';
+import { fillBeads, fullBeads } from '../play/beads';
 import { makePals } from '../play/pals';
-import { measure } from '../play/play-load';
+import { measure, watchResize } from '../play/play-load';
 import { Hud } from '../play/PlayScreen';
 import { createStage } from '../play/stage';
 import { clickTrack } from './click';
@@ -19,7 +20,6 @@ import type { JSX } from 'solid-js';
 // stage, the pals, and the HUD. It draws one frame, plays no sound, and writes no save. When the frame shows, the
 // screen gets `data-demo-ready`.
 
-const BEADS = 10;
 const nothing = (): void => undefined;
 
 type Elements = {
@@ -48,26 +48,15 @@ const show = async (elements: Elements, demo: Demo): Promise<() => void> => {
   const stage = await createStage(elements.canvas, measure(elements), chart.band);
   const pals = makePals(elements.pals, chart.band, facts.beats);
   const frozen = freeze(chart, facts.beats, demo);
-  for (const hop of frozen.hops) {
-    pals.hop(hop.lane, hop.t);
-  }
   const draw = (): void => {
     stage.draw(frozen.view, demo.reduce, frozen.energy);
     pals.update(frozen.view, demo.reduce, frozen.energy);
   };
-  pals.layout(measure(elements));
+  const { unresize } = watchResize(elements, { stage, pals }, draw);
   draw();
-  const full = Math.max(0, Math.min(BEADS, Math.floor((demo.t / duration) * BEADS)));
-  elements.beads.forEach((bead, at) => bead.classList.toggle('full', at < full));
-  const onResize = (): void => {
-    const geometry = measure(elements);
-    stage.resize(geometry);
-    pals.layout(geometry);
-    draw();
-  };
-  window.addEventListener('resize', onResize);
+  fillBeads(elements.beads, fullBeads(demo.t, duration));
   return () => {
-    window.removeEventListener('resize', onResize);
+    unresize();
     stage.destroy();
   };
 };

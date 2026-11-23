@@ -1,4 +1,5 @@
-// The public interface of the game model. The UI and the tests import only from this file.
+// The public interface of the game model. The UI and the tests import only from this file, with one exception: the
+// demo route (src/ui/demo/frozen.ts) imports the test player `model/play/test-player`, to play a chart up to a time.
 // The model is pure TypeScript: no DOM, no time, no audio.
 
 export { readChart } from './chart/chart-file';

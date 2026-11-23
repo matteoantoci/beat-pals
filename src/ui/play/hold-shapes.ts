@@ -22,20 +22,36 @@ type Shape = { readonly key: string; readonly w: number; readonly h: number; rea
 
 const square = (key: string, size: number, paint: (ctx: Ctx) => void): Shape => ({ key, w: size, h: size, paint });
 
+/** The key of a shape for each lane. The strings are made one time, so a frame builds no key (C20). */
+export const laneKeys = (name: string): readonly [string, string, string] => [`${name} 0`, `${name} 1`, `${name} 2`];
+
+/** The key function of a shape for each lane, over keys made one time. */
+export const keyOf = (name: string): ((lane: Lane) => string) => {
+  const keys = laneKeys(name);
+  return (lane) => keys[lane];
+};
+
+/** The key function of a shape for each lane, falling and held. */
+const heldKeyOf = (name: string): ((lane: Lane, held: boolean) => string) => {
+  const falling = laneKeys(`${name} falling`);
+  const held = laneKeys(`${name} held`);
+  return (lane, isHeld) => (isHeld ? held : falling)[lane];
+};
+
 /** The keys of the shapes of the holds and the doubles. */
 export const holdKey = {
-  heldBubble: (lane: Lane): string => `held bubble ${String(lane)}`,
+  heldBubble: keyOf('held bubble'),
   /** The hold band: a strip that the sprite stretches, its round top, and its light dots. */
-  bandStrip: (lane: Lane, held: boolean): string => `band strip ${String(lane)} ${held ? 'held' : 'falling'}`,
-  bandCap: (lane: Lane, held: boolean): string => `band cap ${String(lane)} ${held ? 'held' : 'falling'}`,
-  bandDot: (lane: Lane, held: boolean): string => `band dot ${String(lane)} ${held ? 'held' : 'falling'}`,
-  bead: (lane: Lane): string => `bead ${String(lane)}`,
+  bandStrip: heldKeyOf('band strip'),
+  bandCap: heldKeyOf('band cap'),
+  bandDot: heldKeyOf('band dot'),
+  bead: keyOf('bead'),
   /** The jelly band of a double from `left` to the lane on its right. */
-  link: (left: Lane): string => `link ${String(left)}`,
+  link: keyOf('link'),
   popStar: 'pop star',
   /** The clap burst of a double hit: the glow, and a white or a lemon pill. */
   clapGlow: 'clap glow',
-  clapPill: (lemon: boolean): string => `clap pill ${lemon ? 'lemon' : 'white'}`,
+  clapPill: (lemon: boolean): string => (lemon ? 'clap pill lemon' : 'clap pill white'),
 } as const;
 
 /** The share of the note size that is the half width of a hold band. */

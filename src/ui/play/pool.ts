@@ -1,22 +1,15 @@
 // A pool of sprites in one container (C20: object pools, no allocation in the game loop once the pool is warm).
 // Each frame takes sprites from the start of the pool, and `end` hides the sprites that the frame did not take.
+// `show` gives the sprite itself, so a frame makes no look object for each sprite.
 
 import { Sprite, type Container, type Texture } from 'pixi.js';
 
-/** The look of one sprite in one frame. */
-type Look = {
-  readonly x: number;
-  readonly y: number;
-  readonly alpha: number;
-  readonly scale?: number;
-  /** The vertical scale, when it differs from `scale` (a stretched strip). */
-  readonly scaleY?: number;
-  readonly rotation?: number;
-};
-
 export type Pool = {
-  /** Shows one more sprite with this texture and look. */
-  readonly show: (texture: Texture, look: Look) => void;
+  /**
+   * Shows one more sprite with this texture and `alpha`, at scale 1 with no rotation. It gives the sprite: the caller
+   * sets its position, and its scale and rotation when they are not the default.
+   */
+  readonly show: (texture: Texture, alpha: number) => Sprite;
   /** Starts a frame. */
   readonly begin: () => void;
   /** Hides the sprites that this frame did not show. */
@@ -38,15 +31,15 @@ export const makePool = (parent: Container): Pool => {
     return sprite;
   };
   return {
-    show: (texture, look) => {
+    show: (texture, alpha) => {
       const sprite = take();
       used += 1;
       sprite.texture = texture;
-      sprite.visible = look.alpha > 0;
-      sprite.alpha = look.alpha;
-      sprite.position.set(look.x, look.y);
-      sprite.scale.set(look.scale ?? 1, look.scaleY ?? look.scale ?? 1);
-      sprite.rotation = look.rotation ?? 0;
+      sprite.visible = alpha > 0;
+      sprite.alpha = alpha;
+      sprite.scale.set(1);
+      sprite.rotation = 0;
+      return sprite;
     },
     begin: () => {
       used = 0;
@@ -54,7 +47,7 @@ export const makePool = (parent: Container): Pool => {
     end: () => {
       let at = 0;
       for (const sprite of sprites) {
-        sprite.visible = sprite.visible && at < used;
+        sprite.visible &&= at < used;
         at += 1;
       }
     },

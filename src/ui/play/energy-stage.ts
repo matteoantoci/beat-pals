@@ -4,9 +4,9 @@
 
 import { Sprite, type Container } from 'pixi.js';
 import { shapeKey } from './atlas';
-import { GOLD } from './energy';
+import { drawLevelUp } from './energy-level-up';
 import { laneX } from './geometry';
-import { GLOW_R, GOLD_FLOOR, SPARKLE_R, WARM_SIDE_H, WAVE_R } from './paint-energy';
+import { GLOW_R, GOLD_FLOOR, SPARKLE_R, WARM_SIDE_H } from './paint-energy';
 import { CHUTE_SHARE } from './paint-stage';
 import { makePool, type Pool } from './pool';
 import type { Lane, SongFacts } from '../../model';
@@ -45,8 +45,6 @@ export type EnergyScene = {
   /** A beat index at or after the beats whose floor sparkles still show. */
   readonly beat: number;
 };
-
-const easeOut = (value: number): number => 1 - (1 - value) ** 3;
 
 /** A still random number from 0 to 1 for a pair of integers, so a frozen time shows the same sparkles. */
 const noise = (a: number, b: number): number => {
@@ -121,19 +119,21 @@ const drawBeatSparkles = (scene: EnergyScene, pool: Pool, beat: number): void =>
   const fade = energy.fades[1] * (1 - age / SPARKLE_SEC) * 0.8;
   for (let k = 0; k < count; k += 1) {
     const rise = reduced ? 0 : age * (50 + noise(beat, k * 4 + 1) * 30);
-    pool.show(scene.textures.shape(k % 2 === 1 ? shapeKey.sparkleWhite : shapeKey.sparkleLemon), {
-      x: geometry.cx + (noise(beat, k * 4) * 2 - 1) * geometry.laneW * 1.5,
-      y: geometry.floorY - 4 - rise,
-      alpha: fade,
-      scale: (3.5 + noise(beat, k * 4 + 2) * 2.5) / SPARKLE_R,
-      rotation: reduced ? 0 : age * 2,
-    });
+    const texture = scene.textures.shape(k % 2 === 1 ? shapeKey.sparkleWhite : shapeKey.sparkleLemon);
+    const x = geometry.cx + (noise(beat, k * 4) * 2 - 1) * geometry.laneW * 1.5;
+    const sparkle = pool.show(texture, fade);
+    sparkle.position.set(x, geometry.floorY - 4 - rise);
+    sparkle.scale.set((3.5 + noise(beat, k * 4 + 2) * 2.5) / SPARKLE_R);
+    sparkle.rotation = reduced ? 0 : age * 2;
   }
 };
 
 /** The effects that stay while she is at a step, each at its fade. */
 const drawLasting = (parts: EnergyParts, scene: EnergyScene): void => {
-  const [, warm, light, gold] = scene.energy.fades;
+  const { fades } = scene.energy;
+  const warm = fades[1];
+  const light = fades[2];
+  const gold = fades[3];
   const { stageLight, goldFloor, floorSparkles } = parts;
   stageLight.alpha = light;
   goldFloor.alpha = gold;
@@ -152,64 +152,6 @@ const drawLasting = (parts: EnergyParts, scene: EnergyScene): void => {
     drawBeatSparkles(scene, floorSparkles, beat);
   }
   floorSparkles.end();
-};
-
-type LevelUp = NonNullable<EnergyLook['levelUp']>;
-type UpSparkle = { readonly up: LevelUp; readonly lane: Lane; readonly j: number };
-
-/** Sparkle `j` of the level-up moment at the pal of `lane`. */
-const drawUpSparkle = (scene: EnergyScene, pool: Pool, { up, lane, j }: UpSparkle): void => {
-  const { geometry, reduced } = scene;
-  const gold = up.to === GOLD;
-  const count = gold ? 8 : up.to + 1;
-  const reach = reduced ? 0 : easeOut(up.progress) * (gold ? 56 : 64);
-  const angle = gold ? (j * 2 * Math.PI) / count : -Math.PI / 2 + (j - (count - 1) / 2) * 0.5;
-  pool.show(scene.textures.shape(gold || j % 2 === 1 ? shapeKey.sparkleLemon : shapeKey.sparkleWhite), {
-    x: laneX(geometry, lane) + Math.cos(angle) * reach,
-    y: geometry.floorY - geometry.palH * (gold ? 0.5 : 1.05) + Math.sin(angle) * reach,
-    alpha: 1 - up.progress ** 2,
-    scale: (gold ? 6 : 5) / SPARKLE_R,
-    rotation: reduced ? 0 : up.age * 3,
-  });
-};
-
-/** The soft glow over the rings, up to the pal tops (never a flash), and at gold the thin ring wave. */
-const drawGlow = (parts: EnergyParts, scene: EnergyScene, up: LevelUp): void => {
-  const { cx, ringR, hitY, laneW, floorY, palH } = scene.geometry;
-  const { glow, wave } = parts;
-  const gold = up.to === GOLD;
-  const k = up.progress;
-  glow.texture = scene.textures.shape(gold ? shapeKey.glowGold : shapeKey.glowWhite);
-  glow.position.set(cx, hitY - ringR);
-  glow.scale.set((laneW * (gold ? 2 : 1.5)) / GLOW_R, (2 * ringR - 12) / GLOW_R);
-  glow.alpha = Math.sin(Math.PI * k);
-  wave.visible = gold && !scene.reduced;
-  wave.position.set(cx, floorY - palH * 0.6);
-  wave.scale.set((palH * 0.6 + easeOut(k) * laneW * 1.3) / WAVE_R);
-  wave.alpha = 1 - k;
-};
-
-/** The sparkles from each pal of the band: 2, 3, or 4 that rise, or 8 around it at gold. */
-const drawUpSparkles = (parts: EnergyParts, scene: EnergyScene, up: LevelUp): void => {
-  const { band, upSparkles } = parts;
-  const each = up.to === GOLD ? 8 : up.to + 1;
-  for (let index = 0; index < each * band.length; index += 1) {
-    drawUpSparkle(scene, upSparkles, { up, lane: band[index % band.length] ?? 1, j: Math.floor(index / band.length) });
-  }
-};
-
-/** The level-up moment: the glow, the sparkles, and at gold the ring wave. */
-const drawLevelUp = (parts: EnergyParts, scene: EnergyScene): void => {
-  const up = scene.energy.levelUp;
-  const { glow, wave, upSparkles } = parts;
-  glow.visible = up !== undefined;
-  wave.visible = false;
-  upSparkles.begin();
-  if (up !== undefined) {
-    drawGlow(parts, scene, up);
-    drawUpSparkles(parts, scene, up);
-  }
-  upSparkles.end();
 };
 
 /** Draws the energy of one frame. */

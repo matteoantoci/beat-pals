@@ -144,12 +144,10 @@ const JUMP: Keyframe[] = [
   { transform: 'translateY(-160px)', scale: '0.9', easing: 'ease-in' },
   { transform: 'none', scale: '1' },
 ];
-const SWAP_PLACE: Keyframe[] = [
-  { opacity: 1, scale: '0.8' },
-  { opacity: 0, scale: '0.8', offset: 0.5 },
-  { opacity: 0, scale: '1', offset: 0.5 },
-  { opacity: 1, scale: '1' },
-];
+/** With reduced motion, the waiting pal fades out and fades in at the band size: the size steps while it is hidden,
+ * with no scale change that shows (C16). */
+const FADE_PLACE: Keyframe[] = [{ opacity: 1 }, { opacity: 0 }, { opacity: 1 }];
+const SIZE_STEP: Keyframe[] = [{ scale: '0.8' }, { scale: '1' }];
 
 /** The new pal jumps from its waiting place into the band and lands with a squash. */
 const join = ({ parts, reduced }: Scene, lane: Lane): void => {
@@ -158,12 +156,15 @@ const join = ({ parts, reduced }: Scene, lane: Lane): void => {
   if (body === undefined || pal === undefined) {
     return;
   }
-  animate(body, reduced ? SWAP_PLACE : JUMP, { at: JUMP_AT, sec: JUMP_SEC, easing: 'linear' });
-  if (!reduced) {
-    const squash = [{ scale: '1 1' }, { scale: '1.14 0.86' }, { scale: '1 1' }];
-    animate(pal, squash, { at: LAND_AT, sec: SQUASH_SEC, fill: 'none' });
-    sparkle(parts.landSparks, LAND_AT);
+  if (reduced) {
+    animate(body, FADE_PLACE, { at: JUMP_AT, sec: JUMP_SEC, easing: 'linear' });
+    animate(body, SIZE_STEP, { at: JUMP_AT, sec: JUMP_SEC / 2, easing: 'step-end' });
+    return;
   }
+  animate(body, JUMP, { at: JUMP_AT, sec: JUMP_SEC, easing: 'linear' });
+  const squash = [{ scale: '1 1' }, { scale: '1.14 0.86' }, { scale: '1 1' }];
+  animate(pal, squash, { at: LAND_AT, sec: SQUASH_SEC, fill: 'none' });
+  sparkle(parts.landSparks, LAND_AT);
 };
 
 /** The dancers by the hit ratio, each with its start: the new pal dances after it lands. */
