@@ -1,11 +1,15 @@
 import { onMount } from 'solid-js';
 import { stopTitleMusic } from '../../sound';
+import { Credits } from './Credits';
+import { Reset } from './Reset';
+import { ExportCode, RestoreCode } from './SaveCode';
 import { SongsSection } from './SongsSection';
+import { SoundSwitch } from './SoundSwitch';
 import type { JSX } from 'solid-js';
 
-// The parent area. English text is allowed here, because only an adult gets in. The title music plays only on the
-// title screen and the song list, so it stops here.
-// Later tickets add the other sections (spec, "Screens").
+// The parent area, as in Pile Pals (spec, "Screens"): the "Songs" section, the Sound effects switch, the export and
+// the restore of the save code, the reset, and the credits. English text is allowed here, because only an adult
+// gets in. The title music plays only on the title screen and the song list, so it stops here.
 
 export const ParentArea = (props: { readonly onClose: () => void }): JSX.Element => {
   onMount(stopTitleMusic);
@@ -18,6 +22,11 @@ export const ParentArea = (props: { readonly onClose: () => void }): JSX.Element
         </button>
       </header>
       <SongsSection />
+      <SoundSwitch />
+      <ExportCode />
+      <RestoreCode />
+      <Reset />
+      <Credits />
     </main>
   );
 };

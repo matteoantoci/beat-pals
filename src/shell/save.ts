@@ -1,10 +1,10 @@
 // The save in localStorage (spec, "Save"). Rules as in Pile Pals:
 // - Write after each play, and on `visibilitychange` to hidden, because iOS can end the app with no other event.
 // - A save that this build cannot read gives no progress, not an error.
-// The settings live outside the save, so a reset keeps them.
+// The settings, the songs, and the family key live outside the save, so a reset keeps them.
 
 import { restore, scorePlay, snapshot, songProgress, withSong } from '../model';
-import type { PlayScore, SavedProgress, SongProgress } from '../model';
+import type { PlayScore, SaveData, SavedProgress, SongProgress } from '../model';
 
 /** The key of the save in localStorage. The schema version is inside the data (`SaveData.version`). */
 const SAVE_KEY = 'beat-pals:save';
@@ -28,12 +28,37 @@ const progress = (): SavedProgress => {
   return saved;
 };
 
-/** Writes the whole progress. A failed write (full storage, a blocked origin) must not stop the game. */
-export const writeSave = (): void => {
+/**
+ * Writes the whole progress. A failed write (full storage, a blocked origin) must not stop the game, so it gives
+ * false and the progress stays for this session.
+ */
+export const writeSave = (): boolean => {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot(progress())));
+    return true;
   } catch {
     // No save this time; the next play tries again.
+    return false;
+  }
+};
+
+/** The save data of this device, for the save code. */
+export const currentSave = (): SaveData => snapshot(progress());
+
+/** Replaces the progress of this device with a restored progress, and writes it. False when the write failed. */
+export const replaceProgress = (restored: SavedProgress): boolean => {
+  saved = restored;
+  return writeSave();
+};
+
+/** Deletes the save (the reset of the parent area). False when localStorage refused the change. */
+export const clearSave = (): boolean => {
+  saved = {};
+  try {
+    localStorage.removeItem(SAVE_KEY);
+    return true;
+  } catch {
+    return false;
   }
 };
 

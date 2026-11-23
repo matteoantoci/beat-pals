@@ -16,6 +16,7 @@ import { allowModelImports } from './prepare/model-imports.ts';
 import { recordAudio } from './smoke-audio.ts';
 import { offlineChecks } from './smoke-offline.ts';
 import { check, checkLines, setVisibility, shot, shows, tap, wait } from './smoke-page.ts';
+import { parentSections } from './smoke-parent.ts';
 import { playChecks } from './smoke-play.ts';
 import { autoDownload, installStep, songSetup } from './smoke-setup.ts';
 import type { AudioRecord } from './smoke-audio.ts';
@@ -146,6 +147,7 @@ const runAll = async (browser: Browser, server: Server, keyCode: string): Promis
   await songSetup(page, keyCode);
   await autoDownload(page);
   await playChecks(page, audio, SHOTS);
+  await parentSections(page);
   await offlineChecks(page, audio, async () => stopPreview(server));
 };
 
