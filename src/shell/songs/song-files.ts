@@ -47,5 +47,13 @@ export const readSongFiles = async (
   if (!audioRead.ok) {
     return audioRead;
   }
-  return { factsJson: new TextDecoder().decode(facts), cover, audio: audio.buffer };
+  if (coverRead?.ok === false) {
+    return coverRead;
+  }
+  const picture =
+    coverRead?.ok === true && coverType !== null ? new Blob([coverRead.plain], { type: coverType }) : null;
+  return {
+    ok: true,
+    files: { factsJson: new TextDecoder().decode(factsRead.plain), cover: picture, audio: audioRead.plain.buffer },
+  };
 };

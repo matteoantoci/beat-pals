@@ -18,6 +18,7 @@ import type { Lane, LoadPhase } from '../../model';
 import type { SongFiles } from '../../shell/songs';
 import type { Song, SongEvents } from '../../sound';
 import type { SongChoice } from '../songs/SongList';
+import type { PlayLoopParts } from './play-loop';
 
 export type Loaded = Omit<PlayLoopParts, 'root' | 'beads' | 'onPause' | 'onEnd'> & { readonly unresize: () => void };
 

@@ -10,6 +10,7 @@ import { startPlayLoop, type PlayLoop } from './play-loop';
 import type { LoadPhase } from '../../model';
 import type { SongEvents } from '../../sound';
 import type { SongChoice } from '../songs/SongList';
+import type { PlayElements } from './fit';
 
 export type PlayHooks = {
   /** The play paused itself (hidden page, stopped audio, still clock): show the pause screen. */

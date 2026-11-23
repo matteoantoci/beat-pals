@@ -83,6 +83,7 @@ export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
     handle = loadPlay({ root, canvas, probe, pals, beads }, props.choice, {
       onPause: () => setPaused(true),
       onEnd: (result) => props.onEnd(result),
+      ...hooks,
     });
     onCleanup(() => handle?.stop());
   });
