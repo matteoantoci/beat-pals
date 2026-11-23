@@ -1,165 +1,97 @@
-import { createSignal, onCleanup, onMount, Show } from 'solid-js';
-import {
-  downloading,
-  lastProgress,
-  loadFamilyKey,
-  readSongStore,
-  startDownload,
-  watchDownload,
-} from '../../shell/songs';
+import { createMemo, createSignal, Match, onCleanup, onMount, Show, Switch } from 'solid-js';
+import { setupStep } from '../../model';
+import { forgetSongs, isStandalone, loadFamilyKey, setupMark, watchDownload } from '../../shell/songs';
+import { DownloadStep } from './DownloadStep';
+import { InstallStep } from './InstallStep';
 import { KeyStep } from './KeyStep';
-import type { DownloadPlan, FamilyKey } from '../../model';
-import type { SongStore } from '../../shell/songs';
-import type { JSX } from 'solid-js';
+import { SongsReady } from './SongsReady';
+import type { FamilyKey, SetupStep } from '../../model';
+import type { Accessor, JSX } from 'solid-js';
 
-// The "Songs" section of the parent area (spec, "Guided song setup"): the key step and the download step.
-// The install step, the setup state, and the view after the setup come later.
+// The "Songs" section of the parent area (spec, "Guided song setup"): one step at a time (install, key, download,
+// done), from the stored setup mark, the stored key, and the display mode. After the setup, the section shows the
+// ready songs. "Change key" clears the songs and the key, and starts again at the key step.
 
-const songs = (count: number): string => `${String(count)} ${count === 1 ? 'song' : 'songs'}`;
+/** Two reads of the stored key give 2 objects: the same key id is the same key, so the view stays. */
+const sameKey = (one: FamilyKey | undefined, two: FamilyKey | undefined): boolean => one?.id === two?.id;
 
-/** Megabytes as the Parent reads them: one decimal below 10 MB. */
-const megabytes = (bytes: number): string => {
-  const mb = bytes / 1_000_000;
-  return mb < 10 ? mb.toFixed(1) : String(Math.round(mb));
-};
-
-type DownloadState =
-  | { kind: 'reading' }
-  | { kind: 'problem'; text: string }
-  | { kind: 'start' | 'stopped' | 'running' | 'done'; plan: DownloadPlan };
-
-const problemText = (store: Extract<SongStore, { ok: false }>): string =>
-  store.problem === 'network'
-    ? 'No network. Connect to Wi-Fi and try again.'
-    : `The songs cannot be read: ${store.reason}.`;
-
-/** The state after a store read or a download. */
-const stateOf = (store: SongStore): DownloadState => {
-  if (!store.ok) {
-    // A download that stops on the network shows its progress and continues from the next missing file.
-    const plan = lastProgress();
-    return store.problem === 'network' && plan !== undefined
-      ? { kind: 'stopped', plan }
-      : { kind: 'problem', text: problemText(store) };
-  }
-  if (store.plan.fetch.length === 0) {
-    return { kind: 'done', plan: store.plan };
-  }
-  // Files in the cache and files missing: a download stopped before.
-  return { kind: store.plan.done.bytes > 0 ? 'stopped' : 'start', plan: store.plan };
-};
-
-const Progress = (props: { readonly plan: DownloadPlan }): JSX.Element => (
-  <>
-    <progress class="song-progress" value={props.plan.done.bytes} max={props.plan.total.bytes} />
-    <p class="song-progress-text">
-      {`${String(props.plan.done.songs)} of ${songs(props.plan.total.songs)}, ` +
-        `${megabytes(props.plan.done.bytes)} of ${megabytes(props.plan.total.bytes)} MB`}
-    </p>
-  </>
-);
-
-type ViewProps = { readonly state: DownloadState; readonly onRead: () => void; readonly onStart: () => void };
-
-/** The step text and its button for each state. */
-const DownloadView = (props: ViewProps): JSX.Element => {
-  const { state } = props;
-  if (state.kind === 'reading') {
-    return <p>Reading the song list…</p>;
-  }
-  if (state.kind === 'problem') {
-    return (
-      <>
-        <p class="song-note">{state.text}</p>
-        <button type="button" onClick={() => props.onRead()}>
-          Try again
-        </button>
-      </>
-    );
-  }
-  if (state.kind === 'start') {
-    return (
-      <>
-        <p>{`Download ${songs(state.plan.total.songs)} (${megabytes(state.plan.total.bytes)} MB). Keep the app open on Wi-Fi.`}</p>
-        <button type="button" class="song-download" onClick={() => props.onStart()}>
-          Download
-        </button>
-      </>
-    );
-  }
-  if (state.kind === 'done') {
-    return <p class="song-ready">{`${songs(state.plan.done.songs)} ready on this iPhone`}</p>;
-  }
+const ChangeKey = (props: { readonly onDone: () => void }): JSX.Element => {
+  const [busy, setBusy] = createSignal(false);
+  const change = (): void => {
+    setBusy(true);
+    forgetSongs()
+      .catch(() => undefined)
+      .finally(() => {
+        setBusy(false);
+        props.onDone();
+      });
+  };
   return (
-    <>
-      <Progress plan={state.plan} />
-      <Show when={state.kind === 'stopped'}>
-        <button type="button" class="song-download" onClick={() => props.onStart()}>
-          Download stopped. Tap to continue.
-        </button>
-      </Show>
-    </>
+    <button type="button" class="parent-link song-change-key" disabled={busy()} onClick={change}>
+      Change key
+    </button>
   );
 };
 
-/** Step 3: the download. It reads the song index first, so it can name the song count and the size. */
-const DownloadStep = (props: { readonly songKey: FamilyKey }): JSX.Element => {
-  const progress = lastProgress();
-  const [state, setState] = createSignal<DownloadState>(
-    downloading() && progress !== undefined ? { kind: 'running', plan: progress } : { kind: 'reading' }
-  );
-  const failed = (error: unknown): void => {
-    setState({ kind: 'problem', text: `Error: ${error instanceof Error ? error.message : String(error)}.` });
+type SetupFacts = {
+  readonly key: Accessor<FamilyKey | undefined>;
+  readonly step: Accessor<SetupStep>;
+  readonly loaded: Accessor<boolean>;
+  readonly refresh: () => void;
+};
+
+/** The facts of the setup step: the stored key and the stored mark, read again after a key, a download, or a reset. */
+const setupFacts = (): SetupFacts => {
+  const [key, setKey] = createSignal<FamilyKey | undefined>(undefined, { equals: sameKey });
+  const [mark, setMark] = createSignal(setupMark());
+  const [loaded, setLoaded] = createSignal(false);
+  const loadedKey = (stored: FamilyKey | undefined): void => {
+    setKey(stored);
+    setLoaded(true);
   };
-  const read = (): void => {
-    setState({ kind: 'reading' });
-    readSongStore(props.songKey).then((store) => setState(stateOf(store)), failed);
+  const refresh = (): void => {
+    setMark(setupMark());
+    loadFamilyKey().then(loadedKey, () => loadedKey(undefined));
   };
-  const start = (): void => {
-    // The end event of the download sets the state.
-    startDownload(props.songKey).catch(failed);
-  };
+  const step = createMemo(() => setupStep({ standalone: isStandalone(), hasKey: key() !== undefined, mark: mark() }));
   onMount(() => {
-    onCleanup(
-      watchDownload((event) =>
-        setState(event.type === 'progress' ? { kind: 'running', plan: event.plan } : stateOf(event.result))
-      )
-    );
-    if (!downloading()) {
-      read();
-    }
+    refresh();
+    onCleanup(watchDownload((event) => event.type === 'end' && setMark(setupMark())));
   });
-  return (
-    <Show when={state()} keyed>
-      {(current) => <DownloadView state={current} onRead={read} onStart={start} />}
-    </Show>
-  );
+  return { key, step, loaded, refresh };
 };
 
 export const SongsSection = (): JSX.Element => {
-  const [key, setKey] = createSignal<FamilyKey | undefined>();
-  const [loaded, setLoaded] = createSignal(false);
-  onMount(() => {
-    loadFamilyKey().then(
-      (stored) => {
-        setKey(stored);
-        setLoaded(true);
-      },
-      () => setLoaded(true)
-    );
-  });
+  const { key, step, loaded, refresh } = setupFacts();
   return (
     <section class="parent-section songs-section">
       <h2>Songs</h2>
       <Show when={loaded()}>
-        <Show when={key()} fallback={<KeyStep onKey={setKey} />} keyed>
-          {(songKey) => (
-            <>
-              <p class="song-key-ok">{`Key OK (key id ${songKey.id})`}</p>
-              <DownloadStep songKey={songKey} />
-            </>
-          )}
-        </Show>
+        <Switch>
+          <Match when={step() === 'install'}>
+            <InstallStep />
+          </Match>
+          <Match when={step() === 'key'}>
+            <KeyStep onKey={refresh} />
+          </Match>
+          <Match when={step() !== 'done' && key()} keyed>
+            {(songKey) => (
+              <>
+                <p class="song-key-ok">{`Key OK (key id ${songKey.id})`}</p>
+                <DownloadStep songKey={songKey} stopped={step() === 'stopped'} />
+                <ChangeKey onDone={refresh} />
+              </>
+            )}
+          </Match>
+          <Match when={key()} keyed>
+            {(songKey) => (
+              <>
+                <SongsReady songKey={songKey} />
+                <ChangeKey onDone={refresh} />
+              </>
+            )}
+          </Match>
+        </Switch>
       </Show>
     </section>
   );

@@ -4,6 +4,7 @@
 
 import { decodeKeyCode, openFamilyKey, opensKeyCheck } from '../../model';
 import { saveFamilyKey } from './key-store';
+import { markSetup } from './setup';
 import { fetchManifest } from './store';
 import type { FamilyKey } from '../../model';
 
@@ -22,6 +23,7 @@ const checkRawKey = async (raw: Uint8Array<ArrayBuffer>): Promise<KeyCheck> => {
     return { ok: false, problem: 'wrong-key', reason: 'the key does not open the key check' };
   }
   await saveFamilyKey(key);
+  markSetup('key');
   return { ok: true, key };
 };
 

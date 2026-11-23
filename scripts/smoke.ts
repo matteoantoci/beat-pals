@@ -14,9 +14,10 @@ import { createInterface } from 'node:readline';
 import { launch } from 'puppeteer-core';
 import { allowModelImports } from './prepare/model-imports.ts';
 import { recordAudio } from './smoke-audio.ts';
+import { offlineChecks } from './smoke-offline.ts';
 import { check, checkLines, setVisibility, shot, shows, tap, wait } from './smoke-page.ts';
-import { parentArea } from './smoke-parent.ts';
 import { playChecks } from './smoke-play.ts';
+import { autoDownload, installStep, songSetup } from './smoke-setup.ts';
 import type { AudioRecord } from './smoke-audio.ts';
 import type { ChildProcess } from 'node:child_process';
 import type { Browser, Page } from 'puppeteer-core';
@@ -59,9 +60,9 @@ const startPreview = async (): Promise<Server> => {
   return { url: `http://127.0.0.1:${port}/beat-pals/`, child };
 };
 
-/** Stops portless and vite: the whole process group. */
+/** Stops portless and vite: the whole process group. A second call does nothing. */
 const stopPreview = async ({ child }: Server): Promise<void> => {
-  if (child.pid === undefined || child.exitCode !== null) {
+  if (child.pid === undefined || child.exitCode !== null || child.signalCode !== null) {
     return;
   }
   process.kill(-child.pid, 'SIGTERM');
@@ -81,6 +82,19 @@ const standalone = (): void => {
       return list;
     }
     return Object.defineProperty(list, 'matches', { value: query.includes('standalone') });
+  };
+};
+
+/** Counts the wake lock requests of the page in `data-smoke-wake-locks` on the root element. */
+const countWakeLocks = (): void => {
+  if (!('wakeLock' in navigator)) {
+    return;
+  }
+  const request = navigator.wakeLock.request.bind(navigator.wakeLock);
+  navigator.wakeLock.request = async (type) => {
+    const root = document.documentElement;
+    root.dataset['smokeWakeLocks'] = String(Number(root.dataset['smokeWakeLocks'] ?? '0') + 1);
+    return request(type);
   };
 };
 
@@ -119,22 +133,26 @@ const songListAfterBackground = async (page: Page, audio: AudioRecord): Promise<
   check('home: title screen shows', (await page.$('.title .logo')) !== null);
 };
 
-const runAll = async (browser: Browser, url: string, keyCode: string): Promise<void> => {
+const runAll = async (browser: Browser, server: Server, keyCode: string): Promise<void> => {
+  await installStep(browser, server.url);
   const page = await browser.newPage();
   await page.setViewport({ width: 390, height: 763, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   await page.evaluateOnNewDocument(standalone);
+  await page.evaluateOnNewDocument(countWakeLocks);
   const audio = await recordAudio(await page.createCDPSession());
-  await page.goto(url, { waitUntil: 'networkidle2' });
+  await page.goto(server.url, { waitUntil: 'networkidle2' });
   await titleTap(page, audio);
   await songListAfterBackground(page, audio);
-  await parentArea(page, keyCode);
+  await songSetup(page, keyCode);
+  await autoDownload(page);
   await playChecks(page, audio, SHOTS);
+  await offlineChecks(page, audio, async () => stopPreview(server));
 };
 
-const smoke = async (url: string, keyCode: string): Promise<void> => {
+const smoke = async (server: Server, keyCode: string): Promise<void> => {
   const browser = await launch({ executablePath: CHROME, headless: true });
   try {
-    await runAll(browser, url, keyCode);
+    await runAll(browser, server, keyCode);
   } finally {
     await browser.close();
   }
@@ -146,7 +164,7 @@ const { buildSmokeStore } = await import('./smoke-store.ts');
 const keyCode = await buildSmokeStore(DIST);
 const server = await startPreview();
 try {
-  await smoke(server.url, keyCode);
+  await smoke(server, keyCode);
 } finally {
   await stopPreview(server);
 }

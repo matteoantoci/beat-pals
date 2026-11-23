@@ -8,21 +8,22 @@ import type { FamilyKey, Manifest, SongIndex } from '../../model';
 /** A read of the store. `network`: the request failed. `broken`: the store answered with a wrong file. */
 export type Read<T> = { ok: true; value: T } | { ok: false; problem: 'network' | 'broken'; reason: string };
 
-const SONGS = `${import.meta.env.BASE_URL}songs/`;
-const CACHE = 'beat-pals-songs';
+export const SONGS = `${import.meta.env.BASE_URL}songs/`;
+export const CACHE = 'beat-pals-songs';
 const CACHED_NAME = /\/([0-9a-f]{64})\.bin$/u;
 
-const fileUrl = (name: string): string => `${SONGS}${name}.bin`;
+export const fileUrl = (name: string): string => `${SONGS}${name}.bin`;
 
 const broken = (reason: string): Read<never> => ({ ok: false, problem: 'broken', reason });
 
 /**
  * Fetches a store URL past every HTTP cache. GitHub Pages sends `max-age=600`, so the manifest needs it. A store file
- * never changes, but the copy in Cache Storage is the only copy that the game needs.
+ * never changes, but the copy in Cache Storage is the only copy that the game needs. A stop through the signal is a
+ * `network` result, as a lost network.
  */
-const fetchStore = async (url: string): Promise<Read<Response>> => {
+const fetchStore = async (url: string, signal?: AbortSignal): Promise<Read<Response>> => {
   try {
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await fetch(url, { cache: 'no-store', signal: signal ?? null });
     return response.ok ? { ok: true, value: response } : broken(`${url} answered HTTP ${String(response.status)}`);
   } catch (error) {
     return { ok: false, problem: 'network', reason: error instanceof Error ? error.message : String(error) };
@@ -54,8 +55,12 @@ export const cachedNames = async (): Promise<Set<string>> => {
  * Fetches one store file into the cache. The file must have its manifest size, open with the family key, and have
  * the keyed hash of its plain content as its name, so a damaged file never goes into the cache.
  */
-export const downloadFile = async (key: FamilyKey, file: { name: string; size: number }): Promise<Read<void>> => {
-  const response = await fetchStore(fileUrl(file.name));
+export const downloadFile = async (
+  key: FamilyKey,
+  file: { name: string; size: number },
+  signal?: AbortSignal
+): Promise<Read<void>> => {
+  const response = await fetchStore(fileUrl(file.name), signal);
   if (!response.ok) {
     return response;
   }

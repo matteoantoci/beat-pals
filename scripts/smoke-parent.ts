@@ -1,12 +1,8 @@
-// The parent part of the smoke run (scripts/smoke.ts): the parent check from the logo hold, and the song setup in
-// the "Songs" section with the key code of the test store. The key code goes into the field only; it is never
-// printed.
+// The parent area in the smoke run (scripts/smoke.ts): the parent check from the logo hold, and Done. The song setup
+// in its "Songs" section is in scripts/smoke-setup.ts.
 
-import { check, shows, tap, wait } from './smoke-page.ts';
+import { check, tap, wait } from './smoke-page.ts';
 import type { Page } from 'puppeteer-core';
-
-/** The download of the one short test song ends well within this time. */
-const DOWNLOAD_MS = 20_000;
 
 /** Taps the digits on the pad of the parent check, one after the other. Digit 0 is button 11 of the pad. */
 const typeDigits = async (page: Page, digits: string): Promise<void> => {
@@ -20,7 +16,7 @@ const typeDigits = async (page: Page, digits: string): Promise<void> => {
 };
 
 /** A press of 3.2 s on the logo opens the parent check. The right answer opens the parent area. */
-const openParentArea = async (page: Page): Promise<boolean> => {
+export const openParentArea = async (page: Page): Promise<boolean> => {
   const box = await (await page.$('.logo'))?.boundingBox();
   if (!box) {
     check('parent check: logo shows', false);
@@ -47,23 +43,9 @@ const openParentArea = async (page: Page): Promise<boolean> => {
   return open;
 };
 
-/** The key step takes the test key, and the download step downloads the test song. */
-const songSetup = async (page: Page, keyCode: string): Promise<void> => {
-  await page.type('#song-key', keyCode);
-  await tap(page, '.song-key-check');
-  check('song setup: the test key opens the store', await shows(page, '.song-key-ok'));
-  check('song setup: the download step shows', await shows(page, '.song-download'));
-  await tap(page, '.song-download');
-  check('song setup: the test song downloads', await shows(page, '.song-ready', DOWNLOAD_MS));
-};
-
-/** Opens the parent area, sets up the songs, and goes back to the title screen with Done. */
-export const parentArea = async (page: Page, keyCode: string): Promise<void> => {
-  if (!(await openParentArea(page))) {
-    return;
-  }
-  await songSetup(page, keyCode);
+/** Done closes the parent area and shows the title screen. */
+export const closeParentArea = async (page: Page, name: string): Promise<void> => {
   await tap(page, '.parent-bar button');
   await wait(300);
-  check('Done: title screen shows', (await page.$('.title .logo')) !== null);
+  check(`${name}: Done shows the title screen`, (await page.$('.title .logo')) !== null);
 };

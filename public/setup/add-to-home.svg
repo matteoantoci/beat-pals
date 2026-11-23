@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 150">
+  <rect x="1" y="1" width="238" height="148" rx="16" fill="#F2F2F7" stroke="#C7C7CC" stroke-width="2"/>
+  <g font-family="-apple-system, system-ui, sans-serif" font-size="15" fill="#1C1C1E">
+    <rect x="14" y="14" width="212" height="36" rx="10" fill="#FFFFFF"/>
+    <text x="28" y="37">Copy</text>
+    <rect x="192" y="22" width="16" height="20" rx="3" fill="none" stroke="#3C3C43" stroke-width="2"/>
+    <rect x="14" y="57" width="212" height="36" rx="10" fill="#FFFFFF" stroke="#F5B400" stroke-width="4"/>
+    <text x="28" y="80" font-weight="600">Add to Home Screen</text>
+    <rect x="190" y="65" width="20" height="20" rx="5" fill="none" stroke="#3C3C43" stroke-width="2"/>
+    <path d="M200 70 V80 M195 75 H205" stroke="#3C3C43" stroke-width="2" stroke-linecap="round"/>
+    <rect x="14" y="100" width="212" height="36" rx="10" fill="#FFFFFF"/>
+    <text x="28" y="123">Add Bookmark</text>
+    <path d="M194 110 V128 L200 123 L206 128 V110 Z" fill="none" stroke="#3C3C43" stroke-width="2" stroke-linejoin="round"/>
+  </g>
+</svg>

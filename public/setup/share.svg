@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 150">
+  <rect x="1" y="1" width="238" height="148" rx="16" fill="#FFFFFF" stroke="#C7C7CC" stroke-width="2"/>
+  <rect x="16" y="16" width="208" height="30" rx="10" fill="#EFEFF4"/>
+  <text x="120" y="36" text-anchor="middle" font-family="-apple-system, system-ui, sans-serif" font-size="14" fill="#3C3C43">beat-pals</text>
+  <clipPath id="frame"><rect x="1" y="1" width="238" height="148" rx="16"/></clipPath>
+  <rect x="1" y="96" width="238" height="53" fill="#F7F7F9" clip-path="url(#frame)"/>
+  <path d="M1 96 H239" stroke="#C7C7CC" stroke-width="2"/>
+  <path d="M30 112 L22 122 L30 132" fill="none" stroke="#0A84FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M68 112 L76 122 L68 132" fill="none" stroke="#C7C7CC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="120" cy="122" r="22" fill="none" stroke="#F5B400" stroke-width="4"/>
+  <path d="M111 117 H107 V134 H133 V117 H129" fill="none" stroke="#0A84FF" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M120 125 V106 M113 112 L120 105 L127 112" fill="none" stroke="#0A84FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M162 112 H174 Q180 112 180 118 V132 Q174 128 168 128 H162 Z M180 118 Q180 112 186 112 H198 V128 H192 Q186 128 180 132" fill="none" stroke="#0A84FF" stroke-width="2.5" stroke-linejoin="round"/>
+  <rect x="208" y="110" width="16" height="16" rx="3" fill="none" stroke="#0A84FF" stroke-width="2.5"/>
+  <path d="M204 115 V130 H219" fill="none" stroke="#0A84FF" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M120 88 L120 66" stroke="#F5B400" stroke-width="4" stroke-linecap="round"/>
+  <path d="M110 78 L120 90 L130 78" fill="none" stroke="#F5B400" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

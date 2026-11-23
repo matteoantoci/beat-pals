@@ -199,3 +199,42 @@
 .parent-area .song-note {
   color: var(--parent-danger);
 }
+
+.parent-area .song-ready {
+  font-weight: 600;
+}
+
+/* Step 1 of the song setup: the 3 pictures of the install, each with its text. */
+.song-install {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding-left: 24px;
+}
+
+.song-install li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.song-install img {
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+}
+
+.song-install-title {
+  font-weight: 600;
+}
+
+/* "Change key" is a link, not a main button. It keeps the tap height of 44 px. */
+.parent-area .song-change-key {
+  padding: 8px 0;
+  border: none;
+  background: none;
+  color: var(--parent-line);
+  font-weight: 400;
+  text-decoration: underline;
+}
