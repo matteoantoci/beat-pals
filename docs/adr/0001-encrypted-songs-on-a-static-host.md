@@ -12,7 +12,7 @@ The songs ship with the app on GitHub Pages, but each song file is encrypted wit
 
 ## Consequences
 
-- The songs never go into git, so a GitHub Action cannot build the site. The parent deploys from the Mac, and a gate checks the build for plain media and titles before the push.
+- The songs never go into git, so a GitHub Action cannot build the site. The parent deploys from the Mac, and a gate checks the build for plain media before the push. The gate does not search for song titles, because a text match is too fragile (parent decision of 2026-11-23).
 - One public repository holds the source on `master` and the built site on an orphan `gh-pages` branch. `deploy` force-pushes that branch as one commit. No file in git names a song: the song list, the song notes, and the prototypes stay in `.scratch/`, which git ignores.
 - File names come from a hash keyed with the family key, so a public name does not confirm a known song, and a new key renames every file.
 - The songs stay out of the service worker precache and download in a separate step with progress, because one large install on iOS has no progress and fails as a whole.

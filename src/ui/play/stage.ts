@@ -8,7 +8,7 @@ import { hex, TOKENS } from '../pals/color';
 import { shapeKey } from './atlas';
 import { drawHit, type EffectScene } from './effects';
 import { dressEnergy, drawEnergy, makeEnergyParts, type EnergyParts } from './energy-stage';
-import { laneX, noteY } from './geometry';
+import { clamp01, laneX, noteY } from './geometry';
 import { CHUTE_SHARE } from './paint-stage';
 import { makePool, type Pool } from './pool';
 import { makeRing, type Ring } from './rings';
@@ -49,8 +49,6 @@ type Parts = {
 
 /** One frame: the parts, the view, the band energy, and what the effects need. */
 type Frame = { readonly parts: Parts; readonly view: View; readonly energy: EnergyLook; readonly scene: EffectScene };
-
-const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
 
 /** The chute shape of a lane as a Graphics path, for the glow and the note mask. */
 const chute = (graphics: Graphics, geometry: Geometry, lane: Lane): Graphics => {

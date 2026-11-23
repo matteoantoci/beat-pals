@@ -79,7 +79,7 @@ export const ParentCheck = (props: ParentCheckProps): JSX.Element => {
       aria-labelledby="parent-check-title"
     >
       <div class="parent-check-box">
-        <h2 id="parent-check-title">For grown-ups</h2>
+        <h2 id="parent-check-title">For the parent</h2>
         <p>Give the answer to open the parent area.</p>
         <p class="parent-problem">
           {problem.left} × {problem.right} = <output>{answer() === '' ? '?' : answer()}</output>

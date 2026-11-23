@@ -4,7 +4,7 @@ import { currentSave, replaceProgress } from '../../shell/save';
 import type { RestoreFailure } from '../../model';
 import type { JSX } from 'solid-js';
 
-// The export and the restore of the save code (spec, "Save"; user story 46). The code holds the progress of
+// How to make and restore the save code (spec, "Save"; user story 46). The code holds the progress of
 // localStorage, in the save format of this build (`snapshot`, `restore`). It is not encrypted.
 
 const REFUSED: Readonly<Record<RestoreFailure, string>> = {
@@ -15,7 +15,7 @@ const REFUSED: Readonly<Record<RestoreFailure, string>> = {
 const songs = (count: number): string => `${String(count)} ${count === 1 ? 'song' : 'songs'}`;
 
 /** Makes the code of the progress and shows it, with a copy button. */
-export const ExportCode = (): JSX.Element => {
+export const MakeCode = (): JSX.Element => {
   const [code, setCode] = createSignal('');
   const [note, setNote] = createSignal('');
   const make = async (): Promise<void> => {
@@ -32,8 +32,8 @@ export const ExportCode = (): JSX.Element => {
     setNote('The code is copied.');
   };
   return (
-    <section class="parent-section save-export">
-      <h2>Export save code</h2>
+    <section class="parent-section save-new">
+      <h2>Make a save code</h2>
       <p>The save code holds the progress: the stars and the record color of each song.</p>
       <p class="save-code-note">This code lists the songs on this device.</p>
       <button

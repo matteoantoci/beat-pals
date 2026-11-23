@@ -102,7 +102,7 @@ const countWakeLocks = (): void => {
   };
 };
 
-/** One tap on the title screen starts the music and opens the song list. With no songs, the pals wait there. */
+/** One tap on the title screen starts the music and opens the song list. With no songs, it shows the closed record box. */
 const titleTap = async (page: Page, audio: AudioRecord): Promise<void> => {
   check('standalone display mode', await page.evaluate(() => matchMedia('(display-mode: standalone)').matches));
   check('title screen shows the logo', (await page.$('.title .logo')) !== null);
@@ -112,7 +112,7 @@ const titleTap = async (page: Page, audio: AudioRecord): Promise<void> => {
   check('title tap: context runs', audio.contexts().endsWith('running'), audio.contexts());
   check('title tap: music plays', audio.sources() > 0, `${String(audio.sources())} sources`);
   check('title tap: song list shows', (await page.$('.song-list')) !== null);
-  check('no songs yet: the pals wait', await shows(page, '.song-waiting', 2000));
+  check('no songs yet: the closed record box shows', await shows(page, '.song-closed-box', 2000));
   await shot(page, SHOTS, 'songs-empty-portrait');
 };
 

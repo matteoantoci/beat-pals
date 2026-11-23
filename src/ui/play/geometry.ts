@@ -88,3 +88,6 @@ export const laneAt = (geometry: Geometry, x: number): Lane => {
 
 /** The y of a note `dt` seconds before its time. */
 export const noteY = (geometry: Geometry, dt: number): number => geometry.hitY - dt * geometry.speed;
+
+/** The value, held from 0 to 1. */
+export const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));

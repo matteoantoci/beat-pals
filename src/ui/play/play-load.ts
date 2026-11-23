@@ -5,6 +5,7 @@
 
 import { childChart, playSetup, readFacts } from '../../model';
 import { progressOf } from '../../shell/save';
+import { loadSoundOn } from '../../shell/settings';
 import { readSongFiles } from '../../shell/songs';
 import { loadSong } from '../../sound';
 import { decodePals } from '../pals/pal-svg';
@@ -106,7 +107,7 @@ const load = async (elements: PlayElements, choice: SongChoice, id: number): Pro
   }
   const { color, step } = playSetup(progressOf(choice.song.id));
   const chart = childChart(facts, color, step);
-  const song = await loadSong(files.audio, SONG_EVENTS);
+  const song = await loadSong(files.audio, SONG_EVENTS, loadSoundOn());
   await decodePals();
   const stage = id === current ? await createStage(elements.canvas, measure(elements), chart.band) : undefined;
   if (stage === undefined || id !== current) {

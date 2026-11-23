@@ -3,8 +3,8 @@
 // - A save that this build cannot read gives no progress, not an error.
 // The settings, the songs, and the family key live outside the save, so a reset keeps them.
 
-import { restore, scorePlay, snapshot, songProgress, withSong } from '../model';
-import type { PlayScore, SaveData, SavedProgress, SongProgress } from '../model';
+import { restore, outcomeOf, snapshot, songProgress, withSong } from '../model';
+import type { PlayOutcome, SaveData, SavedProgress, SongProgress } from '../model';
 
 /** The key of the save in localStorage. The schema version is inside the data (`SaveData.version`). */
 const SAVE_KEY = 'beat-pals:save';
@@ -65,10 +65,10 @@ export const clearSave = (): boolean => {
 /** The progress of one song: bronze with 0 stars before its first play. */
 export const progressOf = (songId: string): SongProgress => songProgress(progress(), songId);
 
-/** Scores the play of a song with its hit ratio, keeps the new progress, and writes the save. */
-export const savePlay = (songId: string, ratio: number): PlayScore => {
-  const score = scorePlay(progressOf(songId), ratio);
-  saved = withSong(progress(), songId, score.after);
+/** Finds the outcome of a song play from its hit ratio, keeps the new progress, and writes the save. */
+export const savePlay = (songId: string, ratio: number): PlayOutcome => {
+  const outcome = outcomeOf(progressOf(songId), ratio);
+  saved = withSong(progress(), songId, outcome.after);
   writeSave();
-  return score;
+  return outcome;
 };

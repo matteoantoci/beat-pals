@@ -13,7 +13,7 @@ import { animate } from './animate';
 import { confetti, dance, DANCE_FROM } from './party';
 import type { Dance, Lane } from '../../model';
 
-/** What the scene shows, from the score of the play. */
+/** What the scene shows, from the outcome of the play. */
 export type ScenePlan = {
   /** The star place that the play filled, or null. */
   readonly star: number | null;

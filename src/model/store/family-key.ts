@@ -7,6 +7,7 @@
 //   plain content (IV and tag). The model draws no random values: the caller makes each IV.
 // - Key check: a known text, encrypted with the family key, in base64url.
 
+import { fromBase64url, toBase64url } from '../base64url';
 import { FAMILY_KEY_BYTES } from './key-code';
 
 /**
@@ -31,24 +32,6 @@ const KEY_CHECK_TEXT = 'beat-pals/key-check';
 const utf8 = new TextEncoder();
 
 const hex = (bytes: Uint8Array): string => [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-
-const base64url = (bytes: Uint8Array): string =>
-  btoa(String.fromCodePoint(...bytes))
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replace(/=+$/u, '');
-
-const fromBase64url = (text: string): Uint8Array<ArrayBuffer> | undefined => {
-  if (!/^[A-Za-z0-9_-]*$/u.test(text)) {
-    return undefined;
-  }
-  try {
-    const binary = atob(text.replaceAll('-', '+').replaceAll('_', '/'));
-    return Uint8Array.from(binary, (char) => char.codePointAt(0) ?? 0);
-  } catch {
-    return undefined;
-  }
-};
 
 const keyIdOf = async (raw: Uint8Array<ArrayBuffer>): Promise<string> => {
   const hmac = await crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -119,7 +102,7 @@ export const decryptFile = async (
 
 /** A new key check: the known text, encrypted with a new random IV, in base64url. Made one time with the key. */
 export const makeKeyCheck = async (key: FamilyKey, iv: Uint8Array<ArrayBuffer>): Promise<string> =>
-  base64url(await encryptFile(key, utf8.encode(KEY_CHECK_TEXT), iv));
+  toBase64url(await encryptFile(key, utf8.encode(KEY_CHECK_TEXT), iv));
 
 /** True when the family key opens the key check of a manifest. */
 export const opensKeyCheck = async (key: FamilyKey, keyCheck: string): Promise<boolean> => {
