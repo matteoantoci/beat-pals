@@ -65,4 +65,13 @@ describe('reportSongs', () => {
       'report: 2 songs, 1 with a child chart.',
     ]);
   });
+
+  it('lists each fill of a long rest: start, end, source part, and note count', async () => {
+    // Guitar at 0 s and 10 s, bass at 1 s, 2 s, and 5 s: one fill from the bass.
+    const chart = `${chartOf([0, 3840])}[ExpertDoubleBass]\n{\n  384 = N 0 0\n  768 = N 1 0\n  1920 = N 2 0\n}\n`;
+    await writeFile(join(inbox, 'paper-kites.sng'), sng('Paper Kites', chart));
+    const lines: string[] = [];
+    await reportSongs({ inbox, log: (line) => lines.push(line) });
+    expect(lines.filter((line) => line.includes('fill'))).toEqual(['  fill 0:01 to 0:05  bass  3 notes']);
+  });
 });

@@ -1,0 +1,36 @@
+[Song]
+{
+  Name = "Test Tune"
+  Resolution = 192
+}
+[SyncTrack]
+{
+  0 = TS 4
+  0 = B 120000
+}
+[ExpertSingle]
+{
+  0 = N 0 0
+  3840 = N 1 0
+  7680 = N 2 0
+  8064 = N 3 0
+}
+[ExpertDoubleBass]
+{
+  96 = N 0 0
+  192 = N 1 0
+  1920 = N 2 0
+  1920 = N 4 0
+  3456 = N 3 384
+  3648 = N 0 0
+  9000 = N 0 0
+}
+[HardKeyboard]
+{
+  1000 = N 3 0
+  5760 = N 4 0
+}
+[ExpertDrums]
+{
+  2000 = N 0 0
+}

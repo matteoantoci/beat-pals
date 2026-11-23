@@ -121,6 +121,18 @@ const fretNotes = (track: readonly Timed[], notes: readonly MidNote[], difficult
   });
 };
 
+/** The drum notes of the drums track at one difficulty. The kick (the green pitch, or one below it for Expert+) is open, and the pads from red are the frets 0 to 4. */
+const drumNotes = (notes: readonly MidNote[], difficulty: Difficulty): TickNote[] => {
+  const kick = DIFFICULTY_PITCH[difficulty].green;
+  return notes.flatMap(({ tick, pitch, length }) => {
+    const pad = pitch - kick;
+    if (pad === 0 || (pad === -1 && difficulty === 'Expert')) {
+      return [{ tick, fret: OPEN, length }];
+    }
+    return pad >= 1 && pad <= ORANGE + 1 ? [{ tick, fret: pad - 1, length }] : [];
+  });
+};
+
 /** Snaps each note to the first note of its chord, when it is `CHORD_SNAP` ticks or less after it. Sustain ends stay. */
 const snapChords = (notes: readonly TickNote[]): TickNote[] => {
   let anchor = Number.NEGATIVE_INFINITY;
@@ -166,19 +178,27 @@ export const readMid = (bytes: Uint8Array, meta: SongMeta): ChartResult => {
       ? [{ tick, numerator: event.numerator, denominator: event.denominator }]
       : []
   );
-  const guitarTrack = tracks.find((track) => nameOf(track) === 'PART GUITAR');
-  const guitarNotes = notesOf(guitarTrack ?? []);
-  const guitar =
-    guitarTrack === undefined
-      ? undefined
-      : highestDifficulty((difficulty) => fretNotes(guitarTrack, guitarNotes, difficulty));
+  const fretPart = (name: string): TickNote[] | undefined => {
+    const track = tracks.find((each) => nameOf(each) === name);
+    const notes = notesOf(track ?? []);
+    const part =
+      track === undefined ? undefined : highestDifficulty((difficulty) => fretNotes(track, notes, difficulty));
+    return part === undefined ? undefined : snapChords(part);
+  };
+  const drumTrack = notesOf(tracks.find((track) => nameOf(track) === 'PART DRUMS') ?? []);
+  const drums = highestDifficulty((difficulty) => drumNotes(drumTrack, difficulty));
   const chart: TickChart = {
     resolution,
     offsetSec: 0,
     tempos,
     timeSignatures,
     beats: beatsOf(tracks.find((track) => nameOf(track) === 'BEAT')),
-    guitar: guitar === undefined ? undefined : snapChords(guitar),
+    guitar: fretPart('PART GUITAR'),
+    parts: {
+      bass: fretPart('PART BASS'),
+      keys: fretPart('PART KEYS'),
+      drums: drums === undefined ? undefined : snapChords(drums),
+    },
     endTick: Math.max(0, ...all.map(({ tick }) => tick)),
   };
   return buildFacts(chart, meta);
