@@ -32,7 +32,7 @@ type Elements = {
 
 /** The song length: the decoded length of the generated click, as a play uses the decoded song. */
 const songLength = async (beats: readonly number[]): Promise<number> => {
-  const song = await loadSong(clickTrack(beats), { onReplaced: nothing, onInterrupted: nothing });
+  const song = await loadSong(clickTrack(beats), { onReplaced: nothing, onInterrupted: nothing }, false);
   const { duration } = song;
   song.release();
   return duration;

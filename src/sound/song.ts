@@ -2,7 +2,6 @@
 // <audio> element, and the guarded song clock gives its time. Pause and resume work across a context replacement.
 // Only one song stays in memory, so the state of that song is the state of this module.
 import { firstSongTime, songTime, startAt } from '../model';
-import { loadSoundOn } from '../shell/settings';
 import { clapBuffer } from './clap';
 import { currentContext, decode, onReplaced } from './engine';
 import { levelUpBuffer, type LevelUpStep } from './level-up';
@@ -43,8 +42,6 @@ type Session = {
   readonly source: AudioBufferSourceNode;
   readonly t0: number;
   readonly claps: Set<AudioBufferSourceNode>;
-  /** The Sound effects switch, read when the session starts. */
-  readonly effects: boolean;
   readonly unwatch: () => void;
 };
 
@@ -53,6 +50,7 @@ let current = 0;
 let loads = 0;
 let buffer: AudioBuffer | undefined;
 let events: SongEvents | undefined;
+let effectsOn = false; // The Sound effects switch, given with the song.
 let started = false;
 let session: Session | undefined;
 /** The song time while no session plays, and the last read while one plays. */
@@ -128,12 +126,12 @@ const play = (from: number): void => {
   source.connect(ctx.destination);
   source.start(when, offset);
   frozen = from;
-  session = { ctx, source, t0, claps: new Set(), effects: loadSoundOn(), unwatch: watch(ctx, events) };
+  session = { ctx, source, t0, claps: new Set(), unwatch: watch(ctx, events) };
 };
 
 /** Plays a sound effect at a song time, when the Sound effects switch is on. */
 const effect = (sound: AudioBuffer, at: number): void => {
-  if (!session?.effects) {
+  if (!session || !effectsOn) {
     return;
   }
   const { ctx, t0, claps } = session;
@@ -195,8 +193,9 @@ const handle = (id: number, duration: number): Song => {
 /**
  * Decodes one song from its decrypted bytes. It first releases the song before it, so only one song stays in
  * memory. A load that a newer load replaces before its decode ends fails, so its audio does not stay in memory.
+ * `effects` is the Sound effects switch: false plays no clap and no level-up sound.
  */
-export const loadSong = async (data: ArrayBuffer, songEvents: SongEvents): Promise<Song> => {
+export const loadSong = async (data: ArrayBuffer, songEvents: SongEvents, effects: boolean): Promise<Song> => {
   release();
   loads += 1;
   const id = loads;
@@ -207,6 +206,7 @@ export const loadSong = async (data: ArrayBuffer, songEvents: SongEvents): Promi
   current = id;
   buffer = decoded;
   events = songEvents;
+  effectsOn = effects;
   started = false;
   frozen = 0;
   return handle(id, decoded.duration);
