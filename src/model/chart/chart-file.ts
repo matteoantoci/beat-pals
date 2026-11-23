@@ -62,6 +62,21 @@ const fretNotes = (lines: readonly string[] | undefined): TickNote[] =>
     return code === 'N' && FRETS.has(fret) ? [{ tick, fret, length: Number(length) || 0 }] : [];
   });
 
+/** The kick (0) and the double kick of Expert+ (32) are open. The pads 1 to 5 (red to green) are the frets 0 to 4. Cymbal flags are left out. */
+const KICKS = new Set([0, 32]);
+const LAST_PAD = 5;
+const OPEN = 7;
+
+/** The drum notes of a drums section, with the pads as frets. */
+const drumNotes = (lines: readonly string[] | undefined): TickNote[] =>
+  eventsOf(lines).flatMap(({ tick, code, values: [type, length] }) => {
+    const pad = Number(type);
+    if (code !== 'N' || !(KICKS.has(pad) || (pad >= 1 && pad <= LAST_PAD))) {
+      return [];
+    }
+    return [{ tick, fret: KICKS.has(pad) ? OPEN : pad - 1, length: Number(length) || 0 }];
+  });
+
 const temposOf = (sync: readonly ChartEvent[]) =>
   sync
     .filter((event) => event.code === 'B')
@@ -108,6 +123,11 @@ export const readChart = (text: string, meta: SongMeta): ChartResult => {
     timeSignatures: timeSignaturesOf(sync),
     beats: undefined,
     guitar: highestDifficulty((difficulty) => fretNotes(sections.get(`${difficulty}Single`))),
+    parts: {
+      bass: highestDifficulty((difficulty) => fretNotes(sections.get(`${difficulty}DoubleBass`))),
+      keys: highestDifficulty((difficulty) => fretNotes(sections.get(`${difficulty}Keyboard`))),
+      drums: highestDifficulty((difficulty) => drumNotes(sections.get(`${difficulty}Drums`))),
+    },
     endTick: endTickOf(sections),
   };
   return buildFacts(chart, meta);

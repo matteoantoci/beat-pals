@@ -18,8 +18,13 @@ export type SongFacts = {
   /** The lead guitar at its highest difficulty. */
   notes: FactsNote[];
   /** The notes of other parts that fill the long rests of the lead guitar. */
-  fills: { part: 'bass' | 'keys' | 'drums'; notes: FactsNote[] }[];
+  fills: { part: FillPart; notes: FactsNote[] }[];
 };
+
+/** The parts that fill a long guitar rest, in the order of choice. */
+const FILL_PARTS = ['bass', 'keys', 'drums'] as const;
+
+type FillPart = (typeof FILL_PARTS)[number];
 
 /** The song values that the caller gives, from the metadata pairs of the song. `delay` is in milliseconds. */
 export type SongMeta = { id: string; name: string; artist: string; charter: string; delay: number };
@@ -40,6 +45,8 @@ export type TickChart = {
   timeSignatures: readonly TimeSignature[];
   /** The lead guitar at its highest difficulty. Undefined when the chart has no lead guitar. */
   guitar: readonly TickNote[] | undefined;
+  /** The other parts, each at its highest difficulty (drum pads already as frets). Undefined when a part has no notes. */
+  parts: Readonly<Record<FillPart, readonly TickNote[] | undefined>>;
   /** The beats of a beat track (a .mid `BEAT` track). Undefined when the chart has none: then the time signatures give the beats. */
   beats: readonly BeatTick[] | undefined;
   /** The last tick of the chart. The beats from time signatures continue to the end of its bar. */
@@ -47,6 +54,9 @@ export type TickChart = {
 };
 
 const MS_PER_SECOND = 1000;
+
+/** A guitar rest longer than this gets a fill (a first value to tune). */
+const LONG_REST_SEC = 8;
 
 /** Times keep 6 decimals (microseconds), so the facts file has no float noise. */
 const round = (sec: number): number => Math.round(sec * 1e6) / 1e6;
@@ -63,6 +73,40 @@ const chords = (notes: readonly TickNote[], seconds: (tick: number) => number, d
       lenSec: round(Math.max(...chord.map((note) => seconds(note.tick + note.length))) - seconds(tick)),
     }));
 };
+
+/** A tick range of a fill: from `start` (included) to `stop` (not included). */
+type Window = { start: number; stop: number };
+
+/**
+ * The fill windows of the long guitar rests. A rest runs from the end of a guitar note (or tick 0) to the next guitar
+ * note. Its window starts 1 beat after the end of the note (or at tick 0) and stops 1 beat before the next note.
+ * A rest after the last note gets no window.
+ */
+const fillWindows = (guitar: readonly TickNote[], seconds: (tick: number) => number, beat: number): Window[] => {
+  const windows: Window[] = [];
+  let end: number | undefined;
+  guitar
+    .toSorted((a, b) => a.tick - b.tick)
+    .forEach((note) => {
+      if (seconds(note.tick) - seconds(end ?? 0) > LONG_REST_SEC) {
+        windows.push({ start: end === undefined ? 0 : end + beat, stop: note.tick - beat });
+      }
+      end = Math.max(end ?? 0, note.tick + note.length);
+    });
+  return windows;
+};
+
+/** The fill of one window: the notes of the first part with notes in it. A sustain stops at the end of the window. */
+const fillOf = (
+  parts: TickChart['parts'],
+  { start, stop }: Window
+): { part: FillPart; notes: TickNote[] } | undefined =>
+  FILL_PARTS.map((part) => ({
+    part,
+    notes: (parts[part] ?? [])
+      .filter((note) => note.tick >= start && note.tick < stop)
+      .map(({ tick, fret, length }) => ({ tick, fret, length: Math.min(length, stop - tick) })),
+  })).find((fill) => fill.notes.length > 0);
 
 /** The facts of a chart. The metadata `delay` applies when it is not 0, else the chart `Offset`. */
 export const buildFacts = (chart: TickChart, meta: SongMeta): ChartResult => {
@@ -84,7 +128,10 @@ export const buildFacts = (chart: TickChart, meta: SongMeta): ChartResult => {
     charter: meta.charter,
     beats,
     notes: chords(chart.guitar, seconds, delay),
-    fills: [],
+    fills: fillWindows(chart.guitar, seconds, chart.resolution).flatMap((window) => {
+      const fill = fillOf(chart.parts, window);
+      return fill === undefined ? [] : [{ part: fill.part, notes: chords(fill.notes, seconds, delay) }];
+    }),
   };
   return { ok: true, facts };
 };
