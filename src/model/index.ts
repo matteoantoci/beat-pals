@@ -4,3 +4,5 @@
 export { isParentAnswer, parentProblem } from './parent';
 export type { ParentProblem } from './parent';
 export { soundStart } from './silence';
+export { firstSongTime, songTime, startAt } from './clock';
+export type { ClockReading, SongStart } from './clock';
