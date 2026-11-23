@@ -2,7 +2,8 @@
 // (C21). A hit makes the pal dance: a squash, a jump, and a lean that changes side from hit to hit (P11). The ready
 // state with the open mouth starts 0.55 s before the next note of the pal. An idle pal bobs 2 px on the strong
 // beats only (C15). With reduced motion, a pal changes its picture and does not move (C16).
-// The waiting pals (not in the band) stay hidden here.
+// A waiting pal (not in the band yet) stands right next to the band, at the same size. It smiles while the band
+// hits, and it hops 8 px at a tap in its column.
 
 import { palPicture, type PalState } from '../pals/pal-svg';
 import { laneX } from './geometry';
@@ -11,6 +12,14 @@ import type { Geometry } from './geometry';
 import type { LaneState, View } from './view';
 
 const HAPPY_SEC = 0.5;
+/** A waiting pal smiles this long after a hit of the band, and this long after a tap in its column. */
+const WAIT_SMILE_SEC = 0.3;
+const HOP_SMILE_SEC = 0.4;
+/** The hop of a waiting pal. */
+const HOP_SEC = 0.3;
+const HOP_PX = 8;
+/** The gap between a waiting pal and the edge lane of the band. */
+const WAIT_GAP = 8;
 const SQUASH_SEC = 0.06;
 
 /** One pal picture in one frame: its state and its transform. */
@@ -25,6 +34,19 @@ type Pose = {
 export type Pals = {
   readonly layout: (geometry: Geometry) => void;
   readonly update: (view: View, reduced: boolean) => void;
+  /** A tap in the column of a waiting pal at song time `t`: the pal hops. */
+  readonly hop: (lane: Lane, t: number) => void;
+};
+
+/** The x of the middle of a pal: under its ring in the band, else right next to the band on its side. */
+export const palX = (geometry: Geometry, band: readonly Lane[], lane: Lane): number => {
+  if (band.includes(lane)) {
+    return laneX(geometry, lane);
+  }
+  // The band lists its lanes from left to right.
+  const step = geometry.palH + WAIT_GAP;
+  const low = band[0] ?? lane;
+  return lane < low ? laneX(geometry, low) - step : laneX(geometry, band.at(-1) ?? lane) + step;
 };
 
 /** True for each beat that is strong: a downbeat, or the second beat after it. */
@@ -79,12 +101,32 @@ const poseOf = (lane: LaneState, bob: number, reduced: boolean): Pose => {
   return { state: 'idle', ...STILL, ty: reduced ? 0 : bob };
 };
 
-/** The CSS transform of a pal: its bottom centre stands on the floor under its lane. */
-const transformOf = (geometry: Geometry, lane: Lane, pose: Pose): string => {
+/** A waiting pal: a smile while the band hits, and a hop with a smile after a tap in its column. */
+const waitingPose = (hopAge: number, bandHitAge: number, reduced: boolean): Pose => {
+  const smile = hopAge < HOP_SMILE_SEC || bandHitAge < WAIT_SMILE_SEC;
+  const hops = !reduced && hopAge >= 0 && hopAge < HOP_SEC;
+  return {
+    state: smile ? 'happy' : 'idle',
+    ...STILL,
+    ty: hops ? -Math.sin((hopAge / HOP_SEC) * Math.PI) * HOP_PX : 0,
+  };
+};
+
+/** The CSS transform of a pal: its bottom centre stands on the floor at `centre`. */
+const transformOf = (geometry: Geometry, centre: number, pose: Pose): string => {
   const size = geometry.palH;
-  const x = (laneX(geometry, lane) - size / 2).toFixed(1);
+  const x = (centre - size / 2).toFixed(1);
   const y = (geometry.floorY - size + pose.ty).toFixed(1);
   return `translate(${x}px, ${y}px) rotate(${pose.rot.toFixed(2)}deg) scale(${pose.sx.toFixed(3)}, ${pose.sy.toFixed(3)})`;
+};
+
+/** Shows every pal picture at the pal size: the band and the waiting pals. */
+const showAll = (images: readonly HTMLImageElement[], size: number): void => {
+  for (const image of images) {
+    image.hidden = false;
+    image.style.width = `${String(size)}px`;
+    image.style.height = `${String(size)}px`;
+  }
 };
 
 export const makePals = (
@@ -95,6 +137,9 @@ export const makePals = (
   const strong = strongBeats(beats);
   /** What each picture shows, so a frame writes the DOM only on a change. */
   const shown = images.map(() => ({ src: '', transform: '' }));
+  /** The song time of the last hop of each pal. */
+  const hops = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+  const waiting = ([0, 1, 2] as const).filter((lane) => !band.includes(lane));
   let geometry: Geometry | undefined;
   const place = (lane: Lane, pose: Pose): void => {
     const image = images[lane];
@@ -103,7 +148,7 @@ export const makePals = (
       return;
     }
     const src = palPicture(lane, pose.state);
-    const transform = transformOf(geometry, lane, pose);
+    const transform = transformOf(geometry, palX(geometry, band, lane), pose);
     if (src !== last.src) {
       image.src = src;
       last.src = src;
@@ -116,17 +161,20 @@ export const makePals = (
   return {
     layout: (next) => {
       geometry = next;
-      for (const [lane, image] of images.entries()) {
-        image.hidden = !band.some((member) => member === lane);
-        image.style.width = `${String(next.palH)}px`;
-        image.style.height = `${String(next.palH)}px`;
-      }
+      showAll(images, next.palH);
     },
     update: (view, reduced) => {
       const bob = idleBob(view, strong);
       for (const lane of band) {
         place(lane, poseOf(view.lanes[lane], bob, reduced));
       }
+      const bandHitAge = Math.min(...band.map((lane) => view.lanes[lane].hitAge));
+      for (const lane of waiting) {
+        place(lane, waitingPose(view.t - (hops[lane] ?? Number.NEGATIVE_INFINITY), bandHitAge, reduced));
+      }
+    },
+    hop: (lane, t) => {
+      hops[lane] = t;
     },
   };
 };
