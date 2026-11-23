@@ -34,7 +34,8 @@ const watchSafePoint = (): void => {
   });
 };
 
-/** Each tap starts the music again if it does not play, for example after a new audio context. */
+/** The first tap starts the music. A later tap starts it again if it does not play, for example after a failed
+ * load. After a context replacement, the sound module starts it again by itself. */
 const watchTaps = (): void => {
   document.addEventListener('pointerup', playTitleMusic, { passive: true });
   onCleanup(() => {

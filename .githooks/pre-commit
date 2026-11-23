@@ -33,6 +33,10 @@ step() {
 }
 
 printf 'pre-commit:\n'
+# The leak scan of every file in the index (spec, "Leak scan"). It prints its own result, also a warning
+# when the songs/ folder is missing, so it does not use step().
+printf '  %-20s' 'leak scan'
+node scripts/leak-scan.ts staged || exit 1
 step 'format' oxfmt --check .
 step 'lint' oxlint
 # The typescript preset needs --type-aware and oxlint-tsgolint. Without them its rules do not run.

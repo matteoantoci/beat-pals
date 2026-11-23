@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# The leak scan before each push (spec, "Delivery", "Leak scan"). The repository is public, and a push is
+# permanent. Git gives the remote name as $1 and the pushed refs on stdin. The scan reads the index and every
+# file version and message of the commits that the remote does not have. Without a songs/ folder, it stops the push.
+
+set -eu
+
+printf 'pre-push: leak scan  '
+node scripts/leak-scan.ts push "$1"

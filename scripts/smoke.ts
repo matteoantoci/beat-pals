@@ -90,6 +90,26 @@ const titleTap = async (page: Page, audio: AudioRecord): Promise<void> => {
   check('title tap: music plays', audio.sources() > 0, `${String(audio.sources())} sources`);
 };
 
+const setVisibility = (state: string): void => {
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+  document.dispatchEvent(new Event('visibilitychange'));
+};
+
+/** A trip to the background marks the context stale. The next tap replaces it, and the title music starts again. */
+const titleAfterBackground = async (page: Page, audio: AudioRecord): Promise<void> => {
+  await page.evaluate(setVisibility, 'hidden');
+  await wait(300);
+  await page.evaluate(setVisibility, 'visible');
+  await wait(300);
+  audio.reset();
+  await tap(page, '.title');
+  await wait(1500);
+  const states = audio.contexts();
+  check('background trip: tap replaces the context', states.includes('closed') && states.includes('new'), states);
+  check('background trip: new context runs', states.includes('running'), states);
+  check('background trip: music plays again', audio.sources() > 0, `${String(audio.sources())} sources`);
+};
+
 /** Taps the digits on the pad of the parent check, one after the other. Digit 0 is button 11 of the pad. */
 const typeDigits = async (page: Page, digits: string): Promise<void> => {
   const [digit] = digits;
@@ -137,6 +157,7 @@ const runAll = async (browser: Browser, url: string): Promise<void> => {
   const audio = await recordAudio(await page.createCDPSession());
   await page.goto(url, { waitUntil: 'networkidle2' });
   await titleTap(page, audio);
+  await titleAfterBackground(page, audio);
   await parentCheck(page);
 };
 
