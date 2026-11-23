@@ -2,7 +2,7 @@
 // and the delay applied, so the game needs no tick math. Each chart format reads its file into a
 // `TickChart`, and `buildFacts` makes the facts from it.
 
-import { beatTicks, type TimeSignature } from './beats';
+import { beatTicks, type BeatTick, type TimeSignature } from './beats';
 import { tickClock, type Tempo } from './tempo';
 
 /** A chord or a single note. `frets` 0 to 4 are green to orange, and 7 is open. */
@@ -40,7 +40,9 @@ export type TickChart = {
   timeSignatures: readonly TimeSignature[];
   /** The lead guitar at its highest difficulty. Undefined when the chart has no lead guitar. */
   guitar: readonly TickNote[] | undefined;
-  /** The last tick of the chart. The beats continue to the end of its bar. */
+  /** The beats of a beat track (a .mid `BEAT` track). Undefined when the chart has none: then the time signatures give the beats. */
+  beats: readonly BeatTick[] | undefined;
+  /** The last tick of the chart. The beats from time signatures continue to the end of its bar. */
   endTick: number;
 };
 
@@ -69,7 +71,8 @@ export const buildFacts = (chart: TickChart, meta: SongMeta): ChartResult => {
   }
   const seconds = tickClock(chart.tempos, chart.resolution);
   const delay = meta.delay === 0 ? chart.offsetSec : meta.delay / MS_PER_SECOND;
-  const beats = beatTicks(chart.timeSignatures, chart.resolution, chart.endTick).map(({ tick, downbeat }) => ({
+  const beatSource = chart.beats ?? beatTicks(chart.timeSignatures, chart.resolution, chart.endTick);
+  const beats = beatSource.map(({ tick, downbeat }) => ({
     t: round(seconds(tick) + delay),
     downbeat,
   }));

@@ -5,7 +5,7 @@
 export type TimeSignature = { tick: number; numerator: number; denominator: number };
 
 /** A beat at a tick. `downbeat` marks the first beat of a bar. */
-type BeatTick = { tick: number; downbeat: boolean };
+export type BeatTick = { tick: number; downbeat: boolean };
 
 const FOUR_FOUR: TimeSignature = { tick: 0, numerator: 4, denominator: 4 };
 

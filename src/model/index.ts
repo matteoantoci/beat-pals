@@ -3,6 +3,7 @@
 
 export { readChart } from './chart/chart-file';
 export type { SongFacts } from './chart/facts';
+export { readSongChart } from './chart/song-chart';
 export { isParentAnswer, parentProblem } from './parent';
 export type { ParentProblem } from './parent';
 export { soundStart } from './silence';
