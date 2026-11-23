@@ -1,7 +1,8 @@
 // A player for the tests (spec, "Testing Decisions"). It builds a script of `press` and `release` actions from a
 // child chart: an offset and a lane for each note, a hold share for each soft hold, and extra taps. Then it plays the script
 // through `apply`, with an `advance` to the time of each action, as the play screen does at each frame. It uses only
-// the public interface. Not a test file: vitest does not collect it, and the app does not import it.
+// the public interface. Not a test file: vitest does not collect it. The app does not import it; only the demo route
+// of the dev and smoke builds does (src/ui/demo/), to play the demo chart up to its frozen time.
 
 import { apply, startPlay } from '../index';
 import type { Action, ChildChart, Lane, PlayEvent, PlayState } from '../index';
@@ -50,7 +51,7 @@ const noteTaps = (chart: ChildChart, touches: Touches): Tap[] =>
  * The script of a play: a `press` and a `release` for each tap, in time order, each after an `advance` to its time.
  * A release comes before a press at the same time. The script ends with an `advance` past the last note.
  */
-const script = (chart: ChildChart, touches: Touches = {}): Action[] => {
+export const playScript = (chart: ChildChart, touches: Touches = {}): Action[] => {
   const extra = (touches.extra ?? []).map(({ t, lane }) => ({ t, lane, up: t + TAP_SEC }));
   const taps = [...noteTaps(chart, touches), ...extra].toSorted((a, b) => a.t - b.t);
   const inputs = taps
@@ -78,4 +79,4 @@ export const playActions = (play: PlayState, actions: readonly Action[]): Played
 
 /** Plays the chart with these touches, from the start to past the last note. */
 export const playOut = (chart: ChildChart, touches: Touches = {}): Played =>
-  playActions(startPlay(chart), script(chart, touches));
+  playActions(startPlay(chart), playScript(chart, touches));

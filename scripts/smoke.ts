@@ -6,6 +6,8 @@
 // prove the iPhone behaviour. It uses the default install of Google Chrome on macOS.
 // SMOKE_SHOTS=<folder> saves screenshots of the screens there. SMOKE_NAME=<name> gives the portless name of the run,
 // for a look in a browser at https://<name>.localhost while the run waits; the default is unique to the run.
+// SMOKE_DEMO_SHOTS=<folder> saves the screenshots of the demo route there (scripts/smoke-demo.ts).
+// The `smoke` script builds with `--mode smoke`, so the build has the demo route (vite.config.ts).
 
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
@@ -14,6 +16,7 @@ import { createInterface } from 'node:readline';
 import { launch } from 'puppeteer-core';
 import { allowModelImports } from './prepare/model-imports.ts';
 import { recordAudio } from './smoke-audio.ts';
+import { demoChecks } from './smoke-demo.ts';
 import { offlineChecks } from './smoke-offline.ts';
 import { check, checkLines, setVisibility, shot, shows, tap, wait } from './smoke-page.ts';
 import { parentSections } from './smoke-parent.ts';
@@ -135,6 +138,8 @@ const songListAfterBackground = async (page: Page, audio: AudioRecord): Promise<
 };
 
 const runAll = async (browser: Browser, server: Server, keyCode: string): Promise<void> => {
+  // The demo page registers no service worker and writes no save, so it changes nothing for the other checks.
+  await demoChecks(browser, server.url);
   await installStep(browser, server.url);
   const page = await browser.newPage();
   await page.setViewport({ width: 390, height: 763, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });

@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "smoke": "vite build && node scripts/smoke.ts",
+    "smoke": "vite build --mode smoke && node scripts/smoke.ts",
     "deploy": "node scripts/deploy.ts",
     "prepare-song": "node scripts/prepare-song.ts",
     "leak-scan": "node scripts/leak-scan.ts history",

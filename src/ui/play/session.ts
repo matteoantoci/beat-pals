@@ -52,7 +52,7 @@ let running: (Loaded & { readonly player: Player }) | undefined;
 const px = (value: string): number => Number.parseFloat(value) || 0;
 
 /** The safe-area insets come from the padding of the probe, which CSS sets to env(safe-area-inset-*). */
-const measure = ({ root, probe }: PlayElements): Geometry => {
+export const measure = ({ root, probe }: Pick<PlayElements, 'root' | 'probe'>): Geometry => {
   const style = getComputedStyle(probe);
   return layout(root.clientWidth, root.clientHeight, {
     top: px(style.paddingTop),

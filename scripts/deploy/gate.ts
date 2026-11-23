@@ -5,12 +5,15 @@
 // 4. No raw media: no .sng, .m4a, or .opus file, and no ftyp, OggS, SNGPKG, JPEG, or PNG magic at the start of
 //    a file. The app assets are allowed: a file with the content of a file in git (git is public and passes the
 //    leak scan), and the icons that vite-plugin-pwa makes from public/icon.svg.
+// 5. No demo route: no file holds the mark of the demo route (src/ui/demo/marker.ts). The `deploy` build leaves
+//    the route and its fixture out (vite.config.ts); this rule catches a build that did not.
 // The gate does not search the site for song names: a text match is too fragile.
 // The store files are only checked by rules 1 to 3: they are encrypted, so they hold no media and no text.
 
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { DEMO_MARKER } from '../../src/ui/demo/marker.ts';
 import { checkStore } from './store-check.ts';
 import type { FamilyKey } from '../../src/model/index.ts';
 
@@ -66,7 +69,8 @@ export const checkSite = async ({ dist, key, appAssets }: Options): Promise<stri
   const siteFailures = await others.reduce<Promise<string[]>>(async (done, path) => {
     const bytes = await readFile(join(dist, path));
     const asset = PWA_ICON.test(path) || appAssets.has(createHash('sha256').update(bytes).digest('hex'));
-    return [...(await done), ...(asset ? [] : mediaFailures(path, bytes))];
+    const demo = bytes.includes(DEMO_MARKER) ? [`${path}: the file holds the demo route.`] : [];
+    return [...(await done), ...(asset ? [] : mediaFailures(path, bytes)), ...demo];
   }, Promise.resolve([]));
   return [...storeFailures, ...siteFailures];
 };
