@@ -1,16 +1,19 @@
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { checkForUpdate, openSafeWindow } from '../../shell/update';
-import { playTitleMusic, stopTitleMusic } from '../../sound';
+import { playTitleMusic } from '../../sound';
 import { ParentCheck } from '../parent/ParentCheck';
 import { Logo } from './logo';
 import type { JSX } from 'solid-js';
 
-// The title screen (spec, "Screens"): the logo and the title music. The first tap unlocks the audio (src/sound
-// listens to the pointer events on the document) and starts the title music.
+// The title screen (spec, "Screens"): the logo and the title music. One tap anywhere starts the game: the tap
+// unlocks the audio (src/sound listens to the pointer events on the document), starts the title music, and opens
+// the song list. The music plays on in the song list.
 // Before the first touch, the screen is a safe point for an app update.
-// A 3-second hold on the logo shows the parent check.
+// A 3-second hold on the logo shows the parent check, and its release does not start the game.
 
 export type TitleProps = {
+  /** A tap on the screen: open the song list. */
+  readonly onStart: () => void;
   /** The parent check is passed: open the parent area. */
   readonly onParent: () => void;
 };
@@ -34,24 +37,18 @@ const watchSafePoint = (): void => {
   });
 };
 
-/** The first tap starts the music. A later tap starts it again if it does not play, for example after a failed
- * load. After a context replacement, the sound module starts it again by itself. */
-const watchTaps = (): void => {
-  document.addEventListener('pointerup', playTitleMusic, { passive: true });
-  onCleanup(() => {
-    document.removeEventListener('pointerup', playTitleMusic);
-    stopTitleMusic();
-  });
-};
-
 export const TitleScreen = (props: TitleProps): JSX.Element => {
   const [checking, setChecking] = createSignal(false);
-  onMount(() => {
-    watchSafePoint();
-    watchTaps();
-  });
+  onMount(watchSafePoint);
+  // While the parent check shows (also at the release of the logo hold), a tap belongs to the check.
+  const start = (): void => {
+    if (!checking()) {
+      playTitleMusic();
+      props.onStart();
+    }
+  };
   return (
-    <main class="title">
+    <main class="title" onPointerUp={start}>
       <Logo onHold={() => setChecking(true)} />
       <Show when={checking()}>
         <ParentCheck onPass={() => props.onParent()} onClose={() => setChecking(false)} />

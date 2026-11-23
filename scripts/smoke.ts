@@ -80,6 +80,7 @@ const check = (name: string, pass: boolean, detail = ''): void => {
   results.push(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`);
 };
 
+/** One tap on the title screen starts the music and opens the song list. */
 const titleTap = async (page: Page, audio: AudioRecord): Promise<void> => {
   check('standalone display mode', await page.evaluate(() => matchMedia('(display-mode: standalone)').matches));
   check('title screen shows the logo', (await page.$('.title .logo')) !== null);
@@ -88,6 +89,7 @@ const titleTap = async (page: Page, audio: AudioRecord): Promise<void> => {
   await wait(1500);
   check('title tap: context runs', audio.contexts().endsWith('running'), audio.contexts());
   check('title tap: music plays', audio.sources() > 0, `${String(audio.sources())} sources`);
+  check('title tap: song list shows', (await page.$('.song-list')) !== null);
 };
 
 const setVisibility = (state: string): void => {
@@ -95,19 +97,25 @@ const setVisibility = (state: string): void => {
   document.dispatchEvent(new Event('visibilitychange'));
 };
 
-/** A trip to the background marks the context stale. The next tap replaces it, and the title music starts again. */
-const titleAfterBackground = async (page: Page, audio: AudioRecord): Promise<void> => {
+/**
+ * A trip to the background marks the context stale. The next tap on the song list replaces it, and the title music
+ * starts again. Then the home button goes back to the title screen.
+ */
+const songListAfterBackground = async (page: Page, audio: AudioRecord): Promise<void> => {
   await page.evaluate(setVisibility, 'hidden');
   await wait(300);
   await page.evaluate(setVisibility, 'visible');
   await wait(300);
   audio.reset();
-  await tap(page, '.title');
+  await tap(page, '.song-list');
   await wait(1500);
   const states = audio.contexts();
   check('background trip: tap replaces the context', states.includes('closed') && states.includes('new'), states);
   check('background trip: new context runs', states.includes('running'), states);
   check('background trip: music plays again', audio.sources() > 0, `${String(audio.sources())} sources`);
+  await tap(page, '.song-home');
+  await wait(300);
+  check('home: title screen shows', (await page.$('.title .logo')) !== null);
 };
 
 /** Taps the digits on the pad of the parent check, one after the other. Digit 0 is button 11 of the pad. */
@@ -157,7 +165,7 @@ const runAll = async (browser: Browser, url: string): Promise<void> => {
   const audio = await recordAudio(await page.createCDPSession());
   await page.goto(url, { waitUntil: 'networkidle2' });
   await titleTap(page, audio);
-  await titleAfterBackground(page, audio);
+  await songListAfterBackground(page, audio);
   await parentCheck(page);
 };
 

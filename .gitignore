@@ -6,8 +6,9 @@
 # Downloaded audio and tool output of the research: not published
 docs/research/.cache/
 
-# Song inbox and its songs/.prepared/ output on the Mac: owned audio, never published
-songs/
+# Song inbox and its songs/.prepared/ output on the Mac: owned audio, never published. Only the top folder:
+# src/shell/songs/ and src/ui/songs/ are code.
+/songs/
 
 node_modules
 dist/

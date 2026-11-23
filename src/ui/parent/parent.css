@@ -188,3 +188,14 @@
   font-size: 15px;
   opacity: 0.8;
 }
+
+/* The "Songs" section: the download progress. */
+.song-progress {
+  width: 100%;
+  height: 12px;
+  accent-color: var(--parent-line);
+}
+
+.parent-area .song-note {
+  color: var(--parent-danger);
+}

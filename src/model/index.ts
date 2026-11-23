@@ -27,3 +27,5 @@ export {
 export type { FamilyKey } from './store/family-key';
 export { readManifest, readSongIndex } from './store/manifest';
 export type { CoverType, IndexSong, Manifest, SongIndex } from './store/manifest';
+export { downloadPlan } from './download/plan';
+export type { DownloadPlan } from './download/plan';
