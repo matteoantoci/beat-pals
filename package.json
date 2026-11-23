@@ -16,7 +16,7 @@
     "fmt:check": "oxfmt --check .",
     "lint": "oxlint",
     "lint:types": "oxlint --type-aware",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p scripts --noEmit",
     "knip": "knip && knip --strict --include dependencies,unlisted,unresolved",
     "test": "vitest run --passWithNoTests",
     "check": "sh .githooks/pre-commit"

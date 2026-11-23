@@ -42,6 +42,7 @@ step 'lint' oxlint
 # The typescript preset needs --type-aware and oxlint-tsgolint. Without them its rules do not run.
 step 'lint (type-aware)' oxlint --type-aware
 step 'types' tsc --noEmit
+step 'types (scripts)' tsc -p scripts --noEmit
 # Run 1: all issue types. Default mode includes the tests and scripts/, so code that only they use is not unused.
 step 'knip' knip
 # Run 2: production mode leaves out the tests and scripts/. It finds a dev-only package in production code.
