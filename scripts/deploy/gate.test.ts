@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { encryptFile, storeName } from '../../src/model/index.ts';
+import { DEMO_MARKER } from '../../src/ui/demo/marker.ts';
 import { loadKey, type MacKey, makeKey, newIv } from '../prepare/key.ts';
 import { storeSongs } from '../prepare/store.ts';
 import { checkSite } from './gate.ts';
@@ -196,6 +197,14 @@ describe('checkSite', () => {
       await write(path, 'not really audio');
 
       expect(await check()).toEqual([expect.stringContaining(`${path}: `)]);
+    });
+  });
+
+  describe('the demo route', () => {
+    it('refuses a file that holds the demo route', async () => {
+      await write('assets/DemoScreen-abc.js', `const screen = { demo: "${DEMO_MARKER}" };`);
+
+      expect(await check()).toEqual([expect.stringMatching(/assets\/DemoScreen-abc\.js: .*demo route/u)]);
     });
   });
 });

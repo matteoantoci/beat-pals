@@ -19,7 +19,7 @@ type PlayScreenProps = {
 };
 
 /** The pause button (a hold of 0.6 s) and the progress beads of the song, with no numbers. */
-const Hud = (props: { readonly onPause: () => void; readonly bead: (el: HTMLElement) => void }): JSX.Element => (
+export const Hud = (props: { readonly onPause: () => void; readonly bead: (el: HTMLElement) => void }): JSX.Element => (
   <div class="play-hud">
     <HoldButton class="pause-button" label="Pause (parent: hold)" onHold={() => props.onPause()}>
       <svg class="pause-icon" viewBox="0 0 20 20" aria-hidden="true">
