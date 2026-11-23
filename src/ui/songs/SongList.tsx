@@ -4,15 +4,15 @@ import { progressOf } from '../../shell/save';
 import { loadFamilyKey, readCover, readSongStore, watchDownload } from '../../shell/songs';
 import { playTitleMusic } from '../../sound';
 import { palPicture } from '../pals/pal-svg';
+import { ClosedRecordBox } from './ClosedRecordBox';
 import { Record, Stars } from './record';
-import { WaitingPals } from './WaitingPals';
 import type { FamilyKey, IndexSong } from '../../model';
 import type { Accessor, JSX } from 'solid-js';
 
 // The song list (spec, "Screens"): only the ready songs, in the order of the song index (by title). Each card has
 // the picture, a record of the record color next to the 3 stars, and the title for the Parent. One tap on the
 // picture starts the song. A song shows when all its files are in the cache, so the list fills during a download.
-// With no ready song, the pals wait next to a closed record box. The title music plays on, and a tap starts it
+// With no ready song, the pals stand next to a closed record box. The title music plays on, and a tap starts it
 // again when it does not play.
 
 type Card = { song: IndexSong; picture: string | undefined };
@@ -144,7 +144,7 @@ export const SongList = (props: SongListProps): JSX.Element => {
         <HomeIcon />
       </button>
       <Show when={read() && cards().length === 0}>
-        <WaitingPals />
+        <ClosedRecordBox />
       </Show>
       <ul class="song-cards">
         <For each={cards()}>{(card) => <SongCard card={card} onTap={() => play(card.song)} />}</For>
