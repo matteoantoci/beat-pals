@@ -3,7 +3,7 @@
 // passes run in this order: the filter, the lane mapping, the doubles, and the holds.
 
 import { addDoubles, type NoteLanes } from './doubles';
-import { filterNotes } from './filter';
+import { filterNotes, refillGaps } from './filter';
 import { holdLengths } from './holds';
 import { type Lane, mapLanes } from './lanes';
 import { addOffBeat } from './off-beat';
@@ -42,7 +42,8 @@ export const bandOf = (color: RecordColor): readonly Lane[] => BANDS[color];
 export const childChart = (facts: SongFacts, color: RecordColor, step: SpeedStep): ChildChart => {
   const notes = [...facts.notes, ...facts.fills.flatMap((fill) => fill.notes)].toSorted((a, b) => a.t - b.t);
   const beats = timedBeats(facts.beats);
-  const onBeat = filterNotes(notes, keptBeats(facts.beats, step));
+  const kept = keptBeats(facts.beats, step);
+  const onBeat = refillGaps(notes, filterNotes(notes, kept), { kept, beats });
   const filtered = color === 'diamond' ? addOffBeat(notes, onBeat, { beats, step }) : onBeat;
   const band = BANDS[color];
   const lanes = mapLanes(filtered, band);

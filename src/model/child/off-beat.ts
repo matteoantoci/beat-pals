@@ -1,4 +1,4 @@
-// Filter step 2 of the child chart (spec, "The child chart"): at diamond, off-beat notes (on no beat of the facts)
+// Filter step 3 of the child chart (spec, "The child chart"): at diamond, off-beat notes (on no beat of the facts)
 // join the accepted notes in time order. An off-beat note joins only when no accepted note is closer to it than
 // 0.43 s, and when, with it, the off-beat share of the accepted notes at or before its time stays at or below the
 // cap of the speed step.

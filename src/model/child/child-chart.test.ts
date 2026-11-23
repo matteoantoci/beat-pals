@@ -48,6 +48,9 @@ const onEveryBeat = (beats: Beat[], step: SpeedStep): number[] => {
   return childChart(facts, 'bronze', step).notes.map((note) => note.t);
 };
 
+/** Notes on beats 2 and 4 of 0.5 s beats, from 0.5 s on: beats that step 0 does not keep. */
+const offStep = (count: number): number[] => Array.from({ length: count }, (_, at) => 0.5 + at);
+
 describe('childChart speed steps', () => {
   // 4 bars of 4/4 with a note on each eighth note.
   it.each([
@@ -106,6 +109,23 @@ describe('childChart filter', () => {
   it('lets the notes of the fills join the guitar notes', () => {
     const fills: SongFacts['fills'] = [{ part: 'bass', notes: [{ t: 2, frets: [7], lenSec: 0 }] }];
     expect(timesOf([1, 3], fills)).toEqual([1, 2, 3]);
+  });
+
+  describe('refill of long gaps', () => {
+    // 7 bars of 0.5 s beats at step 0: the kept beats are 1 and 3 of each bar, 1 s apart.
+    const slowBeats = steadyBeats(0.5, 7);
+    const stepZero = (notes: readonly number[]): number[] =>
+      childChart(factsWith(slowBeats, notes), 'bronze', 0).notes.map((note) => note.t);
+
+    it('lets the dropped notes on a beat join a gap of more than 8 s, at the spacing of the kept beats', () => {
+      // 1.25 is on no beat, so it never joins.
+      const refilled = [1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5];
+      expect(stepZero([0, ...offStep(11), 1.25, 12].toSorted((a, b) => a - b))).toEqual([0, ...refilled, 12]);
+    });
+
+    it('keeps a gap of 8 s as it is', () => {
+      expect(stepZero([0, ...offStep(7), 8])).toEqual([0, 8]);
+    });
   });
 });
 
