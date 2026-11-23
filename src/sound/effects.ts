@@ -43,6 +43,10 @@ const CLAP_SHELF_DB = { clap: -6, 'clap-great': -3 } as const;
 
 const isClap = (effect: Effect): effect is keyof typeof CLAP_SHELF_DB => effect in CLAP_SHELF_DB;
 
+/** The claps take this share of the song level boost: the full boost made them too loud in loud parts, while the
+ * chimes need all of it. 0.5 gives the claps at most 5 dB. */
+const CLAP_BOOST_SHARE = 0.5;
+
 const clapShelves = new WeakMap<AudioContext, Record<keyof typeof CLAP_SHELF_DB, AudioNode>>();
 
 /** The high shelf of a clap in `ctx`, in front of the output: one node for each clap, made at its first play. */
@@ -75,7 +79,8 @@ export const startEffect = (ctx: AudioContext, shot: Shot, when: number): AudioB
     return undefined;
   }
   const source = new AudioBufferSourceNode(ctx, { buffer, playbackRate: shot.rate });
-  const gain = new GainNode(ctx, { gain: 10 ** ((GAIN_DB[shot.effect] + (shot.boostDb ?? 0)) / 20) });
+  const boost = (shot.boostDb ?? 0) * (isClap(shot.effect) ? CLAP_BOOST_SHARE : 1);
+  const gain = new GainNode(ctx, { gain: 10 ** ((GAIN_DB[shot.effect] + boost) / 20) });
   source.connect(gain).connect(isClap(shot.effect) ? clapShelfOf(ctx, shot.effect) : outputOf(ctx));
   source.start(when);
   return source;
