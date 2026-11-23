@@ -4,7 +4,7 @@ import { reducedMotion, watchReducedMotion } from '../play/reduced-motion';
 import { pictureOf, type SongChoice } from '../songs/SongList';
 import { playScene, sceneLength, type ScenePlan, type SceneParts } from './motion';
 import { Band, Sleeve, StarRow, type Refs } from './parts';
-import type { PlayScore } from '../../model';
+import type { PlayOutcome } from '../../model';
 import type { JSX } from 'solid-js';
 
 // The end scene (spec, "Screens"): the result of the play in pictures, with no numbers. The record of the play
@@ -23,7 +23,7 @@ type EndSceneProps = {
   readonly choice: SongChoice;
   /** The hit ratio of the play. */
   readonly ratio: number;
-  readonly score: PlayScore;
+  readonly outcome: PlayOutcome;
   readonly onDone: () => void;
 };
 
@@ -64,11 +64,11 @@ const DoneButton = (props: { readonly onDone: () => void }): JSX.Element => {
 
 export const EndScene = (props: EndSceneProps): JSX.Element => {
   const plan: ScenePlan = {
-    star: props.score.star,
-    opened: props.score.opened !== null,
-    joins: props.score.joins,
+    star: props.outcome.star,
+    opened: props.outcome.opened !== null,
+    joins: props.outcome.joins,
     dance: danceOf(props.ratio),
-    band: bandOf(RECORD_COLORS[props.score.before.color]),
+    band: bandOf(RECORD_COLORS[props.outcome.before.color]),
   };
   const refs: Refs = { stars: [], bodies: [], pals: [] };
   const [picture, setPicture] = createSignal<string>();
@@ -100,8 +100,8 @@ export const EndScene = (props: EndSceneProps): JSX.Element => {
     <main class="end" ref={(el) => Object.assign(refs, { root: el })} onPointerDown={tap}>
       <div class="end-confetti" ref={(el) => Object.assign(refs, { confetti: el })} aria-hidden="true" />
       <section class="end-info">
-        <Sleeve score={props.score} picture={picture()} refs={refs} />
-        <StarRow score={props.score} refs={refs} />
+        <Sleeve outcome={props.outcome} picture={picture()} refs={refs} />
+        <StarRow outcome={props.outcome} refs={refs} />
       </section>
       <Band plan={plan} refs={refs} />
       <div class="end-foot">

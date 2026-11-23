@@ -2,11 +2,11 @@
 // the dark plate behind the band, the glass chutes, and the floor that the pals stand on. Nothing here moves during
 // a song.
 
+import { randomFrom, type Lane } from '../../model';
 import { css, TOKENS } from '../pals/color';
 import { laneX } from './geometry';
 import { circlePath, laneCss, style, TAU, tubePath } from './paint';
 import { palX } from './pals';
-import type { Lane } from '../../model';
 import type { Geometry } from './geometry';
 import type { Ctx } from './paint';
 
@@ -23,17 +23,6 @@ const PALS: readonly Lane[] = [0, 1, 2];
 /** The chute of a lane is this share of the lane width. */
 export const CHUTE_SHARE = 0.4;
 
-/** A small seeded random source (mulberry32), so the circles of the background never change. */
-const seeded = (seed: number): (() => number) => {
-  let state = seed;
-  return () => {
-    state = (state + 0x6d_2b_79_f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
-  };
-};
-
 /** The background of the app (a light from the top) with 9 still soft circles. */
 const paintBackdrop = (ctx: Ctx, { width, height }: Geometry): void => {
   ctx.save();
@@ -46,7 +35,7 @@ const paintBackdrop = (ctx: Ctx, { width, height }: Geometry): void => {
   style(ctx, { fillStyle: sky });
   ctx.fillRect(-1, 0, 2, 2);
   ctx.restore();
-  const random = seeded(7);
+  const { next: random } = randomFrom(7);
   style(ctx, { fillStyle: BACKDROP_DOT });
   for (let dot = 0; dot < DOTS; dot += 1) {
     const centre = { x: random() * width, y: random() * (height + 300) - 150 };

@@ -4,7 +4,7 @@
 // (C16). A double hit adds the clap burst at the edge between its 2 lanes.
 
 import { shapeKey } from './atlas';
-import { laneX } from './geometry';
+import { clamp01, laneX } from './geometry';
 import { NOTE_HEAD, SPRINKLE_SIZE } from './paint-fx';
 import type { Lane } from '../../model';
 import type { Geometry } from './geometry';
@@ -59,7 +59,6 @@ export const makeHit = (hit: Omit<HitRecord, 'sprinkles'>): HitRecord => {
   return { ...hit, sprinkles };
 };
 
-const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
 const easeOut = (value: number): number => 1 - (1 - clamp01(value)) ** 3;
 
 /** What the effects of one frame need. */

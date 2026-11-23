@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NEW_SONG, restore, scorePlay, snapshot, songProgress, withSong } from '../index';
+import { NEW_SONG, restore, outcomeOf, snapshot, songProgress, withSong } from '../index';
 import type { SavedProgress } from '../index';
 
 // Invented song ids: the repository is public (CLAUDE.md).
@@ -30,9 +30,9 @@ describe('the progress of a song', () => {
 
   it('keeps the other songs when one song changes', () => {
     const before = played();
-    const score = scorePlay(songProgress(before, 'paper-moon-parade'), 1);
+    const outcome = outcomeOf(songProgress(before, 'paper-moon-parade'), 1);
 
-    const after = withSong(before, 'paper-moon-parade', score.after);
+    const after = withSong(before, 'paper-moon-parade', outcome.after);
 
     expect(songProgress(after, 'paper-moon-parade')).toEqual({ color: 2, stars: 2, weakPlays: 0 });
     expect(songProgress(after, 'tiny-drum-day')).toEqual({ color: 4, stars: 3, weakPlays: 0 });

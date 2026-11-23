@@ -4,7 +4,7 @@
 // hold pops its bead. A double is 2 bubbles joined by a jelly band on 2 adjacent lanes.
 
 import { shapeKey } from './atlas';
-import { laneX, noteY } from './geometry';
+import { clamp01, laneX, noteY } from './geometry';
 import { HOLD } from './held';
 import { BAND_SHARE } from './hold-shapes';
 import { BAND_DOT_GAP, BAND_STRIP } from './paint-holds';
@@ -21,8 +21,6 @@ export type NoteFrame = {
   readonly view: View;
   readonly scene: EffectScene;
 };
-
-const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
 
 /** The bead pops for this long when a hold is done (prototype `drawHalfPop`). */
 const POP_SEC = 0.6;

@@ -31,7 +31,7 @@ type PlaySetup = {
 };
 
 /** What one play changed, for the save and for the end scene. */
-export type PlayScore = {
+export type PlayOutcome = {
   readonly before: SongProgress;
   readonly after: SongProgress;
   /** The star place (0 to 2) that the play filled on the record of `before`, or null for no new star. */
@@ -64,7 +64,7 @@ const joinerOf = (before: SongProgress, opened: RecordColor): Lane | null => {
 };
 
 /** The progress after a play with the hit ratio `ratio`. */
-export const scorePlay = (before: SongProgress, ratio: number): PlayScore => {
+export const outcomeOf = (before: SongProgress, ratio: number): PlayOutcome => {
   const nothing = { before, star: null, opened: null, joins: null } as const;
   if (ratio < GOOD_RATIO) {
     return { ...nothing, after: { ...before, weakPlays: before.weakPlays === 0 ? 1 : 2 } };

@@ -43,7 +43,7 @@ export const watchUpdates = (): void => {
   });
 };
 
-/** Asks the browser for a new version. A return from the background is not a navigation (shell.md §4). */
+/** Asks the browser for a new version. A return from the background is not a navigation. */
 export const checkForUpdate = (): void => {
   registration?.update().catch(ignored);
 };

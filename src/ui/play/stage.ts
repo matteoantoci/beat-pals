@@ -8,7 +8,7 @@ import { hex, TOKENS } from '../pals/color';
 import { shapeKey } from './atlas';
 import { drawHit, type EffectScene } from './effects';
 import { drawEnergy, type EnergyScene } from './energy-stage';
-import { laneX, noteY } from './geometry';
+import { clamp01, laneX, noteY } from './geometry';
 import { drawNotes, type NoteFrame } from './stage-notes';
 import { dress, makeParts, type Parts } from './stage-parts';
 import { makeTextures, type Textures } from './textures';
@@ -43,8 +43,6 @@ type Frame = {
   readonly notes: Mutable<NoteFrame>;
   readonly energy: Mutable<EnergyScene>;
 };
-
-const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
 
 const drawBeat = ({ parts, notes: { view }, scene }: Frame, at: number): void => {
   const beat = view.beats[at];

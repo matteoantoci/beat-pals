@@ -2,7 +2,7 @@ import { css, shade, TOKENS } from '../pals/color';
 import { palPicture } from '../pals/pal-svg';
 import type { JSX } from 'solid-js';
 
-// The song list with no ready songs (spec, "Screens"): the pals wait next to a closed record box. No text, and
+// The song list with no ready songs (spec, "Screens"): the pals stand next to a closed record box. No text, and
 // nothing to tap here.
 
 const BOX = css(TOKENS.g600);
@@ -13,7 +13,7 @@ const LABEL = css(TOKENS.bronze);
 
 /** A closed box with a record drawn on its front. */
 const RecordBox = (): JSX.Element => (
-  <svg class="waiting-box" viewBox="0 0 120 120" aria-hidden="true">
+  <svg class="closed-box" viewBox="0 0 120 120" aria-hidden="true">
     <rect x="12" y="44" width="96" height="72" rx="8" fill={INK} />
     <rect x="12" y="40" width="96" height="72" rx="8" fill={BOX} />
     <rect x="12" y="92" width="96" height="20" rx="8" fill={BOX_DARK} />
@@ -24,11 +24,11 @@ const RecordBox = (): JSX.Element => (
   </svg>
 );
 
-export const WaitingPals = (): JSX.Element => (
-  <div class="song-waiting">
-    <img class="waiting-pal" src={palPicture(0, 'idle')} alt="" draggable={false} />
-    <img class="waiting-pal" src={palPicture(1, 'idle')} alt="" draggable={false} />
+export const ClosedRecordBox = (): JSX.Element => (
+  <div class="song-closed-box">
+    <img class="box-pal" src={palPicture(0, 'idle')} alt="" draggable={false} />
+    <img class="box-pal" src={palPicture(1, 'idle')} alt="" draggable={false} />
     <RecordBox />
-    <img class="waiting-pal" src={palPicture(2, 'idle')} alt="" draggable={false} />
+    <img class="box-pal" src={palPicture(2, 'idle')} alt="" draggable={false} />
   </div>
 );

@@ -133,8 +133,8 @@
   white-space: nowrap;
 }
 
-/* No ready song: the pals wait next to a closed record box. */
-.song-waiting {
+/* No ready song: the pals stand next to a closed record box. */
+.song-closed-box {
   position: absolute;
   inset: 96px 16px 32px;
   display: flex;
@@ -145,12 +145,12 @@
   height: 120px;
 }
 
-.waiting-pal {
+.box-pal {
   width: 88px;
   height: 88px;
 }
 
-.waiting-box {
+.closed-box {
   width: 120px;
   height: 120px;
 }
@@ -176,12 +176,12 @@
 }
 
 @media (max-width: 400px) {
-  .waiting-pal {
+  .box-pal {
     width: 64px;
     height: 64px;
   }
 
-  .waiting-box {
+  .closed-box {
     width: 88px;
     height: 88px;
   }
