@@ -13,7 +13,7 @@ type Leak = { readonly kind: 'id' | 'title' | 'artist'; readonly name: string };
 const WORD = /[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu;
 const MARK = /\p{M}/gu;
 
-/** Folds case and accents, so that "Café" and "CAFE" are the same. The deploy gate uses the same fold. */
+/** Folds case and accents, so that "Café" and "CAFE" are the same. The leak scan uses this fold. */
 export const fold = (text: string): string => text.normalize('NFKD').replace(MARK, '').toLowerCase();
 
 const words = (text: string): readonly string[] => fold(text).match(WORD) ?? [];
