@@ -14,12 +14,12 @@ const SAVE_VERSION = 1;
 /** The progress of each song with a play, by song id. Songs with no play are not in it. */
 export type SavedProgress = Readonly<Record<string, SongProgress>>;
 
-type SaveData = { readonly version: number; readonly progress: SavedProgress };
+export type SaveData = { readonly version: number; readonly progress: SavedProgress };
 
 /** Why `restore` refused a save. `version`: a schema version that this build does not know. `shape`: not save data. */
-type RestoreFailure = 'version' | 'shape';
+export type RestoreFailure = 'version' | 'shape';
 
-type RestoreResult =
+export type RestoreResult =
   | { readonly ok: true; readonly progress: SavedProgress }
   | { readonly ok: false; readonly reason: RestoreFailure };
 
