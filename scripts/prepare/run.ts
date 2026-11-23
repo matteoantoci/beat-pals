@@ -2,7 +2,7 @@
 // `<prepared>/<song-id>/` with `song.m4a`, the cover picture (`cover.jpg` or `cover.png`, none for a plain card),
 // `song.json` (the facts file), and `stamp.json`. A song with an unchanged stamp is skipped before ffmpeg runs.
 // Each song is built in a hidden work folder and then replaces the old folder, so a stopped run leaves no
-// half-written song folder.
+// half-written song folder. A prepared folder whose `.sng` file left the inbox is removed.
 
 import { createHash } from 'node:crypto';
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
@@ -123,10 +123,22 @@ const prepareOne = async (song: InboxSong, { inbox, prepared, encoder, log }: Op
   return 'prepared';
 };
 
-/** Prepares each song of the inbox, one at a time. Gives the count of failed songs. */
+/** Removes each prepared song folder whose id has no `.sng` file in the inbox, with a log line for each. */
+const removeOrphans = async ({ prepared, log }: Options, ids: ReadonlySet<string>): Promise<void> => {
+  const orphans = (await readdir(prepared, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.') && !ids.has(entry.name))
+    .map((entry) => entry.name)
+    .toSorted();
+  await Promise.all(orphans.map(async (id) => rm(join(prepared, id), { recursive: true, force: true })));
+  orphans.forEach((id) => log(`${id}: removed from the prepared songs, its .sng file is gone.`));
+};
+
+/**
+ * Prepares each song of the inbox, one at a time. A song that fails is logged and counted, but it does not stop the
+ * run (story 50). Gives the exit code: 1 only when `only` names no song of the inbox.
+ */
 export const prepareSongs = async (options: Options): Promise<number> => {
-  const entries = await readdir(options.inbox, { withFileTypes: true });
-  const inbox = readInbox(entries.filter((entry) => entry.isFile()).map((entry) => entry.name));
+  const inbox = await readInbox(options.inbox);
   inbox.skipped.forEach((line) => options.log(line));
   const songs = inbox.songs.filter((song) => options.only === undefined || song.id === options.only);
   if (options.only !== undefined && songs.length === 0) {
@@ -134,6 +146,7 @@ export const prepareSongs = async (options: Options): Promise<number> => {
     return 1;
   }
   await mkdir(options.prepared, { recursive: true });
+  await removeOrphans(options, new Set(inbox.songs.map((song) => song.id)));
   const outcomes = await songs.reduce<Promise<Outcome[]>>(
     async (done, song) => [...(await done), await prepareOne(song, options)],
     Promise.resolve([])
@@ -143,5 +156,5 @@ export const prepareSongs = async (options: Options): Promise<number> => {
     (each) => `${String(count(each))} ${each}`
   );
   options.log(`prepare-song: ${summary.join(', ')}.`);
-  return count('failed');
+  return 0;
 };

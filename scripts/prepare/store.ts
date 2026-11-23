@@ -1,5 +1,6 @@
 // The store step of `prepare-song` (spec, "Delivery: the encrypted song store"). It encrypts each file of
 // songs/.prepared/ and the song index into the song store, songs/.site/, and writes the plain `manifest.json`.
+// - Only the prepared songs with a `.sng` file in the inbox go into the store.
 // - Each store file is `<name>.bin`. The name is the keyed hash of the plain content, so a file that exists with
 //   that name is kept: an unchanged song keeps its names, and a second run writes no file.
 // - The store refuses a family key with another key id than its manifest.
@@ -14,6 +15,7 @@ import {
   encryptFile,
   type IndexSong,
   type Manifest,
+  readFacts,
   readManifest,
   type SongIndex,
   storeName,
@@ -26,6 +28,8 @@ type Options = {
   /** The song store, songs/.site/. */
   site: string;
   key: MacKey;
+  /** The song ids of the inbox: one for each `.sng` file of songs/. A prepared folder of another id is not stored. */
+  songIds: ReadonlySet<string>;
   log: (line: string) => void;
 };
 
@@ -75,24 +79,6 @@ const storeFile = async (
   return { name, size };
 };
 
-type Facts = { id: string; title: string; artist: string; charter: string };
-
-/** The song fields of the facts file. The facts file comes from the prepare step, so a wrong one is a bug. */
-const readFacts = (bytes: Uint8Array, folder: string): Facts => {
-  const facts: unknown = JSON.parse(new TextDecoder().decode(bytes));
-  const fields = new Map<string, unknown>(typeof facts === 'object' && facts !== null ? Object.entries(facts) : []);
-  const [id, title, artist, charter] = ['id', 'title', 'artist', 'charter'].map((key) => fields.get(key));
-  if (
-    typeof id !== 'string' ||
-    typeof title !== 'string' ||
-    typeof artist !== 'string' ||
-    typeof charter !== 'string'
-  ) {
-    throw new Error(`${folder}/song.json is not a facts file.`);
-  }
-  return { id, title, artist, charter };
-};
-
 /** Stores the cover picture of a prepared song, the first that exists. A song with no cover has a plain card. */
 const storeCover = async (
   path: string,
@@ -120,7 +106,12 @@ const storeSong = async (
   if (factsBytes === undefined || audioBytes === undefined) {
     throw new Error(`${path} has no song.json or no song.m4a.`);
   }
-  const { id, title, artist, charter } = readFacts(factsBytes, path);
+  const songFacts = readFacts(new TextDecoder().decode(factsBytes));
+  if (songFacts === undefined) {
+    // The facts file comes from the prepare step, so a wrong one is a bug.
+    throw new Error(`${path}/song.json is not a facts file.`);
+  }
+  const { id, title, artist, charter } = songFacts;
   const facts = await storeFile(factsBytes, options, written);
   const cover = await storeCover(path, options, written);
   const audio = await storeFile(audioBytes, options, written);
@@ -165,6 +156,18 @@ const prune = async (site: string, keep: ReadonlySet<string>): Promise<number> =
 /** The text of `manifest.json`, with the keys in the order of the schema. */
 const manifestText = (manifest: Manifest): string => `${JSON.stringify(manifest, null, 2)}\n`;
 
+/** The prepared song folders whose id has a .sng file in the inbox. Logs each other folder. */
+const inboxFolders = async ({ prepared, songIds, log }: Options): Promise<string[]> => {
+  const folders = (await readdir(prepared, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
+    .map((entry) => entry.name)
+    .toSorted();
+  folders
+    .filter((folder) => !songIds.has(folder))
+    .forEach((folder) => log(`${folder}: not stored, no .sng file in the inbox has this id.`));
+  return folders.filter((folder) => songIds.has(folder));
+};
+
 /** Encrypts the prepared songs into the song store and writes its manifest. */
 export const storeSongs = async (options: Options): Promise<Result> => {
   const { site, key, log } = options;
@@ -173,12 +176,9 @@ export const storeSongs = async (options: Options): Promise<Result> => {
     return keyCheck;
   }
   await mkdir(site, { recursive: true });
-  const folders = (await readdir(options.prepared, { withFileTypes: true }))
-    .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
-    .map((entry) => entry.name)
-    .toSorted();
+  const kept = await inboxFolders(options);
   const written: string[] = [];
-  const stored = await folders.reduce<Promise<{ song: IndexSong; files: StoreFile[] }[]>>(
+  const stored = await kept.reduce<Promise<{ song: IndexSong; files: StoreFile[] }[]>>(
     async (done, folder) => [...(await done), await storeSong(folder, options, written)],
     Promise.resolve([])
   );

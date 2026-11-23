@@ -69,7 +69,8 @@ beforeEach(async () => {
   const site = join(root, 'site');
   await prepare(prepared, SONG);
   await prepare(prepared, ONE_WORD);
-  const stored = await storeSongs({ prepared, site, key, log: () => undefined });
+  const songIds = new Set([SONG.id, ONE_WORD.id]);
+  const stored = await storeSongs({ prepared, site, key, songIds, log: () => undefined });
   if (!stored.ok) {
     throw new Error(stored.reason);
   }
