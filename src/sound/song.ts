@@ -2,6 +2,7 @@
 // <audio> element, and the guarded song clock gives its time. Pause and resume work across a context replacement.
 // Only one song stays in memory, so the state of that song is the state of this module.
 import { firstSongTime, songTime, startAt } from '../model';
+import { songBoostDb, songMeter } from './boost';
 import { levelUpShot, startEffect, type LevelUpStep, type Shot } from './effects';
 import { currentContext, decode, onReplaced } from './engine';
 
@@ -35,10 +36,12 @@ export type Song = {
   readonly release: () => void;
 };
 
-/** The source, the claps, and t0 of the song in one context. `claps` holds every sound effect that is to come. */
+/** The source, its meter, the claps, and t0 of the song in one context. `claps` holds every sound effect that is to
+ * come. */
 type Session = {
   readonly ctx: AudioContext;
   readonly source: AudioBufferSourceNode;
+  readonly meter: AnalyserNode;
   readonly t0: number;
   readonly claps: Set<AudioBufferSourceNode>;
   readonly unwatch: () => void;
@@ -122,19 +125,22 @@ const play = (from: number): void => {
   const ctx = currentContext();
   const { t0, when, offset } = startAt(ctx.currentTime, from);
   const source = new AudioBufferSourceNode(ctx, { buffer });
-  source.connect(ctx.destination);
+  const meter = songMeter(ctx);
+  source.connect(meter);
   source.start(when, offset);
   frozen = from;
-  session = { ctx, source, t0, claps: new Set(), unwatch: watch(ctx, events) };
+  session = { ctx, source, meter, t0, claps: new Set(), unwatch: watch(ctx, events) };
 };
 
-/** Plays a sound effect at a song time, when the Sound effects switch is on. */
-const effect = (shot: Shot, at: number): void => {
-  if (!session || !effectsOn) {
+/** Plays a sound effect of song number `id` at a song time, when the Sound effects switch is on, with the boost of
+ * the song level now. */
+const effect = (id: number, shot: Shot, at: number): void => {
+  if (id !== current || !session || !effectsOn) {
     return;
   }
-  const { ctx, t0, claps } = session;
-  const source = startEffect(ctx, shot, Math.max(ctx.currentTime, t0 + at));
+  const { ctx, t0, claps, meter } = session;
+  const boosted = { ...shot, boostDb: songBoostDb(meter) };
+  const source = startEffect(ctx, boosted, Math.max(ctx.currentTime, t0 + at));
   if (!source) {
     return;
   }
@@ -175,16 +181,8 @@ const handle = (id: number, duration: number): Song => {
         play(frozen);
       }
     },
-    clap: (at, great) => {
-      if (id === current) {
-        effect({ effect: great ? 'clap-great' : 'clap', rate: 1 }, at);
-      }
-    },
-    levelUp: (step, at) => {
-      if (id === current) {
-        effect(levelUpShot(step), at);
-      }
-    },
+    clap: (at, great) => effect(id, { effect: great ? 'clap-great' : 'clap', rate: 1 }, at),
+    levelUp: (step, at) => effect(id, levelUpShot(step), at),
     cancelClaps: mine(cancelClaps),
     release: mine(release),
   };

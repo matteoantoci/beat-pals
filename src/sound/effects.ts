@@ -3,8 +3,10 @@
 // the level-up sounds play on the song clock (./song.ts); the record, the star, and the join play in the end scene.
 // The play gain follows the Pile Pals level rule (Pile Pals scripts/audio/prep.py): a file below 0.4 s gets a true
 // peak of -6 dBTP, a longer file -18 LUFS with its true peak at -1 dBTP or lower; then no file has a higher maximum
-// momentary loudness than the great clap (-21.6 LUFS), as the snap in Pile Pals.
+// momentary loudness than the great clap (-21.6 LUFS), as the snap in Pile Pals. Over a song, the effects get a boost
+// that follows the song level (./boost.ts). All effects go through the limiter of ./output.ts.
 import { readyClip } from './engine';
+import { outputOf } from './output';
 import type { EnergyStep } from '../model';
 
 /** The steps that a step up reaches. */
@@ -28,8 +30,9 @@ const fileOf = (effect: string): string => `sounds/${effect}.wav`;
 /** The files of all effects, for the preload at start. */
 export const EFFECT_FILES: readonly string[] = Object.keys(GAIN_DB).map(fileOf);
 
-/** One effect to play and its playbackRate: a rate above 1 plays it higher and shorter. */
-export type Shot = { readonly effect: Effect; readonly rate: number };
+/** One effect to play, its playbackRate (a rate above 1 plays it higher and shorter), and its boost in dB over its
+ * play gain (the song level boost, 0 when absent). */
+export type Shot = { readonly effect: Effect; readonly rate: number; readonly boostDb?: number };
 
 /** A whole tone is 2 semitones. */
 const WHOLE_TONE = 2 ** (2 / 12);
@@ -48,7 +51,8 @@ export const startEffect = (ctx: AudioContext, shot: Shot, when: number): AudioB
     return undefined;
   }
   const source = new AudioBufferSourceNode(ctx, { buffer, playbackRate: shot.rate });
-  source.connect(new GainNode(ctx, { gain: 10 ** (GAIN_DB[shot.effect] / 20) })).connect(ctx.destination);
+  const gain = new GainNode(ctx, { gain: 10 ** ((GAIN_DB[shot.effect] + (shot.boostDb ?? 0)) / 20) });
+  source.connect(gain).connect(outputOf(ctx));
   source.start(when);
   return source;
 };

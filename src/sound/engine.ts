@@ -1,6 +1,7 @@
 // One AudioContext for the whole app (spec, "Sound and the audio clock"). The unlock and the heal come from the
 // Pile Pals engine. Files are decoded one time in an offline context, so the buffers stay good after a replacement.
 import { soundStart } from '../model';
+import { outputOf } from './output';
 
 declare global {
   // The Audio Session API of WebKit. lib.dom does not have it yet.
@@ -137,7 +138,7 @@ const startLoop = (loop: Loop): void => {
         loopStart: offset,
         loopEnd: buffer.duration,
       });
-      source.connect(new GainNode(ctx, { gain: 10 ** (loop.gainDb / 20) })).connect(ctx.destination);
+      source.connect(new GainNode(ctx, { gain: 10 ** (loop.gainDb / 20) })).connect(outputOf(ctx));
       source.start(0, offset);
       looping = { loop, ctx, source };
     })
