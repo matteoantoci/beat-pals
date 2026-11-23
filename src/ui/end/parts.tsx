@@ -3,7 +3,7 @@ import { RECORD_COLORS } from '../../model';
 import { palPicture } from '../pals/pal-svg';
 import { Record, StarIcon } from '../songs/record';
 import { SongPicture } from '../songs/SongList';
-import type { Lane, PlayScore } from '../../model';
+import type { Lane, PlayOutcome } from '../../model';
 import type { ScenePlan } from './motion';
 import type { JSX } from 'solid-js';
 
@@ -33,12 +33,12 @@ const Sparks = (props: { readonly ref: (el: HTMLElement) => void }): JSX.Element
   </span>
 );
 
-type SleeveProps = { readonly score: PlayScore; readonly picture: string | undefined; readonly refs: Refs };
+type SleeveProps = { readonly outcome: PlayOutcome; readonly picture: string | undefined; readonly refs: Refs };
 
 /** The song picture in front, with the record of the play (and the record of a new color) behind it. */
 export const Sleeve = (props: SleeveProps): JSX.Element => (
   <div class="end-sleeve">
-    <Show when={props.score.opened}>
+    <Show when={props.outcome.opened}>
       {(opened) => (
         <div class="end-record" ref={(el) => Object.assign(props.refs, { newRecord: el })}>
           <Record color={opened()} />
@@ -46,7 +46,7 @@ export const Sleeve = (props: SleeveProps): JSX.Element => (
       )}
     </Show>
     <div class="end-record" ref={(el) => Object.assign(props.refs, { record: el })}>
-      <Record color={RECORD_COLORS[props.score.before.color]} />
+      <Record color={RECORD_COLORS[props.outcome.before.color]} />
     </div>
     <div class="end-cover" ref={(el) => Object.assign(props.refs, { cover: el })}>
       <SongPicture picture={props.picture} />
@@ -55,20 +55,20 @@ export const Sleeve = (props: SleeveProps): JSX.Element => (
 );
 
 /** The 3 star places of the record. The stars of before the play shine; the new star flies in. */
-export const StarRow = (props: { readonly score: PlayScore; readonly refs: Refs }): JSX.Element => (
-  <div class="end-stars" role="img" aria-label={`${String(props.score.after.stars)} stars`}>
+export const StarRow = (props: { readonly outcome: PlayOutcome; readonly refs: Refs }): JSX.Element => (
+  <div class="end-stars" role="img" aria-label={`${String(props.outcome.after.stars)} stars`}>
     <For each={[0, 1, 2]}>
       {(place) => (
         <span class="end-slot">
           <StarIcon on={false} />
           <span
             class="end-star"
-            classList={{ earned: place < props.score.before.stars || place === props.score.star }}
+            classList={{ earned: place < props.outcome.before.stars || place === props.outcome.star }}
             ref={(el) => props.refs.stars.push(el)}
           >
             <StarIcon on />
           </span>
-          <Show when={place === props.score.star}>
+          <Show when={place === props.outcome.star}>
             <Sparks ref={(el) => Object.assign(props.refs, { starSparks: el })} />
           </Show>
         </span>

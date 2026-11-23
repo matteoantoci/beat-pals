@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { danceOf, NEW_SONG, playSetup, scorePlay } from '../index';
+import { danceOf, NEW_SONG, playSetup, outcomeOf } from '../index';
 import type { SongProgress } from '../index';
 
 const GOOD = 0.7;
@@ -7,7 +7,7 @@ const WEAK = 0.69;
 
 /** The progress after the plays, one hit ratio each, from a new song. */
 const after = (ratios: readonly number[], from: SongProgress = NEW_SONG): SongProgress =>
-  ratios.reduce((progress, ratio) => scorePlay(progress, ratio).after, from);
+  ratios.reduce((progress, ratio) => outcomeOf(progress, ratio).after, from);
 
 describe('playSetup', () => {
   it('starts a new song at bronze, at the first speed step', () => {
@@ -33,45 +33,45 @@ describe('playSetup', () => {
   });
 });
 
-describe('scorePlay', () => {
+describe('outcomeOf', () => {
   it('earns the next star at 70%', () => {
-    const score = scorePlay(NEW_SONG, GOOD);
+    const outcome = outcomeOf(NEW_SONG, GOOD);
 
-    expect(score.after).toEqual({ color: 0, stars: 1, weakPlays: 0 });
-    expect(score.star).toBe(0);
-    expect(score.opened).toBeNull();
+    expect(outcome.after).toEqual({ color: 0, stars: 1, weakPlays: 0 });
+    expect(outcome.star).toBe(0);
+    expect(outcome.opened).toBeNull();
   });
 
   it('earns nothing below 70% and takes nothing away', () => {
-    const score = scorePlay({ color: 1, stars: 2, weakPlays: 0 }, WEAK);
+    const outcome = outcomeOf({ color: 1, stars: 2, weakPlays: 0 }, WEAK);
 
-    expect(score.after).toEqual({ color: 1, stars: 2, weakPlays: 1 });
-    expect(score.star).toBeNull();
+    expect(outcome.after).toEqual({ color: 1, stars: 2, weakPlays: 1 });
+    expect(outcome.star).toBeNull();
   });
 
   it('opens the next color with 0 stars at the third star', () => {
-    const score = scorePlay({ color: 0, stars: 2, weakPlays: 0 }, 1);
+    const outcome = outcomeOf({ color: 0, stars: 2, weakPlays: 0 }, 1);
 
-    expect(score.after).toEqual({ color: 1, stars: 0, weakPlays: 0 });
-    expect(score.star).toBe(2);
-    expect(score.opened).toBe('silver');
+    expect(outcome.after).toEqual({ color: 1, stars: 0, weakPlays: 0 });
+    expect(outcome.star).toBe(2);
+    expect(outcome.opened).toBe('silver');
   });
 
   it('brings a pal into the band at silver and at gold only', () => {
-    expect(scorePlay({ color: 0, stars: 2, weakPlays: 0 }, 1).joins).toBe(0);
-    expect(scorePlay({ color: 1, stars: 2, weakPlays: 0 }, 1).joins).toBe(2);
-    expect(scorePlay({ color: 2, stars: 2, weakPlays: 0 }, 1).joins).toBeNull();
-    expect(scorePlay({ color: 3, stars: 2, weakPlays: 0 }, 1).joins).toBeNull();
-    expect(scorePlay({ color: 0, stars: 1, weakPlays: 0 }, 1).joins).toBeNull();
+    expect(outcomeOf({ color: 0, stars: 2, weakPlays: 0 }, 1).joins).toBe(0);
+    expect(outcomeOf({ color: 1, stars: 2, weakPlays: 0 }, 1).joins).toBe(2);
+    expect(outcomeOf({ color: 2, stars: 2, weakPlays: 0 }, 1).joins).toBeNull();
+    expect(outcomeOf({ color: 3, stars: 2, weakPlays: 0 }, 1).joins).toBeNull();
+    expect(outcomeOf({ color: 0, stars: 1, weakPlays: 0 }, 1).joins).toBeNull();
   });
 
   it('reaches diamond with 3 stars in 15 good plays, and stays there', () => {
     const top = after(Array.from({ length: 15 }, () => 1));
 
     expect(top).toEqual({ color: 4, stars: 3, weakPlays: 0 });
-    expect(scorePlay(top, 1).after).toEqual(top);
-    expect(scorePlay(top, 1).star).toBeNull();
-    expect(scorePlay(top, 1).opened).toBeNull();
+    expect(outcomeOf(top, 1).after).toEqual(top);
+    expect(outcomeOf(top, 1).star).toBeNull();
+    expect(outcomeOf(top, 1).opened).toBeNull();
   });
 
   it('counts weak plays up to 2', () => {
@@ -87,11 +87,11 @@ describe('scorePlay', () => {
     const tired = after([WEAK, WEAK], { color: 2, stars: 1, weakPlays: 0 });
     expect(playSetup(tired)).toMatchObject({ step: 0, steppedDown: true });
 
-    const score = scorePlay(tired, GOOD);
+    const outcome = outcomeOf(tired, GOOD);
 
-    expect(score.after).toEqual({ color: 2, stars: 1, weakPlays: 0 });
-    expect(score.star).toBeNull();
-    expect(playSetup(score.after)).toMatchObject({ step: 1, steppedDown: false });
+    expect(outcome.after).toEqual({ color: 2, stars: 1, weakPlays: 0 });
+    expect(outcome.star).toBeNull();
+    expect(playSetup(outcome.after)).toMatchObject({ step: 1, steppedDown: false });
   });
 
   it('keeps the lower speed step after a weak play at it, and never goes down 2 steps', () => {
@@ -102,10 +102,10 @@ describe('scorePlay', () => {
   });
 
   it('earns a star at the first step of a color after weak plays, because that play is not stepped down', () => {
-    const score = scorePlay({ color: 1, stars: 0, weakPlays: 2 }, GOOD);
+    const outcome = outcomeOf({ color: 1, stars: 0, weakPlays: 2 }, GOOD);
 
-    expect(score.after).toEqual({ color: 1, stars: 1, weakPlays: 0 });
-    expect(score.star).toBe(0);
+    expect(outcome.after).toEqual({ color: 1, stars: 1, weakPlays: 0 });
+    expect(outcome.star).toBe(0);
   });
 });
 
