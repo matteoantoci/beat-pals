@@ -6,6 +6,7 @@
 import { apply, result, startPlay } from '../../model';
 import { watchLifecycle } from '../../shell/lifecycle';
 import { keepScreenOn } from '../../shell/wake-lock';
+import { makeEnergyTrack, type EnergyStep } from './energy';
 import { watchTaps } from './taps';
 import type { Action, ChildChart, PlayEvent, PlayState } from '../../model';
 import type { Song } from '../../sound';
@@ -55,13 +56,24 @@ let stillSince = 0;
 let beadsFull = -1;
 let sleep = nothing;
 let unwatch = nothing;
+let energy = makeEnergyTrack();
+
+/** A step change of the band energy: the stage and the pals draw it, and a step up plays its level-up sound. */
+const energize = (parts: PlayerParts, step: EnergyStep, t: number): void => {
+  if (energy.record(step, t) && step !== 0) {
+    parts.song.levelUp(step, t);
+  }
+};
 
 const show = (parts: PlayerParts, events: readonly PlayEvent[], t: number): void => {
-  // `hop` (waiting pals), `energy`, `faded`, and `holdDone` have no picture at bronze.
+  // `hop` (waiting pals), `faded`, and `holdDone` have no picture at bronze.
   for (const event of events.filter((each) => each.type === 'hit')) {
     parts.view.record(event, t);
     parts.song.clap(event.soundAt);
     parts.root.setAttribute('data-last-hit', `${String(event.lane)} ${event.grade} ${t.toFixed(3)}`);
+  }
+  for (const event of events.filter((each) => each.type === 'energy')) {
+    energize(parts, event.step, t);
   }
 };
 
@@ -126,8 +138,9 @@ const frame = (parts: PlayerParts, now: number): void => {
   }
   act(parts, { type: 'advance', t }, t);
   parts.view.update(t);
-  parts.stage.draw(parts.view.view(), reducedMotion.matches);
-  parts.pals.update(parts.view.view(), reducedMotion.matches);
+  const look = energy.at(t);
+  parts.stage.draw(parts.view.view(), reducedMotion.matches, look);
+  parts.pals.update(parts.view.view(), reducedMotion.matches, look);
   drawBeads(parts, t);
   frameId = requestAnimationFrame((next) => frame(parts, next));
 };
@@ -167,6 +180,7 @@ export const startPlayer = (parts: PlayerParts): Player => {
   play = startPlay(parts.chart);
   down.clear();
   beadsFull = -1;
+  energy = makeEnergyTrack();
   lastT = Number.NaN;
   unwatch = listen(parts);
   parts.song.start(parts.chart.notes[0]?.t ?? Number.POSITIVE_INFINITY);

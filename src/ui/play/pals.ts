@@ -1,12 +1,14 @@
 // The pals of the play screen: HTML pictures above the PixiJS canvas (ADR 0002). They move only by CSS transforms
 // (C21). A hit makes the pal dance: a squash, a jump, and a lean that changes side from hit to hit (P11). The ready
 // state with the open mouth starts 0.55 s before the next note of the pal. An idle pal bobs 2 px on the strong
-// beats only (C15). With reduced motion, a pal changes its picture and does not move (C16).
+// beats only (C15); the band energy makes the idle dance bigger and, from step 1, gives the pals the "joy" face
+// (spec, "Band energy"). With reduced motion, a pal changes its picture and does not move (C16).
 // The waiting pals (not in the band) stay hidden here.
 
 import { palPicture, type PalState } from '../pals/pal-svg';
 import { laneX } from './geometry';
 import type { Lane, SongFacts } from '../../model';
+import type { EnergyLook } from './energy';
 import type { Geometry } from './geometry';
 import type { LaneState, View } from './view';
 
@@ -24,7 +26,7 @@ type Pose = {
 
 export type Pals = {
   readonly layout: (geometry: Geometry) => void;
-  readonly update: (view: View, reduced: boolean) => void;
+  readonly update: (view: View, reduced: boolean, energy: EnergyLook) => void;
 };
 
 /** True for each beat that is strong: a downbeat, or the second beat after it. */
@@ -39,21 +41,42 @@ const strongBeats = (beats: SongFacts['beats']): boolean[] => {
 /** The index of the last beat at or before the frame time. */
 const beatNow = (view: View): number => {
   let at = view.first.beat;
+  while (at > 0 && (view.beats[at]?.t ?? 0) > view.t) {
+    at -= 1;
+  }
   while ((view.beats[at + 1]?.t ?? Number.POSITIVE_INFINITY) <= view.t) {
     at += 1;
   }
   return at;
 };
 
-/** The bob of the idle pals: 2 px up in the first half of each strong beat. */
-const idleBob = (view: View, strong: readonly boolean[]): number => {
+/** Where the frame is in its beat: the share of the beat that passed (0 before the first beat), and whether the
+ * beat is strong. */
+type BeatPhase = { readonly phase: number; readonly strong: boolean };
+
+const beatPhase = (view: View, strong: readonly boolean[]): BeatPhase => {
   const at = beatNow(view);
   const start = view.beats[at]?.t ?? Number.POSITIVE_INFINITY;
   const phase = (view.t - start) / ((view.beats[at + 1]?.t ?? Number.POSITIVE_INFINITY) - start);
-  return strong[at] === true && phase >= 0 && phase < 0.5 ? -2 * Math.sin(2 * Math.PI * phase) : 0;
+  return { phase: phase >= 0 && phase < 1 ? phase : 0, strong: strong[at] === true };
 };
 
 const STILL = { ty: 0, rot: 0, sx: 1, sy: 1 } as const;
+
+/**
+ * The idle dance of a band pal. Step 0: a 2 px bob in the first half of each strong beat. Steps 1 and 2: a 10 px
+ * bounce on each beat, Dot on the off-beat. Step 3 and gold: the band jumps 18 px together on the beat and squashes
+ * a little when it lands. Each dance fades into the next one with the step (prototype play-style A, energy).
+ */
+const idlePose = (lane: Lane, { phase, strong }: BeatPhase, energy: EnergyLook): Pose => {
+  const [bounceShare, , jumpShare] = energy.fades;
+  const bob = strong && phase < 0.5 ? -2 * Math.sin(2 * Math.PI * phase) : 0;
+  const bounce = -10 * Math.sin(Math.PI * ((phase + (lane === 1 ? 0.5 : 0)) % 1));
+  const jump = -18 * Math.max(0, Math.sin((Math.PI * phase) / 0.7));
+  const land = phase > 0.7 ? jumpShare * Math.sin((Math.PI * (phase - 0.7)) / 0.3) : 0;
+  const ty = bob * (1 - bounceShare) + bounce * bounceShare * (1 - jumpShare) + jump * jumpShare;
+  return { state: energy.level >= 1 ? 'joy' : 'idle', ty, rot: 0, sx: 1 + 0.05 * land, sy: 1 - 0.08 * land };
+};
 
 /** The dance after a hit: a squash, then a jump with a lean. */
 const happyPose = (lane: LaneState, reduced: boolean): Pose => {
@@ -68,7 +91,8 @@ const happyPose = (lane: LaneState, reduced: boolean): Pose => {
   return { state: 'happy', ty: jump, rot, sx: 1 - squash * 0.6, sy: 1 + squash };
 };
 
-const poseOf = (lane: LaneState, bob: number, reduced: boolean): Pose => {
+/** The pose of a band pal: happy after a hit, ready before its note, else its idle dance. */
+const poseOf = (lane: LaneState, idle: Pose, reduced: boolean): Pose => {
   if (lane.hitAge < HAPPY_SEC) {
     return happyPose(lane, reduced);
   }
@@ -76,7 +100,7 @@ const poseOf = (lane: LaneState, bob: number, reduced: boolean): Pose => {
     const stretch = reduced ? 0 : lane.near;
     return { state: 'ready', ty: 0, rot: 0, sx: 1 - 0.03 * stretch, sy: 1 + 0.06 * stretch };
   }
-  return { state: 'idle', ...STILL, ty: reduced ? 0 : bob };
+  return reduced ? { ...idle, ...STILL } : idle;
 };
 
 /** The CSS transform of a pal: its bottom centre stands on the floor under its lane. */
@@ -122,10 +146,10 @@ export const makePals = (
         image.style.height = `${String(next.palH)}px`;
       }
     },
-    update: (view, reduced) => {
-      const bob = idleBob(view, strong);
+    update: (view, reduced, energy) => {
+      const beat = beatPhase(view, strong);
       for (const lane of band) {
-        place(lane, poseOf(view.lanes[lane], bob, reduced));
+        place(lane, poseOf(view.lanes[lane], idlePose(lane, beat, energy), reduced));
       }
     },
   };
