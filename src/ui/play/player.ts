@@ -5,7 +5,6 @@
 
 import { apply, result, startPlay } from '../../model';
 import { watchLifecycle } from '../../shell/lifecycle';
-import { writeSave } from '../../shell/save';
 import { keepScreenOn } from '../../shell/wake-lock';
 import { makeEnergyTrack } from './energy';
 import { watchTaps } from './taps';
@@ -74,7 +73,7 @@ const show = (parts: PlayerParts, events: readonly PlayEvent[], { t, action }: {
     parts.pals.hop(event.lane, t);
   }
   for (const event of events.filter((each) => each.type === 'hit')) {
-    parts.song.clap(event.soundAt);
+    parts.song.clap(event.soundAt, event.grade === 'great');
     parts.root.setAttribute('data-last-hit', `${String(event.lane)} ${event.grade} ${t.toFixed(3)}`);
   }
   for (const event of events.filter((each) => each.type === 'energy')) {
@@ -157,8 +156,8 @@ const run = (parts: PlayerParts): void => {
   frameId = requestAnimationFrame((now) => frame(parts, now));
 };
 
-/** The taps go to the model only while the play runs. The play pauses when the page hides, and the save is written
- * (spec, "Save"); iOS also stops the audio context then, and the song pauses itself for that. */
+/** The taps go to the model only while the play runs. The play pauses when the page hides (the app root writes the
+ * save then); iOS also stops the audio context then, and the song pauses itself for that. */
 const listen = (parts: PlayerParts): (() => void) => {
   const time = (): number => parts.song.songTime();
   const unwatchTaps = watchTaps(parts.root, {
@@ -173,11 +172,7 @@ const listen = (parts: PlayerParts): (() => void) => {
       }
     },
   });
-  const hidden = (): void => {
-    pause(parts);
-    writeSave();
-  };
-  const unwatchLifecycle = watchLifecycle({ hidden, visible: nothing });
+  const unwatchLifecycle = watchLifecycle({ hidden: () => pause(parts), visible: nothing });
   return () => {
     unwatchTaps();
     unwatchLifecycle();

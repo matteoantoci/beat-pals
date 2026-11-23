@@ -11,6 +11,11 @@ export type Read<T> = { ok: true; value: T } | { ok: false; problem: 'network' |
 export const SONGS = `${import.meta.env.BASE_URL}songs/`;
 export const CACHE = 'beat-pals-songs';
 const CACHED_NAME = /\/([0-9a-f]{64})\.bin$/u;
+/**
+ * A manifest fetch that hangs (a captive portal, a weak signal) stops after this long, as a lost network, so the
+ * song list soon uses the last store on the device.
+ */
+const MANIFEST_TIMEOUT_MS = 4000;
 
 export const fileUrl = (name: string): string => `${SONGS}${name}.bin`;
 
@@ -30,9 +35,9 @@ const fetchStore = async (url: string, signal?: AbortSignal): Promise<Read<Respo
   }
 };
 
-/** Fetches and reads `manifest.json`. */
+/** Fetches and reads `manifest.json`. A fetch that takes longer than 4 s is a `network` result. */
 export const fetchManifest = async (): Promise<Read<Manifest>> => {
-  const response = await fetchStore(`${SONGS}manifest.json`);
+  const response = await fetchStore(`${SONGS}manifest.json`, AbortSignal.timeout(MANIFEST_TIMEOUT_MS));
   if (!response.ok) {
     return response;
   }

@@ -1,6 +1,7 @@
-// The hit effects of style A (prototype `drawWave`, `drawSprinkles`, `drawMusicNote`). Each effect stays in its own
-// lane, from 1.5 ring diameters above the ring down to the floor (C5): a sprinkle outside that box is not drawn. The
-// main burst ends in 0.6 s and all effects in 1.2 s (C4). With reduced motion, the effects fade in place (C16).
+// The hit effects of style A (prototype `drawWave`, `drawSprinkles`, `drawMusicNote`, `drawClap`). Each effect stays
+// in its own lane, from 1.5 ring diameters above the ring down to the floor (C5): a sprinkle outside that box is not
+// drawn. The main burst ends in 0.6 s and all effects in 1.2 s (C4). With reduced motion, the effects fade in place
+// (C16). A double hit adds the clap burst at the edge between its 2 lanes.
 
 import { shapeKey } from './atlas';
 import { laneX } from './geometry';
@@ -15,6 +16,7 @@ export const EFFECT_SEC = 1.2;
 const WAVE_SEC = 0.3;
 const SPRINKLE_SEC = 0.6;
 const NOTE_SEC = 0.8;
+const CLAP_SEC = 0.4;
 const GRAVITY = 760;
 
 type Sprinkle = {
@@ -33,8 +35,10 @@ export type HitRecord = {
   /** The song time of the tap. */
   readonly at: number;
   readonly great: boolean;
-  /** The side to which the pal leans in its dance: it changes from hit to hit (P11). */
+  /** The side to which the pal leans in its dance: it changes from hit to hit (P11), or faces the partner lane. */
   readonly side: 1 | -1;
+  /** True for a lane of a double hit: the clap burst shows at the edge on the `side` of the lane. */
+  readonly clap: boolean;
   readonly sprinkles: readonly Sprinkle[];
 };
 
@@ -117,6 +121,33 @@ const drawMusicNote = (scene: EffectScene, hit: HitRecord): void => {
   });
 };
 
+/**
+ * The clap burst of a double hit at the lane edge that faces the partner: short white and lemon pills fly from the
+ * edge into the own lane, and a soft white glow sits on the edge. The left lane of the pair draws the glow one time.
+ */
+const drawClap = (scene: EffectScene, hit: HitRecord, age: number): void => {
+  if (!hit.clap || age >= CLAP_SEC) {
+    return;
+  }
+  const { geometry, reduced } = scene;
+  const k = age / CLAP_SEC;
+  const x = laneX(geometry, hit.lane) + (hit.side * geometry.laneW) / 2;
+  const y = geometry.hitY;
+  const reach = reduced ? 14 : 10 + 22 * easeOut(k);
+  if (hit.side > 0) {
+    scene.pool.show(scene.textures.shape(shapeKey.clapGlow), { x, y, alpha: 0.4 * (1 - k) });
+  }
+  for (let pill = -2; pill <= 2; pill += 1) {
+    const angle = (hit.side > 0 ? Math.PI : 0) + pill * 0.45;
+    scene.pool.show(scene.textures.shape(shapeKey.clapPill(pill % 2 !== 0)), {
+      x: x + Math.cos(angle) * reach,
+      y: y + Math.sin(angle) * reach,
+      alpha: 1 - k * k,
+      rotation: angle,
+    });
+  }
+};
+
 /** Draws the effects of one hit at the song time of the scene. */
 export const drawHit = (scene: EffectScene, hit: HitRecord | undefined): void => {
   const age = scene.t - (hit?.at ?? Number.NEGATIVE_INFINITY);
@@ -132,4 +163,5 @@ export const drawHit = (scene: EffectScene, hit: HitRecord | undefined): void =>
   if (age < NOTE_SEC) {
     drawMusicNote(scene, hit);
   }
+  drawClap(scene, hit, age);
 };

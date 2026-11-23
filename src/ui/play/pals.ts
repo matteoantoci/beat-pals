@@ -1,10 +1,10 @@
 // The pals of the play screen: HTML pictures above the PixiJS canvas (ADR 0002). They move only by CSS transforms
-// (C21). A hit makes the pal dance: a squash, a jump, and a lean that changes side from hit to hit (P11). The ready
-// state with the open mouth starts 0.55 s before the next note of the pal. An idle pal bobs 2 px on the strong
-// beats only (C15); the band energy makes the idle dance bigger and, from step 1, gives the pals the "joy" face
-// (spec, "Band energy"). With reduced motion, a pal changes its picture and does not move (C16).
-// A waiting pal (not in the band yet) stands right next to the band, at the same size. It smiles while the band
-// hits, and it hops 8 px at a tap in its column.
+// (C21). A hit makes the pal dance: a squash, a jump, and a lean that changes side from hit to hit (P11). After a
+// double hit, the 2 pals lean toward each other and press in, as a clap. The ready state with the open mouth starts
+// 0.55 s before the next note of the pal. An idle pal bobs 2 px on the strong beats only (C15); the band energy makes
+// the idle dance bigger and, from step 1, gives the pals the "joy" face (spec, "Band energy"). With reduced motion, a
+// pal changes its picture and does not move (C16). A waiting pal (not in the band yet) stands right next to the band,
+// at the same size. It smiles while the band hits, and it hops 8 px at a tap in its column.
 
 import { palPicture, type PalState } from '../pals/pal-svg';
 import { laneX } from './geometry';
@@ -24,13 +24,14 @@ const HOP_PX = 8;
 const WAIT_GAP = 8;
 const SQUASH_SEC = 0.06;
 
-/** One pal picture in one frame: its state and its transform. */
+/** One pal picture in one frame: its state and its transform. `dx` moves it to the side, for the clap. */
 type Pose = {
   readonly state: PalState;
   readonly ty: number;
   readonly rot: number;
   readonly sx: number;
   readonly sy: number;
+  readonly dx?: number;
 };
 
 export type Pals = {
@@ -100,7 +101,7 @@ const idlePose = (lane: Lane, { phase, strong }: BeatPhase, energy: EnergyLook):
   return { state: energy.step >= 1 ? 'joy' : 'idle', ty, rot: 0, sx: 1 + 0.05 * land, sy: 1 - 0.08 * land };
 };
 
-/** The dance after a hit: a squash, then a jump with a lean. */
+/** The dance after a hit: a squash, then a jump with a lean. A clap leans more and presses in toward the partner. */
 const happyPose = (lane: LaneState, reduced: boolean): Pose => {
   const h = lane.hitAge;
   if (reduced) {
@@ -109,8 +110,10 @@ const happyPose = (lane: LaneState, reduced: boolean): Pose => {
   const after = h - SQUASH_SEC;
   const squash = h < SQUASH_SEC ? -0.16 * (h / SQUASH_SEC) : -0.16 * Math.exp(-after * 9) * Math.cos(after * 22);
   const jump = h < SQUASH_SEC ? 0 : -Math.max(0, Math.sin(after * 8)) * 16 * Math.exp(-after * 4);
-  const rot = lane.side * 8 * Math.min(1, h / 0.08) * Math.exp(-h * 3);
-  return { state: 'happy', ty: jump, rot, sx: 1 - squash * 0.6, sy: 1 + squash };
+  const rot = lane.side * (lane.clap ? 12 : 8) * Math.min(1, h / 0.08) * Math.exp(-h * 3);
+  const press = lane.clap ? Math.min(1, h / 0.06) * Math.exp(-h * 5) : 0;
+  const sx = 1 - squash * 0.6 - 0.06 * press;
+  return { state: 'happy', ty: jump, rot, sx, sy: 1 + squash, dx: lane.side * 10 * press };
 };
 
 /**
@@ -146,7 +149,7 @@ const waitingPose = (hopAge: number, bandHitAge: number, reduced: boolean): Pose
 /** The CSS transform of a pal: its bottom centre stands on the floor at `centre`. */
 const transformOf = (geometry: Geometry, centre: number, pose: Pose): string => {
   const size = geometry.palH;
-  const x = (centre - size / 2).toFixed(1);
+  const x = (centre + (pose.dx ?? 0) - size / 2).toFixed(1);
   const y = (geometry.floorY - size + pose.ty).toFixed(1);
   return `translate(${x}px, ${y}px) rotate(${pose.rot.toFixed(2)}deg) scale(${pose.sx.toFixed(3)}, ${pose.sy.toFixed(3)})`;
 };

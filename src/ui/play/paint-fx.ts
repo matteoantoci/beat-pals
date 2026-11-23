@@ -1,6 +1,6 @@
 // The ring and hit effect shapes of prototype play-style A, painted around (0, 0) for the texture atlas.
 // The ring is cut into layers, so PixiJS only fades and scales them: the near halo, the light bands of a near note,
-// the hit fill, and the white core of a great hit.
+// the hit fill, and the white core of a great hit. The clap burst of a double hit has a glow and short pills.
 
 import { css, TOKENS } from '../pals/color';
 import { circlePath, laneCss, LEMON, ORIGIN, paintCircleLine, palMark, starPath, style, WHITE } from './paint';
@@ -89,5 +89,26 @@ export const paintMusicNote = (ctx: Ctx): void => {
   ctx.moveTo(8.4, -28);
   ctx.quadraticCurveTo(20, -22, 16, -10);
   ctx.quadraticCurveTo(15, -18, 8.4, -19);
+  ctx.fill();
+};
+
+/** The radius of the soft white glow of the clap burst (prototype `drawClap`). */
+export const CLAP_GLOW_R = 16;
+
+/** The soft white glow of the clap burst: white in the middle, clear at the edge. */
+export const paintClapGlow = (ctx: Ctx): void => {
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, CLAP_GLOW_R);
+  glow.addColorStop(0, WHITE);
+  glow.addColorStop(1, css(TOKENS.white, 0));
+  style(ctx, { fillStyle: glow });
+  circlePath(ctx, ORIGIN, CLAP_GLOW_R);
+  ctx.fill();
+};
+
+/** A short pill of the clap burst, 10 by 4 px, along the x axis. */
+export const paintClapPill = (ctx: Ctx, color: string): void => {
+  style(ctx, { fillStyle: color });
+  ctx.beginPath();
+  ctx.roundRect(-5, -2, 10, 4, 2);
   ctx.fill();
 };
