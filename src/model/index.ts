@@ -29,3 +29,5 @@ export { readManifest, readSongIndex } from './store/manifest';
 export type { CoverType, IndexSong, Manifest, SongIndex } from './store/manifest';
 export { downloadPlan } from './download/plan';
 export type { DownloadPlan } from './download/plan';
+export { readSetupMark, setupStep } from './download/setup';
+export type { SetupMark, SetupStep } from './download/setup';

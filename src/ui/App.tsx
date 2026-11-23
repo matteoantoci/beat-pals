@@ -1,4 +1,5 @@
-import { createSignal, Match, Switch } from 'solid-js';
+import { createSignal, Match, onCleanup, onMount, Switch } from 'solid-js';
+import { keepSongsFresh } from '../shell/songs';
 import { ParentArea } from './parent/ParentArea';
 import { PlayScreen } from './play/PlayScreen';
 import { SongList, type SongChoice } from './songs/SongList';
@@ -12,6 +13,8 @@ import type { JSX } from 'solid-js';
 type Screen = 'title' | 'songs' | 'parent' | 'play';
 
 export const App = (): JSX.Element => {
+  // After the setup, the new songs download at the start and at each return to the app (spec, "Delivery").
+  onMount(() => onCleanup(keepSongsFresh()));
   const [screen, setScreen] = createSignal<Screen>('title');
   /** The song of the play screen. */
   const [choice, setChoice] = createSignal<SongChoice>();

@@ -60,3 +60,8 @@ export const loadFamilyKey = async (): Promise<FamilyKey | undefined> => {
   const value: unknown = await withKeys('readonly', (store) => store.get(FAMILY));
   return isFamilyKey(value) ? value : undefined;
 };
+
+/** Deletes the stored family key. */
+export const deleteFamilyKey = async (): Promise<void> => {
+  await withKeys('readwrite', (store) => store.delete(FAMILY));
+};
