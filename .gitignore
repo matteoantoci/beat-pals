@@ -9,7 +9,7 @@ docs/research/.cache/
 # Song inbox and its songs/.prepared/ output on the Mac: owned audio, never published
 songs/
 
-node_modules/
+node_modules
 dist/
 dev-dist/
 *.tsbuildinfo
