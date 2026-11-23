@@ -13,7 +13,7 @@ import struct
 import zlib
 from pathlib import Path
 
-# The stage colour (grape-800). Keep the same value in index.html, vite.config.ts, public/icon.svg, and src/ui/styles.css.
+# The stage colour (grape-800). Keep the same value in index.html, vite.config.ts, and src/ui/styles.css.
 STAGE = (0x2C, 0x17, 0x6F)
 OUT = Path(__file__).resolve().parents[2] / 'public' / 'splash'
 
