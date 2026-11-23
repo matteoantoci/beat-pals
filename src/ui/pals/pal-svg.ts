@@ -1,7 +1,7 @@
 // The 15 still pictures of the pals (spec, "Screens"): 3 pals with 5 states each, drawn as SVG by the prototype
 // function `palSVG` of play-style A, with its colours. Animated WebP files come later, as a separate art task.
 
-import { css, LANE_COLORS, type Oklch } from './color';
+import { css, LANE_COLORS, TOKENS, type Oklch } from './color';
 
 /** idle; ready (wide eyes, open mouth) before a note; happy after a hit; held during a soft hold; joy from
  * energy step 1. */
@@ -12,7 +12,9 @@ export type PalState = (typeof PAL_STATES)[number];
 /** 0 Pip, 1 Dot, 2 Bo. */
 export type PalIndex = 0 | 1 | 2;
 
-const INK = css([0.22, 0.07, 285]);
+/** The pal art uses the palette only: the dark ink, the lane colours with their shades, and white (C27). */
+const INK = css(TOKENS.g950);
+const WHITE = css(TOKENS.white);
 const [PIP, DOT, BO] = LANE_COLORS;
 
 /** One construction for the 3 accessories: a stem with a dark outline in the colour family of the pal. */
@@ -39,7 +41,7 @@ const PALS: readonly [PalDrawing, PalDrawing, PalDrawing] = [
     extra: stem('M58 24 C56 14 62 8 70 11', PIP.dark) + knob([71, 12, 6], DOT.base),
     hi: [40, 44],
     faceY: 64,
-    cheek: css([0.58, 0.19, 5], 0.75),
+    cheek: css(PIP.dark, 0.75),
   },
   // Dot: a lemon block with a straight antenna and a pink knob.
   {
@@ -47,7 +49,7 @@ const PALS: readonly [PalDrawing, PalDrawing, PalDrawing] = [
     extra: stem('M60 26 V10', DOT.dark) + knob([60, 9, 7], PIP.base),
     hi: [34, 42],
     faceY: 64,
-    cheek: css([0.72, 0.19, 3], 0.6),
+    cheek: css(PIP.base, 0.6),
   },
   // Bo: a tall mint arch with a short sprout and one berry leaf.
   {
@@ -57,7 +59,7 @@ const PALS: readonly [PalDrawing, PalDrawing, PalDrawing] = [
       `<path d="M62 11 q1 -10 13 -10 q0 10 -13 10z" fill="${css(PIP.base)}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`,
     hi: [36, 44],
     faceY: 66,
-    cheek: css([0.72, 0.19, 3], 0.55),
+    cheek: css(PIP.base, 0.55),
   },
 ];
 
@@ -70,9 +72,9 @@ const eye = (x: number, y: number, state: PalState): string => {
   const ready = state === 'ready';
   const up = ready ? -5 : 1;
   return (
-    `<ellipse cx="${String(x)}" cy="${String(y)}" rx="11" ry="${ready ? '13' : '12'}" fill="#fff"/>` +
+    `<ellipse cx="${String(x)}" cy="${String(y)}" rx="11" ry="${ready ? '13' : '12'}" fill="${WHITE}"/>` +
     `<circle cx="${String(x + 1)}" cy="${String(y + up)}" r="6.5" fill="${INK}"/>` +
-    `<circle cx="${String(x + 3)}" cy="${String(y + up - 3)}" r="2.2" fill="#fff"/>`
+    `<circle cx="${String(x + 3)}" cy="${String(y + up - 3)}" r="2.2" fill="${WHITE}"/>`
   );
 };
 
@@ -112,7 +114,7 @@ const palSvg = (index: PalIndex, state: PalState): string => {
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">${pal.extra}${pal.shape(css(colors.dark))}` +
     `<g transform="translate(-2 -4)">${pal.shape(css(colors.base))}</g>` +
-    `<ellipse cx="${String(hx)}" cy="${String(hy)}" rx="11" ry="6" transform="rotate(-35 ${String(hx)} ${String(hy)})" fill="#fff" opacity=".55"/>` +
+    `<ellipse cx="${String(hx)}" cy="${String(hy)}" rx="11" ry="6" transform="rotate(-35 ${String(hx)} ${String(hy)})" fill="${WHITE}" opacity=".55"/>` +
     `${face(pal, state)}</svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };

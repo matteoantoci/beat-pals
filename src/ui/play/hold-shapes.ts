@@ -96,6 +96,6 @@ export const linkShapes = (geometry: Geometry): Shape[] => {
 /** The soft glow and the 2 pills of the clap burst. */
 export const clapShapes = (): Shape[] => [
   square(holdKey.clapGlow, 2 * CLAP_GLOW_R + 2, paintClapGlow),
-  { key: holdKey.clapPill(false), w: 12, h: 6, paint: (ctx) => paintClapPill(ctx, WHITE) },
-  { key: holdKey.clapPill(true), w: 12, h: 6, paint: (ctx) => paintClapPill(ctx, LEMON) },
+  { key: holdKey.clapPill(false), w: 16, h: 8, paint: (ctx) => paintClapPill(ctx, WHITE) },
+  { key: holdKey.clapPill(true), w: 16, h: 8, paint: (ctx) => paintClapPill(ctx, LEMON) },
 ];

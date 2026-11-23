@@ -1,6 +1,11 @@
-// The colour tokens of style A (prototype play-style A, C27): the grape ramp, the 3 lane colours, white, and the
-// record metals. Each colour is an OKLCH triple. The SVG pictures need CSS strings, and PixiJS needs numbers, so
-// both come from the same maths, one time at start.
+// The colour tokens of style A (prototype play-style A, C27): one palette of 11 tokens with fixed roles.
+// - The dark ramp: grape 950, 800, 600, 300. The background, the chrome, the ink, and the parent area.
+// - The 3 lane colours: berry (Pip), lemon (Dot), mint (Bo). Each has a dark shade for rims and shadows and a light
+//   shade for cores (`LANE_COLORS`). Lemon is also the accent: reward, progress, and the play action only.
+// - White: highlights and the eyes of the pals.
+// - The record metals bronze, silver, and ice: the record colours of the reward shelf only.
+// Each colour is an OKLCH triple. The SVG pictures need CSS strings, and PixiJS needs numbers, so both come from the
+// same maths, one time at start.
 
 /** Lightness, chroma, and hue of one OKLCH colour. */
 export type Oklch = readonly [number, number, number];

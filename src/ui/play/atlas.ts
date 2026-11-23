@@ -49,7 +49,7 @@ const PAD = 2;
 /** The beat pill of a downbeat is wider. */
 const PILL_SHARE = { beat: 0.32, downbeat: 0.46 } as const;
 /** The white core of a great hit. */
-const CORE_R = 14;
+const CORE_R = 16;
 /** The hit wave starts at the outer edge of the ring. */
 const WAVE_GAP = 3;
 
@@ -114,7 +114,7 @@ const energyShapes = (geometry: Geometry, band: readonly Lane[]): Shape[] => {
 const pillShapes = (geometry: Geometry, lane: Lane): Shape[] =>
   [false, true].map((downbeat) => {
     const width = geometry.laneW * (downbeat ? PILL_SHARE.downbeat : PILL_SHARE.beat);
-    return { key: shapeKey.pill(lane, downbeat), w: width + 12, h: 18, paint: (ctx) => paintPill(ctx, lane, width) };
+    return { key: shapeKey.pill(lane, downbeat), w: width + 12, h: 20, paint: (ctx) => paintPill(ctx, lane, width) };
   });
 
 const ringShapes = (r: number, lane: Lane): Shape[] => {

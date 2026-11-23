@@ -2,15 +2,15 @@
 // atlas: the soft glows, the warm lane edges of step 2, the 4-point sparkles, and the gold rims, the gold floor,
 // and the gold ring wave. The glows are smooth, so they are painted small and the sprites scale them up.
 
-import { css, TOKENS, type Oklch } from '../pals/color';
+import { css, LANE_COLORS, TOKENS, type Oklch } from '../pals/color';
 import { circlePath, ORIGIN, paintCircleLine, starPath, style } from './paint';
 import { paintFloor } from './paint-stage';
 import type { Lane } from '../../model';
 import type { Geometry } from './geometry';
 import type { Ctx } from './paint';
 
-/** The amber of the gold rims and the gold floor: a warm shade of lemon. */
-const AMBER: Oklch = [TOKENS.lemon[0] - 0.06, TOKENS.lemon[1], TOKENS.lemon[2] - 24];
+/** The amber of the gold rims and the gold floor: the dark shade of lemon (C27). */
+const AMBER: Oklch = LANE_COLORS[1].dark;
 
 type Glow = { readonly color: Oklch; readonly alpha: number };
 
@@ -23,14 +23,14 @@ export const GLOWS = {
 
 /** The radius at which the glows, the sparkles, and the gold wave are painted. */
 export const GLOW_R = 64;
-export const SPARKLE_R = 6;
+export const SPARKLE_R = 8;
 export const WAVE_R = 128;
 /** The warm edge of step 2 is painted this high and stretched to the chute. */
 export const WARM_SIDE_H = 64;
 /** The gold rim sits this far outside the ring. */
-const RIM_GAP = 7.5;
+const RIM_GAP = 8;
 /** The gold floor: a soft band of light this high under the band, centred this far below the floor line. */
-export const GOLD_FLOOR = { ry: 18, drop: 6, share: 1.9 } as const;
+export const GOLD_FLOOR = { ry: 16, drop: 8, share: 1.9 } as const;
 const WARM = { width: 6, color: css(TOKENS.lemon, 0.4), clear: css(TOKENS.lemon, 0) } as const;
 
 /** A soft round glow: the colour in the middle, fading out at the edge. */
@@ -69,15 +69,15 @@ export const paintEnergySparkle = (ctx: Ctx, color: string): void => {
   ctx.fill();
 };
 
-/** The thick gold rim of a ring at gold: a 4 px gold band on a 7 px amber band. */
+/** The gold rim of a ring at gold: a 2 px lemon line on a 6 px amber band (the 2 outline widths, C29). */
 export const paintGoldRim = (ctx: Ctx, ringR: number): void => {
-  paintCircleLine(ctx, ringR + RIM_GAP, { width: 7, color: css(AMBER) });
-  paintCircleLine(ctx, ringR + RIM_GAP, { width: 4, color: css(TOKENS.lemon) });
+  paintCircleLine(ctx, ringR + RIM_GAP, { width: 6, color: css(AMBER) });
+  paintCircleLine(ctx, ringR + RIM_GAP, { width: 2, color: css(TOKENS.lemon) });
 };
 
 /** The thin gold ring wave of the gold level-up. */
 export const paintGoldWave = (ctx: Ctx): void => {
-  paintCircleLine(ctx, WAVE_R, { width: 3, color: css(TOKENS.lemon) });
+  paintCircleLine(ctx, WAVE_R, { width: 2, color: css(TOKENS.lemon) });
 };
 
 /** The size of the gold floor shape. */

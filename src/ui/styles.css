@@ -1,8 +1,8 @@
 /* Shell rules, as in Pile Pals (research/native-feel/shell.md of Pile Pals). */
 :root {
-  /* The stage colour. Keep the same value in index.html and vite.config.ts. */
-  --stage: #3b2a6b;
-  --gold: #f5b400;
+  /* The stage colour: grape-800 of tokens.css as hex (C27). Keep the same value in index.html and vite.config.ts,
+     which show it before this file loads. */
+  --stage: #2c176f;
 }
 
 html {

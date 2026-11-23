@@ -103,7 +103,7 @@
 .hold-fill {
   fill: none;
   stroke: var(--lemon);
-  stroke-width: 4;
+  stroke-width: 4.8; /* 6 px: the viewBox of 48 shows at 60 px (C29) */
   stroke-linecap: round;
   stroke-dasharray: 100 100;
   stroke-dashoffset: 100;

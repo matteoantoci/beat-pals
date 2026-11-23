@@ -56,7 +56,7 @@ export const paintBandCap = (ctx: Ctx, look: BandLook): void => {
 /** A light dot of the band. */
 export const paintBandDot = (ctx: Ctx, lane: Lane, held: boolean): void => {
   style(ctx, { fillStyle: held ? laneCss(lane, 0.9).base : HIGHLIGHT });
-  circlePath(ctx, ORIGIN, 2.5);
+  circlePath(ctx, ORIGIN, 2);
   ctx.fill();
 };
 
