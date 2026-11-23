@@ -92,7 +92,7 @@ const paintChute = (ctx: Ctx, geometry: Geometry, lane: Lane): void => {
 };
 
 /** One soft dark ellipse under the band, and a small shadow under each pal: in the band and waiting at the side. */
-const paintFloor = (ctx: Ctx, geometry: Geometry, band: readonly Lane[]): void => {
+export const paintFloor = (ctx: Ctx, geometry: Geometry, band: readonly Lane[]): void => {
   style(ctx, { fillStyle: FLOOR_WIDE });
   ctx.beginPath();
   ctx.ellipse(geometry.cx, geometry.floorY + 2, geometry.laneW * 1.75, 16, 0, 0, TAU);

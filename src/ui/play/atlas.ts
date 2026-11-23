@@ -1,8 +1,23 @@
 // The texture atlas of the play screen (C20: one atlas). Each shape of the moving parts (notes, beat pills, ring
-// layers, and hit effects) is painted one time for each layout into one 2D canvas. A simple shelf packer places the
-// shapes in rows. Each shape paints around (0, 0), so its sprite takes the anchor 0.5.
+// layers, hit effects, and the band energy) is painted one time for each layout into one 2D canvas. A simple shelf
+// packer places the shapes in rows. Each shape paints around (0, 0), so its sprite takes the anchor 0.5.
 
-import { laneCss, paintBubble, paintCircleLine, paintDisc, paintPill, WHITE } from './paint';
+import { laneCss, LEMON, paintBubble, paintCircleLine, paintDisc, paintPill, WHITE } from './paint';
+import {
+  GLOW_R,
+  GLOWS,
+  goldFloorSize,
+  paintGlow,
+  paintGoldFloor,
+  paintGoldRim,
+  paintGoldWave,
+  paintEnergySparkle,
+  paintWarmCap,
+  paintWarmSides,
+  SPARKLE_R,
+  WARM_SIDE_H,
+  WAVE_R,
+} from './paint-energy';
 import {
   HALO_GAP,
   NOTE_HEAD,
@@ -16,6 +31,7 @@ import {
   SPRINKLE_SIZE,
   sprinkleColors,
 } from './paint-fx';
+import { CHUTE_SHARE } from './paint-stage';
 import type { Lane } from '../../model';
 import type { Geometry } from './geometry';
 import type { Ctx } from './paint';
@@ -51,9 +67,39 @@ export const shapeKey = {
   core: 'core',
   whiteStuds: 'white studs',
   musicNote: 'music note',
+  /** The band energy (./energy-stage). The glows are painted small and scaled up. */
+  stageLight: 'stage light',
+  glowWhite: 'glow white',
+  glowGold: 'glow gold',
+  warmSides: 'warm sides',
+  warmCap: 'warm cap',
+  sparkleWhite: 'sparkle white',
+  sparkleLemon: 'sparkle lemon',
+  goldRim: 'gold rim',
+  goldFloor: 'gold floor',
+  goldWave: 'gold wave',
 } as const;
 
 const square = (key: string, size: number, paint: (ctx: Ctx) => void): Shape => ({ key, w: size, h: size, paint });
+
+/** The shapes of the band energy. The gold floor cuts out the floor shadows of the band. */
+const energyShapes = (geometry: Geometry, band: readonly Lane[]): Shape[] => {
+  const glow = 2 * GLOW_R + 2;
+  const half = geometry.laneW * CHUTE_SHARE;
+  const sparkle = 2 * SPARKLE_R + 2;
+  return [
+    square(shapeKey.stageLight, glow, (ctx) => paintGlow(ctx, GLOWS.stage)),
+    square(shapeKey.glowWhite, glow, (ctx) => paintGlow(ctx, GLOWS.white)),
+    square(shapeKey.glowGold, glow, (ctx) => paintGlow(ctx, GLOWS.gold)),
+    { key: shapeKey.warmSides, w: 2 * half + 8, h: WARM_SIDE_H, paint: (ctx) => paintWarmSides(ctx, half) },
+    square(shapeKey.warmCap, 2 * half + 8, (ctx) => paintWarmCap(ctx, half)),
+    square(shapeKey.sparkleWhite, sparkle, (ctx) => paintEnergySparkle(ctx, WHITE)),
+    square(shapeKey.sparkleLemon, sparkle, (ctx) => paintEnergySparkle(ctx, LEMON)),
+    square(shapeKey.goldRim, 2 * (geometry.ringR + 12), (ctx) => paintGoldRim(ctx, geometry.ringR)),
+    square(shapeKey.goldWave, 2 * WAVE_R + 6, paintGoldWave),
+    { key: shapeKey.goldFloor, ...goldFloorSize(geometry), paint: (ctx) => paintGoldFloor(ctx, geometry, band) },
+  ];
+};
 
 const pillShapes = (geometry: Geometry, lane: Lane): Shape[] =>
   [false, true].map((downbeat) => {
@@ -82,8 +128,8 @@ const sprinkleShapes = (lane: Lane): Shape[] =>
     return square(shapeKey.sprinkle(lane, at), SPRINKLE_SIZE * 3, (ctx) => paintSprinkle(ctx, kind, color));
   });
 
-/** All shapes of one layout. */
-const shapesOf = (geometry: Geometry): Shape[] => {
+/** All shapes of one layout for the band. */
+const shapesOf = (geometry: Geometry, band: readonly Lane[]): Shape[] => {
   const r = geometry.ringR;
   const bubble = Math.ceil(geometry.noteS * 1.45 + 4);
   const shapes: Shape[] = [];
@@ -98,7 +144,8 @@ const shapesOf = (geometry: Geometry): Shape[] => {
   shapes.push(
     square(shapeKey.core, 2 * CORE_R + 4, (ctx) => paintDisc(ctx, CORE_R, WHITE)),
     square(shapeKey.whiteStuds, 2 * (r + 8), (ctx) => paintStuds(ctx, r, WHITE)),
-    { key: shapeKey.musicNote, w: 24 - NOTE_HEAD.x, h: 32, paint: paintMusicNote }
+    { key: shapeKey.musicNote, w: 24 - NOTE_HEAD.x, h: 32, paint: paintMusicNote },
+    ...energyShapes(geometry, band)
   );
   return shapes;
 };
@@ -122,12 +169,13 @@ const pack = (shapes: readonly Shape[]): { frames: Map<string, Frame>; width: nu
   return { frames, width: ROW_WIDTH, height: y + rowHeight };
 };
 
-/** Paints all shapes of the layout into one canvas at `resolution` pixels for each CSS px. */
+/** Paints all shapes of the layout for the band into one canvas at `resolution` pixels for each CSS px. */
 export const paintAtlas = (
   geometry: Geometry,
+  band: readonly Lane[],
   resolution: number
 ): { canvas: HTMLCanvasElement; frames: Map<string, Frame> } => {
-  const shapes = shapesOf(geometry);
+  const shapes = shapesOf(geometry, band);
   const { frames, width, height } = pack(shapes);
   const canvas = document.createElement('canvas');
   canvas.width = Math.ceil(width * resolution);

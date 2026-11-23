@@ -2,8 +2,10 @@
 // <audio> element, and the guarded song clock gives its time. Pause and resume work across a context replacement.
 // Only one song stays in memory, so the state of that song is the state of this module.
 import { firstSongTime, songTime, startAt } from '../model';
+import { loadSoundOn } from '../shell/settings';
 import { clapBuffer } from './clap';
 import { currentContext, decode, onReplaced } from './engine';
+import { levelUpBuffer, type LevelUpStep } from './level-up';
 
 /** What the play screen hears from the song. In both cases, the song paused itself before the call. */
 export type SongEvents = {
@@ -25,20 +27,24 @@ export type Song = {
   readonly pause: () => void;
   /** Continues from the saved song time in the current context. */
   readonly resume: () => void;
-  /** Plays a clap at a song time. A time in the past plays the clap now. */
+  /** Plays a clap at a song time. A time in the past plays the clap now. The Sound effects switch turns it off. */
   readonly clap: (at: number) => void;
+  /** Plays the level-up sound of an energy step at a song time, as a clap. */
+  readonly levelUp: (step: LevelUpStep, at: number) => void;
   /** Cancels the claps that did not play yet. */
   readonly cancelClaps: () => void;
   /** Stops the song and frees its audio. */
   readonly release: () => void;
 };
 
-/** The source, the claps, and t0 of the song in one context. */
+/** The source, the claps, and t0 of the song in one context. `claps` holds every sound effect that is to come. */
 type Session = {
   readonly ctx: AudioContext;
   readonly source: AudioBufferSourceNode;
   readonly t0: number;
   readonly claps: Set<AudioBufferSourceNode>;
+  /** The Sound effects switch, read when the session starts. */
+  readonly effects: boolean;
   readonly unwatch: () => void;
 };
 
@@ -122,15 +128,16 @@ const play = (from: number): void => {
   source.connect(ctx.destination);
   source.start(when, offset);
   frozen = from;
-  session = { ctx, source, t0, claps: new Set(), unwatch: watch(ctx, events) };
+  session = { ctx, source, t0, claps: new Set(), effects: loadSoundOn(), unwatch: watch(ctx, events) };
 };
 
-const clap = (at: number): void => {
-  if (!session) {
+/** Plays a sound effect at a song time, when the Sound effects switch is on. */
+const effect = (sound: AudioBuffer, at: number): void => {
+  if (!session?.effects) {
     return;
   }
   const { ctx, t0, claps } = session;
-  const source = new AudioBufferSourceNode(ctx, { buffer: clapBuffer() });
+  const source = new AudioBufferSourceNode(ctx, { buffer: sound });
   source.connect(ctx.destination);
   source.addEventListener('ended', () => claps.delete(source));
   source.start(Math.max(ctx.currentTime, t0 + at));
@@ -172,7 +179,12 @@ const handle = (id: number, duration: number): Song => {
     },
     clap: (at) => {
       if (id === current) {
-        clap(at);
+        effect(clapBuffer(), at);
+      }
+    },
+    levelUp: (step, at) => {
+      if (id === current) {
+        effect(levelUpBuffer(step), at);
       }
     },
     cancelClaps: mine(cancelClaps),

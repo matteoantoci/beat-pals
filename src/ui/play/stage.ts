@@ -6,6 +6,7 @@ import { Application, Container, Graphics, Sprite } from 'pixi.js';
 import { hex, TOKENS } from '../pals/color';
 import { shapeKey } from './atlas';
 import { drawHit, type EffectScene } from './effects';
+import { dressEnergy, drawEnergy, makeEnergyParts, type EnergyParts } from './energy-stage';
 import { laneX, LOOK_AHEAD, noteY } from './geometry';
 import { CHUTE_SHARE } from './paint-stage';
 import { makePool, type Pool } from './pool';
@@ -13,13 +14,14 @@ import { makeRing, type Ring } from './rings';
 import { makeTextures, type Textures } from './textures';
 import { lastShown, MISS_FADE_SEC, type View } from './view';
 import type { Lane } from '../../model';
+import type { EnergyLook } from './energy';
 import type { Geometry } from './geometry';
 
 export type Stage = {
   /** Paints the stage again for a new screen size. */
   readonly resize: (geometry: Geometry) => void;
-  /** Draws the view at its song time. */
-  readonly draw: (view: View, reduced: boolean) => void;
+  /** Draws the view and the band energy at its song time. */
+  readonly draw: (view: View, reduced: boolean, energy: EnergyLook) => void;
   readonly destroy: () => void;
 };
 
@@ -39,10 +41,11 @@ type Parts = {
   readonly pills: Pool;
   readonly notes: Pool;
   readonly effects: Pool;
+  readonly energy: EnergyParts;
 };
 
-/** One frame: the parts, the view, and what the effects need. */
-type Frame = { readonly parts: Parts; readonly view: View; readonly scene: EffectScene };
+/** One frame: the parts, the view, the band energy, and what the effects need. */
+type Frame = { readonly parts: Parts; readonly view: View; readonly energy: EnergyLook; readonly scene: EffectScene };
 
 const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
 
@@ -65,6 +68,7 @@ const dress = (parts: Parts, geometry: Geometry, textures: Textures): void => {
     parts.rings[at]?.dress(textures, geometry.ringR);
     parts.rings[at]?.container.position.set(laneX(geometry, lane), geometry.hitY);
   });
+  dressEnergy(parts.energy, geometry, textures);
 };
 
 const drawBeat = ({ parts, view, scene }: Frame, at: number): void => {
@@ -124,12 +128,14 @@ const drawFrame = (frame: Frame): void => {
     drawHit(frame.scene, view.hits[at]);
   }
   parts.effects.end();
+  drawEnergy(parts.energy, { ...frame.scene, energy: frame.energy, beats: view.beats, beat: view.first.beat });
   parts.app.render();
 };
 
 const makeParts = (app: Application, band: readonly Lane[]): Parts => {
   const layer = (): Container => app.stage.addChild(new Container());
   const backdrop = app.stage.addChild(new Sprite());
+  const energyBack = layer();
   const glowLayer = layer();
   const glows = band.map(() => glowLayer.addChild(new Graphics()));
   const pills = makePool(layer());
@@ -137,11 +143,14 @@ const makeParts = (app: Application, band: readonly Lane[]): Parts => {
   for (const ring of rings) {
     app.stage.addChild(ring.container);
   }
+  const rims = layer();
   // Notes come out of the chutes: one mask of the chute shapes clips them.
   const noteLayer = layer();
   const mask = app.stage.addChild(new Graphics());
   noteLayer.mask = mask;
-  return { app, band, backdrop, glows, mask, rings, pills, notes: makePool(noteLayer), effects: makePool(layer()) };
+  const effects = makePool(layer());
+  const energy = makeEnergyParts({ back: energyBack, rims, front: layer() }, band);
+  return { app, band, backdrop, glows, mask, rings, pills, notes: makePool(noteLayer), effects, energy };
 };
 
 /** Makes the stage on the canvas for the lanes of the band. */
@@ -172,9 +181,9 @@ export const createStage = async (
       dress(parts, layout.geometry, layout.textures);
       old.destroy();
     },
-    draw: (view, reduced) => {
+    draw: (view, reduced, energy) => {
       const scene: EffectScene = { pool: parts.effects, ...layout, reduced, t: view.t };
-      drawFrame({ parts, view, scene });
+      drawFrame({ parts, view, energy, scene });
     },
     destroy: () => {
       app.destroy({ removeView: false }, { children: true });

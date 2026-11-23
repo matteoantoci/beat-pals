@@ -29,7 +29,7 @@ const stageSource = (geometry: Geometry, band: readonly Lane[], resolution: numb
 
 export const makeTextures = (geometry: Geometry, band: readonly Lane[], resolution: number): Textures => {
   const stage = new Texture({ source: stageSource(geometry, band, resolution) });
-  const atlas = paintAtlas(geometry, resolution);
+  const atlas = paintAtlas(geometry, band, resolution);
   const source = new CanvasSource({
     resource: atlas.canvas,
     resolution,
