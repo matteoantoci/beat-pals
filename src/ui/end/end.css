@@ -167,12 +167,6 @@
   transform-origin: 50% 100%;
 }
 
-/* A waiting pal stands at the side of the band, a little smaller. */
-.end-spot.waiting .end-body,
-.end-spot.waiting .end-shadow {
-  scale: 0.8;
-}
-
 .end-pal {
   display: block;
   width: 100%;

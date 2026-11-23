@@ -80,8 +80,8 @@ export const StarRow = (props: { readonly outcome: PlayOutcome; readonly refs: R
   </Show>
 );
 
-/** The 3 pals on the floor, Pip, Dot, and Bo in their places. A waiting pal stands a little smaller. The dancers
- * smile; a waiting pal that does not dance looks on. There is never a sad pal. */
+/** The 3 pals on the floor, Pip, Dot, and Bo in their places, all at the same size, as on the play screen. The
+ * dancers smile; a waiting pal that does not dance looks on. There is never a sad pal. */
 export const Band = (props: { readonly plan: ScenePlan; readonly refs: Refs }): JSX.Element => {
   const dances = (lane: Lane): boolean => props.plan.dance !== 'band' || props.plan.band.includes(lane);
   return (
