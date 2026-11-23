@@ -56,7 +56,7 @@ export type View = {
   readonly t: number;
 };
 
-/** The view, and the 2 changes that the player makes to it. */
+/** The view, and the 2 changes that the play loop makes to it. */
 export type LiveView = {
   readonly view: () => View;
   /**

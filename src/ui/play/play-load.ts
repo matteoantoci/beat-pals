@@ -1,6 +1,7 @@
-// The start of a play: it reads and decrypts the song files, makes the child chart, decodes the song and the 15 pal
-// pictures, makes the stage, and then starts the player. A screen that closes during the load stops it, and the load
-// frees each part that it made. Only one play exists at a time, so the running play is the state of this module.
+// The load of a play: it reads and decrypts the song files, makes the child chart, decodes the song and the 15 pal
+// pictures, makes the stage, and then starts the play loop. A screen that closes during the load stops it, and the
+// load frees each part that it made. Only one play exists at a time, so the running play is the state of this module.
+// The play handle guards each call: a handle of a replaced play changes nothing.
 
 import { childChart, playSetup, readFacts } from '../../model';
 import { progressOf } from '../../shell/save';
@@ -9,7 +10,7 @@ import { loadSong } from '../../sound';
 import { decodePals } from '../pals/pal-svg';
 import { layout, type Geometry } from './geometry';
 import { makePals, type Pals } from './pals';
-import { startPlayer, type Player, type PlayerParts } from './player';
+import { startPlayLoop, type PlayLoop, type PlayLoopParts } from './play-loop';
 import { createStage, type Stage } from './stage';
 import { makeView } from './view';
 import type { SongFacts } from '../../model';
@@ -27,14 +28,15 @@ export type PlayElements = {
   readonly beads: readonly HTMLElement[];
 };
 
-export type SessionHooks = {
+export type PlayHooks = {
   /** The play paused itself (hidden page, stopped audio, still clock): show the pause screen. */
   readonly onPause: () => void;
   /** The song ended (the hit ratio), or the play ended from the pause screen or could not start (null). */
   readonly onEnd: (result: number | null) => void;
 };
 
-export type Session = {
+/** The controls of a play for the play screen. */
+export type PlayHandle = {
   readonly pause: () => void;
   readonly resume: () => void;
   readonly quit: () => void;
@@ -42,11 +44,11 @@ export type Session = {
   readonly stop: () => void;
 };
 
-type Loaded = Omit<PlayerParts, 'root' | 'beads' | 'onPause' | 'onEnd'> & { readonly unresize: () => void };
+type Loaded = Omit<PlayLoopParts, 'root' | 'beads' | 'onPause' | 'onEnd'> & { readonly unresize: () => void };
 
-/** The number of the session that may run. A load of an older session frees what it made. */
+/** The number of the play that may run. A load of an older play frees what it made. */
 let current = 0;
-let running: (Loaded & { readonly player: Player }) | undefined;
+let running: (Loaded & { readonly loop: PlayLoop }) | undefined;
 
 const px = (value: string): number => Number.parseFloat(value) || 0;
 
@@ -62,7 +64,7 @@ const measure = ({ root, probe }: PlayElements): Geometry => {
 };
 
 const stopRunning = (): void => {
-  running?.player.stop();
+  running?.loop.stop();
   running?.unresize();
   running?.stage.destroy();
   running?.song.release();
@@ -72,8 +74,8 @@ const stopRunning = (): void => {
 /** The song paused itself before each of these calls (a stopped audio context, or a tap that replaced it): the
  * play pauses too. */
 const SONG_EVENTS: SongEvents = {
-  onReplaced: () => running?.player.pause(),
-  onInterrupted: () => running?.player.pause(),
+  onReplaced: () => running?.loop.pause(),
+  onInterrupted: () => running?.loop.pause(),
 };
 
 const factsOf = (files: SongFiles | undefined): SongFacts | undefined =>
@@ -117,7 +119,7 @@ const load = async (elements: PlayElements, choice: SongChoice, id: number): Pro
 };
 
 /** Loads the song of the choice and starts its play at the record color and speed step of its progress. */
-export const startSession = (elements: PlayElements, choice: SongChoice, hooks: SessionHooks): Session => {
+export const loadPlay = (elements: PlayElements, choice: SongChoice, hooks: PlayHooks): PlayHandle => {
   stopRunning();
   current += 1;
   const id = current;
@@ -134,7 +136,7 @@ export const startSession = (elements: PlayElements, choice: SongChoice, hooks: 
       return;
     }
     const { root, beads } = elements;
-    running = { ...loaded, player: startPlayer({ ...loaded, root, beads, onPause: hooks.onPause, onEnd: end }) };
+    running = { ...loaded, loop: startPlayLoop({ ...loaded, root, beads, onPause: hooks.onPause, onEnd: end }) };
   };
   load(elements, choice, id).then(started, () => started(undefined));
   const mine = (action: () => void) => (): void => {
@@ -143,9 +145,9 @@ export const startSession = (elements: PlayElements, choice: SongChoice, hooks: 
     }
   };
   return {
-    pause: mine(() => running?.player.pause()),
-    resume: mine(() => running?.player.resume()),
-    quit: mine(() => running?.player.quit()),
+    pause: mine(() => running?.loop.pause()),
+    resume: mine(() => running?.loop.resume()),
+    quit: mine(() => running?.loop.quit()),
     stop: mine(() => {
       stopRunning();
       current += 1;

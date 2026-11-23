@@ -2,7 +2,7 @@ import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { stopTitleMusic } from '../../sound';
 import { HoldButton } from './HoldButton';
 import { PauseScreen } from './PauseScreen';
-import { startSession, type Session } from './session';
+import { loadPlay, type PlayHandle } from './play-load';
 import type { SongChoice } from '../songs/SongList';
 import type { JSX } from 'solid-js';
 
@@ -39,7 +39,7 @@ export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
   let root: HTMLElement | undefined;
   const pals: HTMLImageElement[] = [];
   const beads: HTMLElement[] = [];
-  let session: Session | undefined;
+  let handle: PlayHandle | undefined;
   onMount(() => {
     stopTitleMusic();
     const canvas = root?.querySelector('canvas');
@@ -47,15 +47,15 @@ export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
     if (root === undefined || !canvas || !probe) {
       return;
     }
-    session = startSession({ root, canvas, probe, pals, beads }, props.choice, {
+    handle = loadPlay({ root, canvas, probe, pals, beads }, props.choice, {
       onPause: () => setPaused(true),
       onEnd: (result) => props.onEnd(result),
     });
-    onCleanup(() => session?.stop());
+    onCleanup(() => handle?.stop());
   });
   const resume = (): void => {
     setPaused(false);
-    session?.resume();
+    handle?.resume();
   };
   return (
     <main
@@ -69,9 +69,9 @@ export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
         {() => <img class="play-pal" alt="" hidden draggable={false} ref={(el) => pals.push(el)} />}
       </For>
       <div class="play-probe" />
-      <Hud onPause={() => session?.pause()} bead={(el) => beads.push(el)} />
+      <Hud onPause={() => handle?.pause()} bead={(el) => beads.push(el)} />
       <Show when={paused()}>
-        <PauseScreen onPlay={resume} onHome={() => session?.quit()} />
+        <PauseScreen onPlay={resume} onHome={() => handle?.quit()} />
       </Show>
     </main>
   );
