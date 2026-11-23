@@ -14,3 +14,16 @@ export { firstSongTime, songTime, startAt } from './clock';
 export type { ClockReading, SongStart } from './clock';
 export { apply, result, startPlay } from './play/play';
 export type { Action, Lane, PlayEvent, PlayState } from './play/play';
+export { decodeKeyCode, encodeKeyCode, FAMILY_KEY_BYTES } from './store/key-code';
+export {
+  decryptFile,
+  ENCRYPTION_OVERHEAD,
+  encryptFile,
+  makeKeyCheck,
+  openFamilyKey,
+  opensKeyCheck,
+  storeName,
+} from './store/family-key';
+export type { FamilyKey } from './store/family-key';
+export { readManifest, readSongIndex } from './store/manifest';
+export type { CoverType, IndexSong, Manifest, SongIndex } from './store/manifest';

@@ -1,7 +1,7 @@
 // The play model (spec, "Play rules", "Band energy", and "Play model interface"). It judges the taps of one play
 // against the child chart and gives the events that the play screen shows and plays. Each `t` is the song time in
-// seconds from the guarded song clock. Soft holds and doubles are judged from ticket 16 on: here each note is a
-// plain note in the lanes of its `lanes`.
+// seconds from the guarded song clock. A note with 2 lanes (a double) counts when either lane is tapped. The finger
+// on a soft hold is not judged yet: each note counts at its tap, as a plain note.
 
 import { energyStep, hitEnergy, passEnergy, START_ENERGY, type Energy, type EnergyStep } from './energy';
 import { goodWindows, GREAT_SEC } from './windows';
