@@ -66,7 +66,10 @@ const energize = (parts: PlayerParts, step: EnergyStep, t: number): void => {
 };
 
 const show = (parts: PlayerParts, events: readonly PlayEvent[], t: number): void => {
-  // `hop` (waiting pals), `faded`, and `holdDone` have no picture at bronze.
+  // `faded` and `holdDone` have no picture at bronze.
+  for (const event of events.filter((each) => each.type === 'hop')) {
+    parts.pals.hop(event.lane, t);
+  }
   for (const event of events.filter((each) => each.type === 'hit')) {
     parts.view.record(event, t);
     parts.song.clap(event.soundAt);

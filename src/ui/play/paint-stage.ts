@@ -5,6 +5,7 @@
 import { css, TOKENS } from '../pals/color';
 import { laneX } from './geometry';
 import { circlePath, laneCss, style, TAU, tubePath } from './paint';
+import { palX } from './pals';
 import type { Lane } from '../../model';
 import type { Geometry } from './geometry';
 import type { Ctx } from './paint';
@@ -17,6 +18,7 @@ const PLATE_TOP = css(TOKENS.g950, 0);
 const FLOOR_WIDE = css([0.2, 0.09, 285], 0.55);
 const FLOOR_PAL = css([0.16, 0.08, 285], 0.6);
 const DOTS = 9;
+const PALS: readonly Lane[] = [0, 1, 2];
 
 /** The chute of a lane is this share of the lane width. */
 export const CHUTE_SHARE = 0.4;
@@ -89,16 +91,16 @@ const paintChute = (ctx: Ctx, geometry: Geometry, lane: Lane): void => {
   ctx.stroke();
 };
 
-/** One soft dark ellipse under the band and a small shadow under each pal of the band. */
+/** One soft dark ellipse under the band, and a small shadow under each pal: in the band and waiting at the side. */
 export const paintFloor = (ctx: Ctx, geometry: Geometry, band: readonly Lane[]): void => {
   style(ctx, { fillStyle: FLOOR_WIDE });
   ctx.beginPath();
   ctx.ellipse(geometry.cx, geometry.floorY + 2, geometry.laneW * 1.75, 16, 0, 0, TAU);
   ctx.fill();
   style(ctx, { fillStyle: FLOOR_PAL });
-  for (const lane of band) {
+  for (const lane of PALS) {
     ctx.beginPath();
-    ctx.ellipse(laneX(geometry, lane), geometry.floorY, geometry.palH * 0.42, 7, 0, 0, TAU);
+    ctx.ellipse(palX(geometry, band, lane), geometry.floorY, geometry.palH * 0.42, 7, 0, 0, TAU);
     ctx.fill();
   }
 };
