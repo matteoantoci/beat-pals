@@ -74,7 +74,7 @@ export const TitleScreen = (props: TitleProps): JSX.Element => {
     }
   };
   return (
-    <main class="title" classList={{ 'title-go': going() }} onPointerUp={start}>
+    <main class="title stage-backdrop" classList={{ 'title-go': going() }} onPointerUp={start}>
       <div class="title-brand">
         <Logo onHold={() => setChecking(true)} />
         <h1 class="title-word">
@@ -84,10 +84,10 @@ export const TitleScreen = (props: TitleProps): JSX.Element => {
       <Show when={ready()}>
         <PlaySign />
       </Show>
-      <div class="title-band" aria-hidden="true">
+      <div class="pal-band title-band" aria-hidden="true">
         <For each={PALS}>
           {(index) => (
-            <span class="title-pal">
+            <span class="band-pal">
               <img src={palPicture(index, going() ? 'happy' : 'idle')} alt="" draggable={false} />
             </span>
           )}

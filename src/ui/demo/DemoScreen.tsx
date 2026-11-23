@@ -4,7 +4,7 @@ import { loadSong } from '../../sound';
 import { decodePals } from '../pals/pal-svg';
 import { fillBeads, fullBeads } from '../play/beads';
 import { makePals } from '../play/pals';
-import { measure, watchResize } from '../play/play-load';
+import { measure, watchResize } from '../play/fit';
 import { Hud } from '../play/PlayScreen';
 import { createStage } from '../play/stage';
 import { clickTrack } from './click';

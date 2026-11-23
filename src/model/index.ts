@@ -25,6 +25,8 @@ export type { ClockReading, SongStart } from './clock';
 export { apply, result, startPlay } from './play/play';
 export type { Action, Lane, PlayEvent, PlayState } from './play/play';
 export type { EnergyStep } from './play/energy';
+export { decodeTime, FIRST_DECODE_MS_PER_MB, nextDecodeRate, ringFill } from './play/load-progress';
+export type { LoadPhase } from './play/load-progress';
 export { decodeKeyCode, encodeKeyCode, FAMILY_KEY_BYTES } from './store/key-code';
 export {
   decryptFile,

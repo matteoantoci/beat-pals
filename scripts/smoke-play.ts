@@ -112,7 +112,7 @@ const pauseAndReturn = async (page: Page, audio: AudioRecord): Promise<void> => 
  * page. */
 const titleSpace = (): { gap: number; playInside: boolean } => {
   const word = document.querySelector('.title-word')?.getBoundingClientRect();
-  const pal = document.querySelector('.title-pal')?.getBoundingClientRect();
+  const pal = document.querySelector('.band-pal')?.getBoundingClientRect();
   const play = document.querySelector('.title-play')?.getBoundingClientRect();
   const inside =
     play !== undefined && play.top >= 0 && play.left >= 0 && play.bottom <= innerHeight && play.right <= innerWidth;
@@ -153,6 +153,10 @@ const startSong = async (page: Page, audio: AudioRecord, shots: string | undefin
   await wait(2500);
   const states = audio.contexts();
   check('play: the play screen shows', playing);
+  check(
+    'play: the load scene closed, and the pause button shows',
+    (await page.$('.load-scene')) === null && (await page.$('.play-loading')) === null
+  );
   check(
     'play: the song plays',
     (states === '' || states.endsWith('running')) && audio.sources() > 0,

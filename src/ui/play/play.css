@@ -176,3 +176,133 @@
     display: none;
   }
 }
+
+/* During the load, the pause button and the beads stay hidden: they do nothing until the play starts. */
+.play-loading .play-hud {
+  visibility: hidden;
+}
+
+/* The load scene (LoadScene.tsx): the cover on a turning record with the fill ring, and the band in the ready state.
+   Prototype: .scratch/prototypes/loading/. */
+.load-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  align-items: center;
+  padding: calc(var(--inset-top) + 24px) var(--inset-right) calc(var(--inset-bottom) + 16px) var(--inset-left);
+  transition: opacity 0.2s;
+}
+
+.load-closing {
+  opacity: 0;
+}
+
+.load-disc {
+  position: relative;
+  width: min(78vmin, 340px);
+  aspect-ratio: 1;
+}
+
+.load-disc svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.load-record {
+  transform-origin: 60px 60px;
+  animation: stage-spin 2.4s linear infinite;
+}
+
+.load-failed .load-record {
+  animation-play-state: paused;
+}
+
+.load-ring-track {
+  fill: none;
+  stroke: color-mix(in oklch, var(--grape-950) 70%, transparent);
+  stroke-width: 6;
+}
+
+.load-ring {
+  fill: none;
+  stroke: var(--lemon);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 60px 60px;
+}
+
+.load-failed .load-ring {
+  stroke: var(--grape-300);
+}
+
+.load-cover {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: var(--r-m);
+  box-shadow: 0 5px 0 var(--grape-950);
+  transform: translate(-50%, -50%);
+}
+
+.load-failed .load-cover {
+  animation: load-shake 0.4s ease-in-out;
+}
+
+@keyframes load-shake {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotate(0);
+  }
+
+  25% {
+    transform: translate(-50%, -50%) rotate(-6deg);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) rotate(5deg);
+  }
+
+  75% {
+    transform: translate(-50%, -50%) rotate(-3deg);
+  }
+}
+
+/* The pals wait for the song: a quicker bob than on the title screen, and none after a failure. */
+.load-band .band-pal img {
+  animation-duration: 0.7s;
+}
+
+.load-failed .band-pal img {
+  animation: none;
+}
+
+@media (orientation: landscape) {
+  .load-scene {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
+    column-gap: 16px;
+    padding-top: calc(var(--inset-top) + 12px);
+  }
+
+  .load-disc {
+    width: min(70vh, 300px);
+  }
+}
+
+/* Reduced motion (C16): nothing turns, bobs, or shakes. The ring and the faces still show the load. */
+@media (prefers-reduced-motion: reduce) {
+  .load-record,
+  .load-failed .load-cover,
+  .load-band .band-pal img {
+    animation: none;
+  }
+}

@@ -1,5 +1,6 @@
 import { createResource, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { downloading, lastProgress, readSongStore, startDownload, storageKept, watchDownload } from '../../shell/songs';
+import { LoadProblemNote } from './LoadProblemNote';
 import { megabytes, problemText, Progress, songs } from './song-texts';
 import type { DownloadPlan, FamilyKey } from '../../model';
 import type { StoreProblem } from '../../shell/songs';
@@ -114,6 +115,7 @@ export const SongsReady = (props: { readonly songKey: FamilyKey }): JSX.Element 
           {kept() === true ? 'Storage kept' : 'Storage can be cleared by iOS when the phone is full'}
         </p>
       </Show>
+      <LoadProblemNote />
     </>
   );
 };

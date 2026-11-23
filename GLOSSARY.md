@@ -138,6 +138,10 @@ _Avoid_: Library, catalog, menu, playlist
 The picture of a song in the song list, with its record and its stars.
 _Avoid_: Tile, item, cover
 
+**Load scene**:
+The short scene while a song loads: its cover on a turning record, with a fill ring, and the pals in the ready state. When the load fails, the pals make the oops face.
+_Avoid_: Spinner, loading screen, progress bar
+
 **End scene**:
 The short reward screen after a play.
 _Avoid_: Results screen, score screen, game over

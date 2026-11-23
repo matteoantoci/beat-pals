@@ -86,11 +86,43 @@ export const downloadFile = async (
   return { ok: true, value: undefined };
 };
 
-/** The plain content of a cached store file, or undefined when it is not in the cache or does not open. */
-export const readCachedFile = async (key: FamilyKey, name: string): Promise<Uint8Array<ArrayBuffer> | undefined> => {
+/** A read of a cached store file: its plain content, or why it failed. `missing`: not in the cache. `locked`: the
+ * key does not open it, or it is damaged. */
+export type CachedRead = { ok: true; plain: Uint8Array<ArrayBuffer> } | { ok: false; problem: 'missing' | 'locked' };
+
+/** The bytes of a body. `onBytes` gets the length of each chunk as it arrives, for the progress of a load. */
+const bodyBytes = async (response: Response, onBytes?: (count: number) => void): Promise<ArrayBuffer> => {
+  if (onBytes === undefined || response.body === null) {
+    return response.arrayBuffer();
+  }
+  const counter = new TransformStream<Uint8Array, Uint8Array>({
+    transform: (chunk, controller) => {
+      onBytes(chunk.byteLength);
+      controller.enqueue(chunk);
+    },
+  });
+  return new Response(response.body.pipeThrough(counter)).arrayBuffer();
+};
+
+/** The plain content of a cached store file. `onBytes` counts its encrypted bytes as they are read. */
+export const readCachedStream = async (
+  key: FamilyKey,
+  name: string,
+  onBytes?: (count: number) => void
+): Promise<CachedRead> => {
   const cache = await caches.open(CACHE);
   const response = await cache.match(fileUrl(name));
-  return response === undefined ? undefined : decryptFile(key, new Uint8Array(await response.arrayBuffer()));
+  if (response === undefined) {
+    return { ok: false, problem: 'missing' };
+  }
+  const plain = await decryptFile(key, new Uint8Array(await bodyBytes(response, onBytes)));
+  return plain === undefined ? { ok: false, problem: 'locked' } : { ok: true, plain };
+};
+
+/** The plain content of a cached store file, or undefined when it is not in the cache or does not open. */
+export const readCachedFile = async (key: FamilyKey, name: string): Promise<Uint8Array<ArrayBuffer> | undefined> => {
+  const read = await readCachedStream(key, name);
+  return read.ok ? read.plain : undefined;
 };
 
 /** The plain song index from the cache. It downloads into the cache first when it is not there. */

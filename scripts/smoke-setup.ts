@@ -159,7 +159,7 @@ export const songSetup = async (page: Page, keyCode: string): Promise<void> => {
 };
 
 /** Deletes the largest store file of the kept manifest, the audio of the test song, and gives its path. Runs in the page. */
-const dropAudio = async (cache: string): Promise<string> => {
+export const dropAudio = async (cache: string): Promise<string> => {
   const songs = await caches.open(cache);
   const kept = (await (await songs.match('/beat-pals/songs/last/manifest.json'))?.text()) ?? '';
   const files = [...kept.matchAll(/"name":"([0-9a-f]{64})","size":(\d+)/gu)];
@@ -170,7 +170,7 @@ const dropAudio = async (cache: string): Promise<string> => {
 };
 
 /** Waits up to `ms` for the path in the song cache. */
-const cachedAgain = async (page: Page, path: string, ms: number): Promise<boolean> => {
+export const cachedAgain = async (page: Page, path: string, ms: number): Promise<boolean> => {
   if ((await page.evaluate(cachedPaths, CACHE)).includes(path)) {
     return true;
   }

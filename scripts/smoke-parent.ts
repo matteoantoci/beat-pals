@@ -157,13 +157,18 @@ const restoreCode = async (page: Page, code: string, before: string | null): Pro
   check('restore: the save code gives the progress back', after !== null && after === before, after ?? 'no save');
 };
 
-/** From the song list: the new sections of the parent area (the sound switch, the save code, reset, credits). */
+/** From the song list: the new sections of the parent area (the last load problem, the sound switch, the save
+ * code, reset, credits). The failed load of scripts/smoke-load.ts comes before. */
 export const parentSections = async (page: Page): Promise<void> => {
   await tap(page, '.song-home');
   await wait(300);
   if (!(await openParentArea(page))) {
     return;
   }
+  check(
+    'parent area: the last load problem shows',
+    (await textOf(page, '.song-load-problem')).includes('a song file was missing')
+  );
   const before = await stored(page, SAVE);
   await soundSwitch(page);
   await credits(page);

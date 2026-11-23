@@ -17,6 +17,7 @@ import { launch } from 'puppeteer-core';
 import { allowModelImports } from './prepare/model-imports.ts';
 import { recordAudio } from './smoke-audio.ts';
 import { demoChecks } from './smoke-demo.ts';
+import { loadFailure, slowLoad } from './smoke-load.ts';
 import { offlineChecks } from './smoke-offline.ts';
 import { check, checkLines, setVisibility, shot, tap, wait } from './smoke-page.ts';
 import { parentSections } from './smoke-parent.ts';
@@ -150,6 +151,8 @@ const runAll = async (browser: Browser, server: Server, keyCode: string): Promis
   await songSetup(page, keyCode);
   await autoDownload(page);
   await playChecks(page, audio, SHOTS);
+  await slowLoad(page, SHOTS);
+  await loadFailure(page, SHOTS);
   await parentSections(page);
   await offlineChecks(page, audio, async () => stopPreview(server));
 };

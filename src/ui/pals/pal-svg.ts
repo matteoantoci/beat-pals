@@ -1,11 +1,12 @@
-// The 15 still pictures of the pals (spec, "Screens"): 3 pals with 5 states each, drawn as SVG by the prototype
-// function `palSVG` of play-style A, with its colours. Animated WebP files come later, as a separate art task.
+// The 18 still pictures of the pals (spec, "Screens"): 3 pals with 6 states each, drawn as SVG by the prototype
+// function `palSVG` of play-style A, with its colours, and the oops state of the loading prototype. Animated WebP
+// files come later, as a separate art task.
 
 import { css, LANE_COLORS, TOKENS, type Oklch } from './color';
 
-/** idle; ready (wide eyes, open mouth) before a note; happy after a hit; held during a soft hold; joy from
- * energy step 1. */
-const PAL_STATES = ['idle', 'ready', 'happy', 'held', 'joy'] as const;
+/** idle; ready (wide eyes, open mouth) before a note and during the load; happy after a hit; held during a soft
+ * hold; joy from energy step 1; oops when a song does not load ("whoops!", not sad). */
+const PAL_STATES = ['idle', 'ready', 'happy', 'held', 'joy', 'oops'] as const;
 
 export type PalState = (typeof PAL_STATES)[number];
 
@@ -69,12 +70,18 @@ const eye = (x: number, y: number, state: PalState): string => {
   if (isGlad(state)) {
     return `<path d="M${String(x - 9)} ${String(y + 2)} q9 -12 18 0" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>`;
   }
-  const ready = state === 'ready';
-  const up = ready ? -5 : 1;
+  // oops: the pupils look up and to the side, under a raised round brow.
+  const oops = state === 'oops';
+  const up = state === 'ready' ? -5 : oops ? -3 : 1;
+  const side = oops ? 4 : 1;
+  const brow = oops
+    ? `<path d="M${String(x - 9)} ${String(y - 18)} q9 -8 18 0" fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>`
+    : '';
   return (
-    `<ellipse cx="${String(x)}" cy="${String(y)}" rx="11" ry="${ready ? '13' : '12'}" fill="${WHITE}"/>` +
-    `<circle cx="${String(x + 1)}" cy="${String(y + up)}" r="6.5" fill="${INK}"/>` +
-    `<circle cx="${String(x + 3)}" cy="${String(y + up - 3)}" r="2.2" fill="${WHITE}"/>`
+    `<ellipse cx="${String(x)}" cy="${String(y)}" rx="11" ry="${state === 'ready' || oops ? '13' : '12'}" fill="${WHITE}"/>` +
+    `<circle cx="${String(x + side)}" cy="${String(y + up)}" r="6.5" fill="${INK}"/>` +
+    `<circle cx="${String(x + side + 2)}" cy="${String(y + up - 3)}" r="2.2" fill="${WHITE}"/>` +
+    brow
   );
 };
 
@@ -91,6 +98,8 @@ const MOUTHS: Readonly<Record<PalState, (my: number) => string>> = {
   held: (my) => `<ellipse cx="60" cy="${String(my + 1)}" rx="6.5" ry="7.5" fill="${INK}"/>`,
   idle: SMILE,
   joy: SMILE,
+  // a small round "o" to one side
+  oops: (my) => `<ellipse cx="65" cy="${String(my + 1)}" rx="5" ry="5.5" fill="${INK}"/>`,
 };
 
 const face = (pal: PalDrawing, state: PalState): string => {
@@ -130,7 +139,7 @@ export const palPicture = (index: PalIndex, state: PalState): string =>
 
 let decoded: Promise<void> | undefined;
 
-/** Decodes all 15 pictures one time, so no state change of a pal waits for a decode during a song (C21). */
+/** Decodes all 18 pictures one time, so no state change of a pal waits for a decode during a song (C21). */
 export const decodePals = (): Promise<void> => {
   decoded ??= Promise.all(
     PICTURES.flat().map(async (src) => {

@@ -1,6 +1,6 @@
 // The files of a ready song, read from Cache Storage and decrypted in memory (spec, "Delivery", play).
 
-import { readCachedFile } from './store';
+import { readCachedFile, readCachedStream } from './store';
 import type { FamilyKey, IndexSong } from '../../model';
 
 /** A ready song, decrypted: the facts file as JSON text, the cover picture, and the encoded audio. */
@@ -23,18 +23,29 @@ export const readCover = async (key: FamilyKey, song: IndexSong): Promise<Blob |
   return bytes === undefined ? null : new Blob([bytes], { type: coverType });
 };
 
-/** All files of a ready song, or undefined when a file is not in the cache or does not open with the key. */
-export const readSongFiles = async (key: FamilyKey, song: IndexSong): Promise<SongFiles | undefined> => {
-  const [facts, audio] = await Promise.all([
-    readCachedFile(key, song.files.facts),
-    readCachedFile(key, song.files.audio),
+/** A read of the files of a song: the files, or why a file failed (see `CachedRead`). */
+type SongFilesRead = { ok: true; files: SongFiles } | { ok: false; problem: 'missing' | 'locked' };
+
+/**
+ * All files of a ready song. `onBytes` counts their encrypted bytes as they are read; the sum of all counts is the
+ * `size` of the song in the index.
+ */
+export const readSongFiles = async (
+  key: FamilyKey,
+  song: IndexSong,
+  onBytes?: (count: number) => void
+): Promise<SongFilesRead> => {
+  const { facts, audio, cover, coverType } = song.files;
+  const [factsRead, audioRead, coverRead] = await Promise.all([
+    readCachedStream(key, facts, onBytes),
+    readCachedStream(key, audio, onBytes),
+    cover === null ? undefined : readCachedStream(key, cover, onBytes),
   ]);
-  if (facts === undefined || audio === undefined) {
-    return undefined;
+  if (!factsRead.ok) {
+    return factsRead;
   }
-  const cover = await readCover(key, song);
-  if (song.files.cover !== null && cover === null) {
-    return undefined;
+  if (!audioRead.ok) {
+    return audioRead;
   }
   return { factsJson: new TextDecoder().decode(facts), cover, audio: audio.buffer };
 };
