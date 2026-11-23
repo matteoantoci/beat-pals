@@ -66,6 +66,17 @@ describe('reportSongs', () => {
     ]);
   });
 
+  it('gives the off-beat notes in the diamond rows only', async () => {
+    // Notes at 0 s and 2 s on the beat, and one at 1.25 s off the beat.
+    await writeFile(join(inbox, 'paper-kites.sng'), sng('Paper Kites', chartOf([0, 480, 768])));
+    const lines: string[] = [];
+    await reportSongs({ inbox, log: (line) => lines.push(line) });
+    const notesOf = (color: string): string[] =>
+      lines.filter((line) => line.startsWith(`  ${color} `)).map((line) => line.trim().split(/ +/)[2] ?? '');
+    expect(notesOf('platinum')).toEqual(['2', '2', '2']);
+    expect(notesOf('diamond')).toEqual(['2', '2', '3']);
+  });
+
   it('lists each fill of a long rest: start, end, source part, and note count', async () => {
     // Guitar at 0 s and 10 s, bass at 1 s, 2 s, and 5 s: one fill from the bass.
     const chart = `${chartOf([0, 3840])}[ExpertDoubleBass]\n{\n  384 = N 0 0\n  768 = N 1 0\n  1920 = N 2 0\n}\n`;
