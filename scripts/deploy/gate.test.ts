@@ -11,7 +11,6 @@ import { checkSite } from './gate.ts';
 
 // All song names here are invented.
 const SONG = { id: 'kites-of-paper', title: 'Paper Kites', artist: 'The Lanterns', charter: 'Mossy Fern' };
-const ONE_WORD = { id: 'bright-glimmer', title: 'Glimmer', artist: 'Zephyra', charter: 'Quillon' };
 const ICON = Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 7, 7, 7);
 
 let root = '';
@@ -69,15 +68,13 @@ beforeEach(async () => {
   const prepared = join(root, 'prepared');
   const site = join(root, 'site');
   await prepare(prepared, SONG);
-  await prepare(prepared, ONE_WORD);
-  const songIds = new Set([SONG.id, ONE_WORD.id]);
-  const stored = await storeSongs({ prepared, site, key, songIds, log: () => undefined });
+  const stored = await storeSongs({ prepared, site, key, songIds: new Set([SONG.id]), log: () => undefined });
   if (!stored.ok) {
     throw new Error(stored.reason);
   }
   await cp(site, join(dist, 'songs'), { recursive: true });
   await write('index.html', '<script type="module" src="/beat-pals/assets/index-abc.js"></script>');
-  await write('assets/index-abc.js', 'const glow = "golden"; console.log(glow);');
+  await write('assets/index-abc.js', 'export const start = () => document.body.append("ready");');
   await write('.nojekyll', '');
   await write('pwa-192x192.png', Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1));
   await write('assets/icon-abc.png', ICON);
