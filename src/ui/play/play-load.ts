@@ -4,7 +4,7 @@
 // the running play is the state of this module. The play handle guards each call: a handle of a replaced play
 // changes nothing.
 
-import { storeLoadProblem } from '../../shell/load-notes';
+import { clearLoadProblem, storeLoadProblem } from '../../shell/load-notes';
 import { free, isFailure, loadParts, type Loaded, type LoadFailure } from './load-parts';
 import { startPlayLoop, type PlayLoop } from './play-loop';
 import type { LoadPhase } from '../../model';
@@ -84,7 +84,14 @@ const afterLoad = (id: number, elements: PlayElements, hooks: PlayHooks): AfterL
       return;
     }
     const { root, beads } = elements;
-    running = { ...result, loop: startPlayLoop({ ...result, root, beads, onPause: hooks.onPause, onEnd: end }) };
+    try {
+      running = { ...result, loop: startPlayLoop({ ...result, root, beads, onPause: hooks.onPause, onEnd: end }) };
+    } catch (error) {
+      free(result);
+      throw error;
+    }
+    // A song that plays ends the last problem: a missing file that downloaded again is no fault anymore.
+    clearLoadProblem();
   };
   return { start, fail };
 };

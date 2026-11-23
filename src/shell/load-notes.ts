@@ -65,3 +65,13 @@ export const storeLoadProblem = (kind: LoadProblemKind): void => {
   problem = { kind, at: Date.now() };
   write(PROBLEM_KEY, `${kind} ${String(problem.at)}`);
 };
+
+/** Ends the last load problem, after a song loads and plays. */
+export const clearLoadProblem = (): void => {
+  problem = undefined;
+  try {
+    localStorage.removeItem(PROBLEM_KEY);
+  } catch {
+    // The problem stays stored, and shows again at the next launch.
+  }
+};
