@@ -1,18 +1,21 @@
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { bandOf, danceOf, RECORD_COLORS } from '../../model';
+import { loadSoundOn } from '../../shell/settings';
+import { playSceneSounds } from '../../sound';
 import { reducedMotion, watchReducedMotion } from '../play/reduced-motion';
 import { pictureOf, type SongChoice } from '../songs/SongList';
-import { playScene, sceneLength, type ScenePlan, type SceneParts } from './motion';
+import { playScene, sceneLength, sceneSounds, type ScenePlan, type SceneParts } from './motion';
 import { Band, Sleeve, StarRow, type Refs } from './parts';
 import type { PlayOutcome } from '../../model';
 import type { JSX } from 'solid-js';
 
 // The end scene (spec, "Screens"): the result of the play in pictures, with no numbers. The record of the play
 // slides out of the song sleeve, a new star flies to its place, a new record color slides out after a third star,
-// and at silver and gold the new pal jumps into the band (the join scene). The pals dance by the hit ratio. Then
-// one button goes back to the song list.
+// and at silver and gold the new pal jumps into the band (the join scene). The pals dance by the hit ratio. The
+// record, the star, and the join have their sounds (Sound effects switch). Then one button goes back to the song list.
 // Taps: each `pointerdown` in the first 2 s does nothing, and a pointer that went down before the scene never
-// gives a `pointerdown` here. After that, one tap skips to the final state. The button reacts only to a pointer
+// gives a `pointerdown` here. After that, one tap skips to the final state, and the sounds still to come do not
+// play: a skip never leaves a sound queued, and never plays one twice. The button reacts only to a pointer
 // that went down on the button itself, so the skip tap never presses it, also when iOS sends its click to the
 // button that shows under the finger.
 
@@ -36,6 +39,21 @@ const sceneParts = (refs: Refs): SceneParts | undefined => {
   }
   const { newRecord, starSparks, landSparks, stars, bodies, pals } = refs;
   return { root, cover, record, confetti, newRecord, starSparks, landSparks, stars, bodies, pals };
+};
+
+/** Starts the motion and the sounds of the scene. Gives the skip: each part in its final state, and no sound still
+ * to come. */
+const startScene = (refs: Refs, plan: ScenePlan): (() => void) => {
+  const parts = sceneParts(refs);
+  if (parts === undefined) {
+    return ignore;
+  }
+  const finishMotion = playScene(parts, plan, reducedMotion());
+  const cancelSounds = playSceneSounds(sceneSounds(plan), loadSoundOn());
+  return () => {
+    finishMotion();
+    cancelSounds();
+  };
 };
 
 /** The button back to the song list: the 4 squares of the prototype. It reacts only to a pointer that went down
@@ -84,8 +102,8 @@ export const EndScene = (props: EndSceneProps): JSX.Element => {
   onMount(() => {
     pictureOf(props.choice.key, props.choice.song).then(setPicture, ignore);
     onCleanup(() => URL.revokeObjectURL(picture() ?? ''));
-    const parts = sceneParts(refs);
-    skip = parts === undefined ? ignore : playScene(parts, plan, reducedMotion());
+    skip = startScene(refs, plan);
+    onCleanup(skip); // The exit cancels the sounds still to come.
     // A change to reduced motion during the scene stops each motion: the parts jump to their final state.
     onCleanup(watchReducedMotion((reduced) => reduced && skip()));
     const timer = setTimeout(finish, sceneLength(plan) * 1000);

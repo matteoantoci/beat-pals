@@ -2,8 +2,8 @@ import { createSignal } from 'solid-js';
 import { loadSoundOn, storeSoundOn } from '../../shell/settings';
 import type { JSX } from 'solid-js';
 
-// The Sound effects switch of the parent area (spec, "Save" and "Sound"). It turns off the claps and the level-up
-// sounds from the next song on. The songs and the title music always play.
+// The Sound effects switch of the parent area (spec, "Save" and "Sound"). It turns off the claps, the level-up
+// sounds, and the end scene sounds from the next song on. The songs and the title music always play.
 
 export const SoundSwitch = (): JSX.Element => {
   const [on, setOn] = createSignal(loadSoundOn());
@@ -18,7 +18,7 @@ export const SoundSwitch = (): JSX.Element => {
       <button type="button" class="parent-switch" role="switch" aria-checked={on()} onClick={flip}>
         Sound effects: {on() ? 'On' : 'Off'}
       </button>
-      <p>The claps and the level-up sounds. The songs and the title music always play.</p>
+      <p>The claps, the level-up sounds, and the end of song sounds. The songs and the title music always play.</p>
     </section>
   );
 };

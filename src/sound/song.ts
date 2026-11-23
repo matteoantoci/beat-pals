@@ -2,9 +2,8 @@
 // <audio> element, and the guarded song clock gives its time. Pause and resume work across a context replacement.
 // Only one song stays in memory, so the state of that song is the state of this module.
 import { firstSongTime, songTime, startAt } from '../model';
-import { clapBuffer } from './clap';
+import { levelUpShot, startEffect, type LevelUpStep, type Shot } from './effects';
 import { currentContext, decode, onReplaced } from './engine';
-import { levelUpBuffer, type LevelUpStep } from './level-up';
 
 /** What the play screen hears from the song. In both cases, the song paused itself before the call. */
 export type SongEvents = {
@@ -26,7 +25,7 @@ export type Song = {
   readonly pause: () => void;
   /** Continues from the saved song time in the current context. */
   readonly resume: () => void;
-  /** Plays a clap at a song time, brighter for a great hit. A past time plays now. The Sound effects switch turns it off. */
+  /** Plays a clap at a song time, the great clap for a great hit. A past time plays now. The switch turns it off. */
   readonly clap: (at: number, great: boolean) => void;
   /** Plays the level-up sound of an energy step at a song time, as a clap. */
   readonly levelUp: (step: LevelUpStep, at: number) => void;
@@ -130,15 +129,16 @@ const play = (from: number): void => {
 };
 
 /** Plays a sound effect at a song time, when the Sound effects switch is on. */
-const effect = (sound: AudioBuffer, at: number): void => {
+const effect = (shot: Shot, at: number): void => {
   if (!session || !effectsOn) {
     return;
   }
   const { ctx, t0, claps } = session;
-  const source = new AudioBufferSourceNode(ctx, { buffer: sound });
-  source.connect(ctx.destination);
+  const source = startEffect(ctx, shot, Math.max(ctx.currentTime, t0 + at));
+  if (!source) {
+    return;
+  }
   source.addEventListener('ended', () => claps.delete(source));
-  source.start(Math.max(ctx.currentTime, t0 + at));
   claps.add(source);
 };
 
@@ -177,12 +177,12 @@ const handle = (id: number, duration: number): Song => {
     },
     clap: (at, great) => {
       if (id === current) {
-        effect(clapBuffer(great), at);
+        effect({ effect: great ? 'clap-great' : 'clap', rate: 1 }, at);
       }
     },
     levelUp: (step, at) => {
       if (id === current) {
-        effect(levelUpBuffer(step), at);
+        effect(levelUpShot(step), at);
       }
     },
     cancelClaps: mine(cancelClaps),

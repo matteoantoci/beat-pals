@@ -22,6 +22,8 @@ let decoder: OfflineAudioContext | undefined;
 /** The end of the last decode. Each decode waits for it, so decodes never run in parallel. */
 let decoding: Promise<unknown> = Promise.resolve();
 const loading = new Map<string, Promise<AudioBuffer>>();
+/** The decoded files, for the sound effects: they play at once or not at all. */
+const ready = new Map<string, AudioBuffer>();
 /** The code to run after a tap replaced the context. */
 const replacedListeners = new Set<() => void>();
 
@@ -82,7 +84,9 @@ const download = async (file: string): Promise<AudioBuffer> => {
   if (!response.ok) {
     throw new Error(`${file}: HTTP ${String(response.status)}`);
   }
-  return decode(await response.arrayBuffer());
+  const buffer = await decode(await response.arrayBuffer());
+  ready.set(file, buffer);
+  return buffer;
 };
 
 /** Loads and decodes a file one time. After a failure, the next call tries again. */
@@ -95,6 +99,15 @@ const loadClip = (file: string): Promise<AudioBuffer> => {
   loading.set(file, next);
   next.catch(() => loading.delete(file));
   return next;
+};
+
+/** The decoded buffer of a file, or undefined when it is not decoded yet: then it starts the load, for a next call. */
+export const readyClip = (file: string): AudioBuffer | undefined => {
+  const buffer = ready.get(file);
+  if (!buffer) {
+    loadClip(file).catch(ignore);
+  }
+  return buffer;
 };
 
 /** The loop that the app wants to hear. It stays set while the file loads and after a context replacement. */

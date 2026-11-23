@@ -4,9 +4,9 @@ import { loadFamilyKey, readSongStore } from '../../shell/songs';
 import type { CreditGroup } from '../../model';
 import type { JSX } from 'solid-js';
 
-// The credits of the parent area (spec, "Screens"; user story 48): the title music and the other shipped files from
-// the credits list of the model, and the chart author of each ready song. The song index holds the `charter` of each
-// facts file (prepare-song copies it), so the chart authors need no decryption of a song file.
+// The credits of the parent area (spec, "Screens"; user story 48): the title music, the sound effects, and the other
+// shipped files from the credits list of the model, and the chart author of each ready song. The song index holds the
+// `charter` of each facts file (prepare-song copies it), so the chart authors need no decryption of a song file.
 
 /** The chart authors of the ready songs on this device. With no key or no song store, the list is empty. */
 const readyChartAuthors = async (): Promise<string[]> => {
@@ -70,7 +70,7 @@ const ChartAuthors = (): JSX.Element => {
 export const Credits = (): JSX.Element => (
   <section class="parent-section credits-section">
     <h2>Credits</h2>
-    <p>Beat Pals uses this music and these charts. Thank you to their authors.</p>
+    <p>Beat Pals uses this music, these sounds, and these charts. Thank you to their authors.</p>
     <For each={CREDIT_GROUPS}>{(group) => <Group group={group} />}</For>
     <ChartAuthors />
   </section>

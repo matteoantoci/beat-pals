@@ -21,8 +21,10 @@ const matches = (pattern: string, file: string): boolean => {
 };
 
 describe('the credits list (src/model/credits/credits.ts)', () => {
-  it('finds the shipped files: the title music, the icon, and the setup pictures', () => {
-    expect(shipped).toEqual(expect.arrayContaining(['public/music/title.mp3', 'public/icon.svg']));
+  it('finds the shipped files: the title music, the sounds, the icon, and the setup pictures', () => {
+    expect(shipped).toEqual(
+      expect.arrayContaining(['public/music/title.mp3', 'public/sounds/clap.wav', 'public/icon.svg'])
+    );
     expect(shipped.filter((file) => file.startsWith('public/setup/'))).not.toEqual([]);
   });
 

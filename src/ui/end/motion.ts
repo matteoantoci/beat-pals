@@ -7,11 +7,14 @@
 // - 3.3 s: at silver and gold, the new pal jumps into the band and lands at 4.3 s.
 // The pals dance by the hit ratio, and confetti falls at 70% or more (party.ts). With reduced motion, each part
 // fades in place: no spin, no jump, no dance, no confetti (C16).
+// The sounds follow the same timeline (`sceneSounds`): the record at each slide-out, the star at its pop, and the
+// new pal at its landing. With reduced motion, the parts fade in at the same moments, so the sounds keep their times.
 // All animations keep their last frame, so `finish` on all of them gives the final state of the scene: the skip.
 
 import { animate } from './animate';
 import { confetti, dance, DANCE_FROM } from './party';
 import type { Dance, Lane } from '../../model';
+import type { SceneSound } from '../../sound';
 
 /** What the scene shows, from the outcome of the play. */
 export type ScenePlan = {
@@ -74,6 +77,14 @@ export const sceneLength = (plan: ScenePlan): number => {
   }
   return plan.opened ? 3.5 : 3;
 };
+
+/** The sounds of the scene: only the sounds of the moments that the plan shows. */
+export const sceneSounds = (plan: ScenePlan): SceneSound[] => [
+  { effect: 'record', at: RECORD_AT },
+  ...(plan.star === null ? [] : [{ effect: 'star', at: POP_AT } satisfies SceneSound]),
+  ...(plan.opened ? [{ effect: 'record', at: NEW_RECORD_AT } satisfies SceneSound] : []),
+  ...(plan.joins === null ? [] : [{ effect: 'join', at: LAND_AT } satisfies SceneSound]),
+];
 
 const centre = (el: Element): { x: number; y: number } => {
   const box = el.getBoundingClientRect();
@@ -140,14 +151,12 @@ const flyStar = (scene: Scene, star: HTMLElement): void => {
 };
 
 const JUMP: Keyframe[] = [
-  { transform: 'none', scale: '0.8', easing: 'ease-out' },
-  { transform: 'translateY(-160px)', scale: '0.9', easing: 'ease-in' },
-  { transform: 'none', scale: '1' },
+  { transform: 'none', easing: 'ease-out' },
+  { transform: 'translateY(-160px)', easing: 'ease-in' },
+  { transform: 'none' },
 ];
-/** With reduced motion, the waiting pal fades out and fades in at the band size: the size steps while it is hidden,
- * with no scale change that shows (C16). */
+/** With reduced motion, the new pal fades out and fades in at its place, with no jump (C16). */
 const FADE_PLACE: Keyframe[] = [{ opacity: 1 }, { opacity: 0 }, { opacity: 1 }];
-const SIZE_STEP: Keyframe[] = [{ scale: '0.8' }, { scale: '1' }];
 
 /** The new pal jumps from its waiting place into the band and lands with a squash. */
 const join = ({ parts, reduced }: Scene, lane: Lane): void => {
@@ -158,7 +167,6 @@ const join = ({ parts, reduced }: Scene, lane: Lane): void => {
   }
   if (reduced) {
     animate(body, FADE_PLACE, { at: JUMP_AT, sec: JUMP_SEC, easing: 'linear' });
-    animate(body, SIZE_STEP, { at: JUMP_AT, sec: JUMP_SEC / 2, easing: 'step-end' });
     return;
   }
   animate(body, JUMP, { at: JUMP_AT, sec: JUMP_SEC, easing: 'linear' });

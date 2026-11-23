@@ -36,6 +36,83 @@ const ENTRIES: readonly CreditEntry[] = [
     change: 'The game skips the silence at the start of the loop.',
   },
   {
+    kind: 'sound',
+    title: 'Simple Clap',
+    author: 'LordMelchior',
+    licence: 'CC0-1.0',
+    url: 'https://freesound.org/people/LordMelchior/sounds/213919/',
+    files: ['public/sounds/clap.wav', 'public/sounds/clap-great.wav'],
+    change:
+      'Made from the Freesound HQ preview (MP3). Converted to mono WAV, 16-bit, 44.1 kHz, with the silence at the ' +
+      'start and the end removed and the peak at -1 dBFS. The great clap mixes it with TAM.wav and a limiter at -1 dBFS.',
+  },
+  {
+    kind: 'sound',
+    title: 'TAM.wav',
+    author: 'menegass',
+    licence: 'CC0-1.0',
+    url: 'https://freesound.org/people/menegass/sounds/99853/',
+    files: ['public/sounds/clap-great.wav'],
+    change:
+      'Made from the Freesound HQ preview (MP3). Converted to mono WAV, 16-bit, 44.1 kHz, with the silence at the ' +
+      'start and the end removed and the peak at -1 dBFS. Mixed at 0.8, 30 ms after Simple Clap, into the great clap.',
+  },
+  {
+    kind: 'sound',
+    title: 'Interface Sounds',
+    author: 'Kenney',
+    licence: 'CC0-1.0',
+    url: 'https://kenney.nl/assets/interface-sounds',
+    files: ['public/sounds/level-up.wav'],
+    change:
+      'confirmation_001.ogg from the pack. Converted to mono WAV, 16-bit, 44.1 kHz, with the silence at the start ' +
+      'and the end removed and the peak at -1 dBFS. The game plays it one whole tone higher for each energy step.',
+  },
+  {
+    kind: 'sound',
+    title: 'Level Up Bells',
+    author: 'Qvantor',
+    licence: 'CC0-1.0',
+    url: 'https://freesound.org/people/Qvantor/sounds/878595/',
+    files: ['public/sounds/gold.wav'],
+    change:
+      'Made from the Freesound HQ preview (MP3). Converted to mono WAV, 16-bit, 44.1 kHz, with the silence at the ' +
+      'start and the end removed and the peak at -1 dBFS. Cut to 1.5 s with a 0.35 s fade-out.',
+  },
+  {
+    kind: 'sound',
+    title: 'Whoosh',
+    author: 'qubodup',
+    licence: 'CC0-1.0',
+    url: 'https://freesound.org/people/qubodup/sounds/60013/',
+    files: ['public/sounds/record.wav'],
+    change:
+      'Made from the Freesound HQ preview (MP3). Converted to mono WAV, 16-bit, 44.1 kHz, with the silence at the ' +
+      'start and the end removed and the peak at -1 dBFS.',
+  },
+  {
+    kind: 'sound',
+    title: 'cartoon_wink_magic_sparkle.wav',
+    author: 'MLaudio',
+    licence: 'CC0-1.0',
+    url: 'https://freesound.org/people/MLaudio/sounds/511485/',
+    files: ['public/sounds/star.wav'],
+    change:
+      'Made from the Freesound HQ preview (MP3). Converted to mono WAV, 16-bit, 44.1 kHz, with the silence at the ' +
+      'start and the end removed and the peak at -1 dBFS.',
+  },
+  {
+    kind: 'sound',
+    title: 'Boing 2',
+    author: 'magnuswaker',
+    licence: 'CC0-1.0',
+    url: 'https://freesound.org/people/magnuswaker/sounds/540790/',
+    files: ['public/sounds/join.wav'],
+    change:
+      'The Pile Pals copy (mono WAV, 16-bit, 44.1 kHz), with the silence at the start and the end removed and the ' +
+      'peak at -1 dBFS.',
+  },
+  {
     kind: 'picture',
     title: 'App icon',
     author: 'Beat Pals',

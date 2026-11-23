@@ -14,8 +14,8 @@ const readSoundOn = (): boolean => {
   }
 };
 
-/** The Sound effects switch (the claps and the level-up sounds): true (on) when there is no setting or localStorage
- * is blocked. The songs and the title music always play. */
+/** The Sound effects switch (the claps, the level-up sounds, and the end scene sounds): true (on) when there is no
+ * setting or localStorage is blocked. The songs and the title music always play. */
 export const loadSoundOn = (): boolean => {
   soundOn ??= readSoundOn();
   return soundOn;
