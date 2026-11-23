@@ -64,9 +64,12 @@ export default defineConfig({
         theme_color: STAGE,
       },
       workbox: {
-        // The Pile Pals list plus mp3 (the title music in public/music/). Each file is below the default limit
-        // of 2 MiB (maximumFileSizeToCacheInBytes), so the precache holds all of them.
-        globPatterns: ['**/*.{js,css,html,svg,png,webp,avif,txt,webmanifest,wav,mp3}'],
+        // The Pile Pals list plus mp3 (the title music in public/music/), less webmanifest. Each file is below the
+        // default limit of 2 MiB (maximumFileSizeToCacheInBytes), so the precache holds all of them.
+        // vite-plugin-pwa adds manifest.webmanifest to the precache itself. A glob match adds it a second time with
+        // another revision, and then Workbox refuses the whole precache list: the service worker serves nothing,
+        // and the app does not start offline.
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,avif,txt,wav,mp3}'],
         // The encrypted songs are never in the precache: the app downloads them on demand (spec, "Delivery").
         globIgnores: ['songs/**'],
       },
