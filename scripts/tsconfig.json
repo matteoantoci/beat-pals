@@ -14,6 +14,7 @@
     "leak-scan.test.ts",
     "prepare-song.ts",
     "lib/*.ts",
-    "prepare/*.ts"
+    "prepare/*.ts",
+    "deploy/*.ts"
   ]
 }
