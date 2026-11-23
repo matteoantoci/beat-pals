@@ -1,7 +1,8 @@
 // The play model (spec, "Play rules", "Band energy", and "Play model interface"). It judges the taps of one play
 // against the child chart and gives the events that the play screen shows and plays. Each `t` is the song time in
-// seconds from the guarded song clock. A note with 2 lanes (a double) counts when either lane is tapped. The finger
-// on a soft hold is not judged yet: each note counts at its tap, as a plain note.
+// seconds from the guarded song clock. A note with 2 lanes (a double) counts when either lane is tapped. A soft hold
+// counts at its tap, as a plain note. When the finger stays down to its half point, the hold is done. An early
+// release is never a miss.
 
 import { energyStep, hitEnergy, passEnergy, START_ENERGY, type Energy, type EnergyStep } from './energy';
 import { goodWindows, GREAT_SEC } from './windows';
@@ -46,6 +47,8 @@ export type PlayState = {
   readonly passed: number;
   /** The lane of each pointer that is down. */
   readonly down: ReadonlyMap<number, Lane>;
+  /** The soft hold (its note index) of each pointer that hit a soft hold and is still down before its half point. */
+  readonly holding: ReadonlyMap<number, number>;
   readonly energy: Energy;
   readonly quit: boolean;
 };
@@ -60,6 +63,7 @@ export const startPlay = (chart: ChildChart): PlayState => ({
   hits: 0,
   passed: 0,
   down: new Map(),
+  holding: new Map(),
   energy: START_ENERGY,
   quit: false,
 });
@@ -99,7 +103,14 @@ const press = (play: PlayState, { t, lane, pointerId }: Extract<Action, { type: 
   const energy = hitEnergy(play.energy, t);
   const grade = Math.abs(t - note.t) <= GREAT_SEC ? 'great' : 'good';
   return {
-    state: { ...play, down, hit: play.hit.with(at, true), hits: play.hits + 1, energy },
+    state: {
+      ...play,
+      down,
+      holding: note.holdSec > 0 ? new Map(play.holding).set(pointerId, at) : play.holding,
+      hit: play.hit.with(at, true),
+      hits: play.hits + 1,
+      energy,
+    },
     events: [{ type: 'hit', lane, grade, soundAt: Math.max(t, note.t) }, ...energyEvents(play.energy, energy)],
   };
 };
@@ -110,11 +121,30 @@ const release = (play: PlayState, pointerId: number): Outcome => {
   }
   const down = new Map(play.down);
   down.delete(pointerId);
-  return { state: { ...play, down }, events: [] };
+  const holding = new Map(play.holding);
+  holding.delete(pointerId);
+  return { state: { ...play, down, holding }, events: [] };
+};
+
+/** Each soft hold whose finger stayed down to its half point by `t` is done. */
+const finishHolds = (play: PlayState, t: number): Outcome => {
+  const done = [...play.holding].filter(([, at]) => {
+    const note = play.chart.notes[at];
+    return note !== undefined && note.t + note.holdSec / 2 <= t;
+  });
+  if (done.length === 0) {
+    return { state: play, events: [] };
+  }
+  const holding = new Map(play.holding);
+  done.forEach(([pointerId]) => holding.delete(pointerId));
+  return {
+    state: { ...play, holding },
+    events: done.map(([, note]) => ({ type: 'holdDone', note })),
+  };
 };
 
 /** Each note whose good window ended before `t` passes: a note with no hit fades, and the energy can drop. */
-const advance = (play: PlayState, t: number): Outcome => {
+const passNotes = (play: PlayState, t: number): Outcome => {
   const { notes } = play.chart;
   const passedAt = (at: number): number => (notes[at]?.t ?? Number.POSITIVE_INFINITY) + (play.good[at] ?? 0);
   let passed = play.passed;
@@ -135,6 +165,13 @@ const advance = (play: PlayState, t: number): Outcome => {
     events.push({ type: 'faded', note: at }, ...energyEvents(before, energy));
   }
   return { state: { ...play, passed, energy }, events };
+};
+
+/** The soft holds at their half point are done. Then the notes pass: see `passNotes`. */
+const advance = (play: PlayState, t: number): Outcome => {
+  const held = finishHolds(play, t);
+  const passing = passNotes(held.state, t);
+  return { state: passing.state, events: [...held.events, ...passing.events] };
 };
 
 /** Applies one action. An action that changes nothing returns the same state object. After `quit`, nothing changes. */

@@ -20,7 +20,7 @@ const HALF_NOTES_BELOW_SEC = 0.43;
 const LONE_BEAT_SEC = 0.5;
 
 /** Each beat of the facts with its length. The last beat has the length of the beat before it. */
-const timedBeats = (beats: SongFacts['beats']): TimedBeat[] =>
+export const timedBeats = (beats: SongFacts['beats']): TimedBeat[] =>
   beats.map((beat, at) => {
     const next = beats[at + 1] ?? beat;
     const before = beats[at - 1] ?? beat;

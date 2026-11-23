@@ -2,13 +2,15 @@
 // the record color and the speed step of the play. The notes of the fills join the guitar notes first. Then the
 // passes run in this order: the filter, the lane mapping, the doubles, and the holds.
 
+import { addDoubles, type NoteLanes } from './doubles';
 import { filterNotes } from './filter';
+import { holdLengths } from './holds';
 import { type Lane, mapLanes } from './lanes';
-import { keptBeats, type SpeedStep } from './speed-steps';
+import { keptBeats, timedBeats, type SpeedStep } from './speed-steps';
 import type { SongFacts } from '../chart/facts';
 
 /** A note of the child chart. `holdSec` is 0 for a plain note. */
-type ChildNote = { t: number; lanes: [Lane] | [Lane, Lane]; holdSec: number };
+type ChildNote = { t: number; lanes: NoteLanes; holdSec: number };
 
 /** The record colors, from the first to the last. */
 export const RECORD_COLORS = ['bronze', 'silver', 'gold', 'platinum', 'diamond'] as const;
@@ -29,6 +31,9 @@ const BANDS: Readonly<Record<RecordColor, readonly Lane[]>> = {
   diamond: [0, DOT, 2],
 };
 
+/** The colors with doubles and soft holds: platinum and up. */
+const ACCENTS: ReadonlySet<RecordColor> = new Set(['platinum', 'diamond']);
+
 /** The band of a record color: the lanes of the pals that play. */
 export const bandOf = (color: RecordColor): readonly Lane[] => BANDS[color];
 
@@ -38,5 +43,18 @@ export const childChart = (facts: SongFacts, color: RecordColor, step: SpeedStep
   const filtered = filterNotes(notes, keptBeats(facts.beats, step));
   const band = BANDS[color];
   const lanes = mapLanes(filtered, band);
-  return { band, notes: filtered.map((note, at) => ({ t: note.t, lanes: [lanes[at] ?? DOT], holdSec: 0 })) };
+  if (!ACCENTS.has(color)) {
+    return { band, notes: filtered.map((note, at) => ({ t: note.t, lanes: [lanes[at] ?? DOT], holdSec: 0 })) };
+  }
+  const beats = timedBeats(facts.beats);
+  const doubles = addDoubles(
+    filtered,
+    lanes,
+    beats.filter((_, at) => facts.beats[at]?.downbeat === true)
+  );
+  const holds = holdLengths(filtered, beats);
+  return {
+    band,
+    notes: filtered.map((note, at) => ({ t: note.t, lanes: doubles[at] ?? [DOT], holdSec: holds[at] ?? 0 })),
+  };
 };
