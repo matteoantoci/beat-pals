@@ -1,7 +1,7 @@
 // The shapes of the ball effects, the phrase balls, and the star moment burst (prototype star-moments v2), painted
-// around (0, 0) for the texture atlas. The ball effects grow with the band energy: a glow (step 1), a sparkle trail
-// (step 2), a comet tail (step 3), and a gold rim (gold). A phrase ball has a wide gold glow and a thick double gold
-// ring. The burst has speed lines (tapered at both ends: a deep warm gold body and a thin hot core) and a light warm
+// around (0, 0) for the texture atlas. The ball effects grow with the band energy: a glow (step 1), a comet tail
+// (step 3), and a gold rim (gold). A phrase ball has a wide gold glow and a thick double gold ring. The burst has
+// speed lines (tapered at both ends: a deep warm gold body and a thin hot core) and a light warm
 // glow at the screen edges. The soft shapes are painted small and the sprites scale them up.
 
 import { css, LANE_COLORS, TOKENS, type Oklch } from '../pals/color';

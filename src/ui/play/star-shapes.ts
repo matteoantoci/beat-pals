@@ -1,8 +1,7 @@
 // The atlas shapes of the ball effects, the phrase balls, and the star moment burst (see ./paint-star).
 
 import { css, LANE_COLORS } from '../pals/color';
-import { keyOf, laneKeys } from './hold-shapes';
-import { laneCss } from './paint';
+import { keyOf } from './hold-shapes';
 import { paintEnergySparkle, SPARKLE_R } from './paint-energy';
 import {
   BALL_GLOW_SHARE,
@@ -26,14 +25,10 @@ type Shape = { readonly key: string; readonly w: number; readonly h: number; rea
 
 const square = (key: string, size: number, paint: (ctx: Ctx) => void): Shape => ({ key, w: size, h: size, paint });
 
-const TRAIL_LIGHT = laneKeys('trail light');
-
 /** The keys of the shapes of the ball effects and the star moment. */
 export const starKey = {
   ballGlow: keyOf('ball glow'),
   ballTail: keyOf('ball tail'),
-  /** A trail sparkle in the light colour of the lane. The white and the lemon ones are the energy sparkles. */
-  trailLight: (lane: Lane): string => TRAIL_LIGHT[lane],
   sparkleAmber: 'sparkle amber',
   ballRim: 'ball rim',
   phraseGlow: 'phrase glow',
@@ -42,14 +37,13 @@ export const starKey = {
   edgeGlow: 'edge glow',
 } as const;
 
-/** The shapes of one lane: its ball glow, its comet tail, and its light trail sparkle. */
+/** The shapes of one lane: its ball glow and its comet tail. */
 export const laneStarShapes = (geometry: Geometry, lane: Lane): Shape[] => {
   const r = geometry.noteS / 2;
   const len = geometry.noteS * TAIL_SHARE;
   return [
     square(starKey.ballGlow(lane), 2 * r * BALL_GLOW_SHARE + 2, (ctx) => paintBallGlow(ctx, lane, r)),
     { key: starKey.ballTail(lane), w: 2 * r, h: len, paint: (ctx) => paintBallTail(ctx, lane, { r, len }) },
-    square(starKey.trailLight(lane), 2 * SPARKLE_R + 2, (ctx) => paintEnergySparkle(ctx, laneCss(lane).light)),
   ];
 };
 
