@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount } from 'solid-js';
+import { createSignal, onSettled } from 'solid-js';
 import { loadFamilyKey, readSongStore, watchDownload } from '../../shell/songs';
 import type { Accessor } from 'solid-js';
 
@@ -19,17 +19,16 @@ const readyCount = async (): Promise<number> => {
 /** True when the song list has at least one card. */
 export const songsReady = (): Accessor<boolean> => {
   const [ready, setReady] = createSignal(false);
-  onMount(() => {
-    onCleanup(
-      watchDownload((event) => {
-        if (event.type === 'progress' && event.plan.ready.length > 0) {
-          setReady(true);
-        }
-      })
-    );
+  onSettled(() => {
+    const unwatch = watchDownload((event) => {
+      if (event.type === 'progress' && event.plan.ready.length > 0) {
+        setReady(true);
+      }
+    });
     readyCount()
       .then((count) => count > 0 && setReady(true))
       .catch(ignore);
+    return unwatch;
   });
   return ready;
 };

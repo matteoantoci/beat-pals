@@ -1,7 +1,7 @@
 import { For, Show } from 'solid-js';
 import { css, shade, TOKENS, type Oklch } from '../pals/color';
 import type { RecordColor } from '../../model';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The reward shelf of a song card (spec, "Screens"): a record in the record color next to 3 stars. The whole disc
 // has the color, so it reads at a glance. Platinum has a second shine line, so each record differs by a mark and not

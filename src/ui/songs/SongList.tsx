@@ -1,4 +1,4 @@
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+import { createSignal, For, onSettled, Show } from 'solid-js';
 import { RECORD_COLORS } from '../../model';
 import { progressOf } from '../../shell/save';
 import { loadFamilyKey, readCover, readSongStore, watchDownload } from '../../shell/songs';
@@ -6,7 +6,8 @@ import { playTitleMusic } from '../../sound';
 import { palPicture } from '../pals/pal-svg';
 import { Record, Stars } from './record';
 import type { FamilyKey, IndexSong } from '../../model';
-import type { Accessor, JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
+import type { Accessor } from 'solid-js';
 
 // The song list (spec, "Screens"): only the ready songs, in the order of the song index (by title). Each card has
 // the picture, a record of the record color next to the 3 stars, and the title for the Parent. One tap on the
@@ -55,28 +56,29 @@ const readyCards = (): Cards => {
     // The ready list has the index order, so each card takes the place of its song.
     const order = new Map(ready.map((song, at) => [song.id, at]));
     const rank = (card: Card): number => order.get(card.song.id) ?? 0;
-    setCards([...cards(), ...added].toSorted((one, two) => rank(one) - rank(two)));
+    // The updater form reads the cards with the staged writes, so a second card list that arrives before the flush
+    // does not drop the first.
+    setCards((current) => [...current, ...added].toSorted((one, two) => rank(one) - rank(two)));
   };
   const loadCards = async (): Promise<void> => {
     key = await loadFamilyKey();
     const store = key === undefined ? undefined : await readSongStore(key);
     await add(store?.ok === true ? store.plan.ready : []);
   };
-  onMount(() => {
-    onCleanup(
-      watchDownload((event) => {
-        if (event.type === 'progress') {
-          add(event.plan.ready).catch(ignore);
-        }
-      })
-    );
-    onCleanup(() => {
-      for (const card of cards()) {
-        URL.revokeObjectURL(card.picture ?? '');
+  onSettled(() => {
+    const unwatch = watchDownload((event) => {
+      if (event.type === 'progress') {
+        add(event.plan.ready).catch(ignore);
       }
     });
     // With no key, no network, or no store, the list has no songs.
     loadCards().catch(ignore);
+    return () => {
+      unwatch();
+      for (const card of cards()) {
+        URL.revokeObjectURL(card.picture ?? '');
+      }
+    };
   });
   return { cards, key: () => key };
 };
@@ -94,11 +96,11 @@ export const SongPicture = (props: { readonly picture: string | undefined }): JS
     when={props.picture}
     fallback={
       <span class="song-picture song-plain">
-        <img src={palPicture(1, 'idle')} alt="" draggable={false} />
+        <img src={palPicture(1, 'idle')} alt="" draggable="false" />
       </span>
     }
   >
-    {(picture) => <img class="song-picture" src={picture()} alt="" draggable={false} />}
+    {(picture) => <img class="song-picture" src={picture()} alt="" draggable="false" />}
   </Show>
 );
 
@@ -122,10 +124,10 @@ type SongListProps = { readonly onHome: () => void; readonly onPlay: (choice: So
 
 export const SongList = (props: SongListProps): JSX.Element => {
   const { cards, key } = readyCards();
-  onMount(() => {
+  onSettled(() => {
     playTitleMusic();
     document.addEventListener('pointerup', playTitleMusic, { passive: true });
-    onCleanup(() => document.removeEventListener('pointerup', playTitleMusic));
+    return () => document.removeEventListener('pointerup', playTitleMusic);
   });
   const play = (song: IndexSong): void => {
     const songKey = key();

@@ -1,4 +1,4 @@
-import { createMemo, createSignal, Match, onCleanup, onMount, Show, Switch } from 'solid-js';
+import { createMemo, createSignal, Match, onSettled, Show, Switch } from 'solid-js';
 import { setupStep } from '../../model';
 import { forgetSongs, isStandalone, loadFamilyKey, setupMark, watchDownload } from '../../shell/songs';
 import { DownloadStep } from './DownloadStep';
@@ -6,7 +6,8 @@ import { InstallStep } from './InstallStep';
 import { KeyStep } from './KeyStep';
 import { SongsReady } from './SongsReady';
 import type { FamilyKey, SetupStep } from '../../model';
-import type { Accessor, JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
+import type { Accessor } from 'solid-js';
 
 // The "Songs" section of the parent area (spec, "Guided song setup"): one step at a time (install, key, download,
 // done), from the stored setup mark, the stored key, and the display mode. After the setup, the section shows the
@@ -54,9 +55,9 @@ const setupFacts = (): SetupFacts => {
     loadFamilyKey().then(loadedKey, () => loadedKey(undefined));
   };
   const step = createMemo(() => setupStep({ standalone: isStandalone(), hasKey: key() !== undefined, mark: mark() }));
-  onMount(() => {
+  onSettled(() => {
     refresh();
-    onCleanup(watchDownload((event) => event.type === 'end' && setMark(setupMark())));
+    return watchDownload((event) => event.type === 'end' && setMark(setupMark()));
   });
   return { key, step, loaded, refresh };
 };

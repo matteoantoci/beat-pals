@@ -1,4 +1,4 @@
-import { render } from 'solid-js/web';
+import { render } from '@solidjs/web';
 import { watchLifecycle } from './shell/lifecycle';
 import { writeSave } from './shell/save';
 import { checkForUpdate, watchUpdates } from './shell/update';

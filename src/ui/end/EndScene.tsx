@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount, Show } from 'solid-js';
+import { createSignal, onSettled, Show } from 'solid-js';
 import { bandOf, danceOf, RECORD_COLORS } from '../../model';
 import { loadSoundOn } from '../../shell/settings';
 import { playSceneSounds } from '../../sound';
@@ -7,7 +7,7 @@ import { pictureOf, type SongChoice } from '../songs/SongList';
 import { playScene, sceneLength, sceneSounds, type ScenePlan, type SceneParts } from './motion';
 import { Band, Sleeve, StarRow, type Refs } from './parts';
 import type { PlayOutcome } from '../../model';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The end scene (spec, "Screens"): the result of the play in pictures, with no numbers. The record of the play
 // slides out of the song sleeve, a new star flies to its place, a new record color slides out after a third star,
@@ -56,6 +56,17 @@ const startScene = (refs: Refs, plan: ScenePlan): (() => void) => {
   };
 };
 
+/** Skips the scene at a change to reduced motion, and finishes it at its end. Gives the function that stops both. */
+const watchScene = (plan: ScenePlan, skip: () => void, finish: () => void): (() => void) => {
+  // A change to reduced motion during the scene stops each motion: the parts jump to their final state.
+  const unwatch = watchReducedMotion((reduced) => reduced && skip());
+  const timer = setTimeout(finish, sceneLength(plan) * 1000);
+  return () => {
+    clearTimeout(timer);
+    unwatch();
+  };
+};
+
 /** The button back to the song list: the 4 squares of the prototype. It reacts only to a pointer that went down
  * on it, or to a keyboard press (no pointer: `detail` 0). */
 const DoneButton = (props: { readonly onDone: () => void }): JSX.Element => {
@@ -99,15 +110,15 @@ export const EndScene = (props: EndSceneProps): JSX.Element => {
       setDone(true);
     }
   };
-  onMount(() => {
+  onSettled(() => {
     pictureOf(props.choice.key, props.choice.song).then(setPicture, ignore);
-    onCleanup(() => URL.revokeObjectURL(picture() ?? ''));
     skip = startScene(refs, plan);
-    onCleanup(skip); // The exit cancels the sounds still to come.
-    // A change to reduced motion during the scene stops each motion: the parts jump to their final state.
-    onCleanup(watchReducedMotion((reduced) => reduced && skip()));
-    const timer = setTimeout(finish, sceneLength(plan) * 1000);
-    onCleanup(() => clearTimeout(timer));
+    const stopWatches = watchScene(plan, skip, finish);
+    return () => {
+      stopWatches();
+      skip(); // The exit cancels the sounds still to come.
+      URL.revokeObjectURL(picture() ?? '');
+    };
   });
   const tap = (): void => {
     if (performance.now() - shownAt >= DEAF_MS) {

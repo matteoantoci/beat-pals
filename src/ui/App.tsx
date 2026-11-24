@@ -1,4 +1,4 @@
-import { createSignal, Match, onCleanup, onMount, Switch } from 'solid-js';
+import { createSignal, Match, onSettled, Switch } from 'solid-js';
 import { savePlay } from '../shell/save';
 import { keepSongsFresh } from '../shell/songs';
 import { EndScene } from './end/EndScene';
@@ -7,7 +7,7 @@ import { PlayScreen } from './play/PlayScreen';
 import { SongList, type SongChoice } from './songs/SongList';
 import { TitleScreen } from './title/TitleScreen';
 import type { PlayOutcome } from '../model';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The screens of the app. A tap on the title screen opens the song list, and its home button goes back. A tap on a
 // song card starts the play screen. The end of the song saves the play and shows the end scene, whose button goes
@@ -21,7 +21,7 @@ type Ended = { readonly choice: SongChoice; readonly ratio: number; readonly out
 
 export const App = (): JSX.Element => {
   // After the setup, the new songs download at the start and at each return to the app (spec, "Delivery").
-  onMount(() => onCleanup(keepSongsFresh()));
+  onSettled(keepSongsFresh);
   const [screen, setScreen] = createSignal<Screen>('title');
   /** The song of the play screen. */
   const [choice, setChoice] = createSignal<SongChoice>();

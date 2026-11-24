@@ -2,7 +2,7 @@ import { createSignal } from 'solid-js';
 import { checkKeyCode } from '../../shell/songs';
 import type { FamilyKey } from '../../model';
 import type { KeyCheck } from '../../shell/songs';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // Step 2 of the song setup (spec, "Guided song setup"): the key code field and the check. The decode rules run
 // before any request. A wrong key keeps the field.
@@ -44,7 +44,7 @@ export const KeyStep = (props: { readonly onKey: (key: FamilyKey) => void }): JS
         autocomplete="off"
         autocorrect="off"
         autocapitalize="characters"
-        spellcheck={false}
+        spellcheck="false"
         value={code()}
         onInput={(event) => setCode(event.currentTarget.value)}
       />

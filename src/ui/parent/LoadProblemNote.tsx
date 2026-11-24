@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { loadLastProblem, type LoadProblemKind } from '../../shell/load-notes';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The last song that did not load, for the parent (spec, "Screens", load scene): what went wrong, when, and what
 // to do. The child sees only the oops moment. The song title is not kept.

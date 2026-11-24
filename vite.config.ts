@@ -1,9 +1,9 @@
+import solid from '@solidjs/vite-plugin';
 import { minimal2023Preset, type Preset } from '@vite-pwa/assets-generator/config';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import solid from 'vite-plugin-solid';
 
 // The stage colour. Keep the same value in index.html and src/ui/styles.css. public/icon.svg uses it for the record shadow.
 const STAGE = '#2C176F';

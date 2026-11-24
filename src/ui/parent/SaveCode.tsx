@@ -2,7 +2,7 @@ import { createSignal, Show } from 'solid-js';
 import { readSaveCode, saveCode } from '../../model';
 import { currentSave, replaceProgress } from '../../shell/save';
 import type { RestoreFailure } from '../../model';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // How to make and restore the save code (spec, "Save"; user story 46). The code holds the progress of
 // localStorage, in the save format of this build (`snapshot`, `restore`). It is not encrypted.
@@ -90,7 +90,7 @@ export const RestoreCode = (): JSX.Element => {
         value={text()}
         aria-label="Save code to restore"
         autocomplete="off"
-        spellcheck={false}
+        spellcheck="false"
         onInput={(event) => setText(event.currentTarget.value)}
       />
       <button

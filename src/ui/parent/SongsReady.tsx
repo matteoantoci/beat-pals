@@ -1,10 +1,10 @@
-import { createResource, createSignal, onCleanup, onMount, Show } from 'solid-js';
+import { createMemo, createSignal, Loading, onSettled, Show } from 'solid-js';
 import { downloading, lastProgress, readSongStore, startDownload, storageKept, watchDownload } from '../../shell/songs';
 import { LoadProblemNote } from './LoadProblemNote';
 import { megabytes, problemText, Progress, songs } from './song-texts';
 import type { DownloadPlan, FamilyKey } from '../../model';
 import type { StoreProblem } from '../../shell/songs';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The "Songs" section after the setup (spec, "Guided song setup", step 4 and after): the song count and the state
 // ("31 songs ready on this iPhone", "Downloading 3 new songs, 25 MB", or "Offline: 31 songs ready on this iPhone"),
@@ -82,7 +82,8 @@ export const SongsReady = (props: { readonly songKey: FamilyKey }): JSX.Element 
   const [state, setState] = createSignal<ReadyState>(
     downloading() && progress !== undefined ? { kind: 'running', plan: progress } : { kind: 'reading' }
   );
-  const [kept] = createResource(storageKept);
+  /** The answer of the storage request. A failed request gives no answer, and the line does not show. */
+  const kept = createMemo(() => storageKept().catch(() => undefined));
   const read = (): void => {
     readSongStore(props.songKey).then(
       (store) =>
@@ -97,24 +98,27 @@ export const SongsReady = (props: { readonly songKey: FamilyKey }): JSX.Element 
   const start = (): void => {
     startDownload(props.songKey).catch((error: unknown) => setState({ kind: 'problem', text: errorText(error) }));
   };
-  onMount(() => {
-    onCleanup(
-      watchDownload((event) => (event.type === 'progress' ? setState({ kind: 'running', plan: event.plan }) : read()))
+  onSettled(() => {
+    const unwatch = watchDownload((event) =>
+      event.type === 'progress' ? setState({ kind: 'running', plan: event.plan }) : read()
     );
     if (!downloading()) {
       read();
     }
+    return unwatch;
   });
   return (
     <>
       <Show when={state()} keyed>
         {(current) => <StateView state={current} onStart={start} />}
       </Show>
-      <Show when={kept.state === 'ready'}>
-        <p class="song-storage">
-          {kept() === true ? 'Storage kept' : 'Storage can be cleared by iOS when the phone is full'}
-        </p>
-      </Show>
+      <Loading>
+        <Show when={kept() !== undefined}>
+          <p class="song-storage">
+            {kept() === true ? 'Storage kept' : 'Storage can be cleared by iOS when the phone is full'}
+          </p>
+        </Show>
+      </Loading>
       <LoadProblemNote />
     </>
   );

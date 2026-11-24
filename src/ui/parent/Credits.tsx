@@ -1,8 +1,8 @@
-import { createResource, For, Show } from 'solid-js';
+import { createMemo, For, Loading, Show } from 'solid-js';
 import { chartAuthors, CREDIT_GROUPS } from '../../model';
 import { loadFamilyKey, readSongStore } from '../../shell/songs';
 import type { CreditGroup } from '../../model';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The credits of the parent area (spec, "Screens"; user story 48): the title music, the sound effects, and the other
 // shipped files from the credits list of the model, and the chart author of each ready song. The song index holds the
@@ -49,20 +49,18 @@ const Group = (props: { readonly group: CreditGroup }): JSX.Element => {
 };
 
 const ChartAuthors = (): JSX.Element => {
-  const [authors] = createResource(async () => readyChartAuthors().catch(() => []));
+  const authors = createMemo(() => readyChartAuthors().catch((): string[] => []));
   return (
     <>
       <h3>Charts</h3>
-      <Show when={authors()} fallback={<p>Reading the song list…</p>}>
-        {(names) => (
-          <Show when={names().length > 0} fallback={<p>No songs are ready on this device yet.</p>}>
-            <p>The charts of the songs are by:</p>
-            <ul class="parent-credits chart-authors">
-              <For each={names()}>{(name) => <li>{name}</li>}</For>
-            </ul>
-          </Show>
-        )}
-      </Show>
+      <Loading fallback={<p>Reading the song list…</p>}>
+        <Show when={authors().length > 0} fallback={<p>No songs are ready on this device yet.</p>}>
+          <p>The charts of the songs are by:</p>
+          <ul class="parent-credits chart-authors">
+            <For each={authors()}>{(name) => <li>{name}</li>}</For>
+          </ul>
+        </Show>
+      </Loading>
     </>
   );
 };

@@ -1,9 +1,9 @@
-import { createSignal, onCleanup, onMount, Show } from 'solid-js';
+import { createSignal, onSettled, Show } from 'solid-js';
 import { downloading, lastProgress, readSongStore, startDownload, watchDownload } from '../../shell/songs';
 import { megabytes, problemText, Progress, songs } from './song-texts';
 import type { DownloadPlan, FamilyKey } from '../../model';
 import type { SongStore } from '../../shell/songs';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // Step 3 of the song setup (spec, "Guided song setup"): the download. It reads the song index first, so it can name
 // the song count and the size. A download that stopped (network lost, app closed) shows "Download stopped. Tap to
@@ -89,15 +89,14 @@ export const DownloadStep = (props: DownloadStepProps): JSX.Element => {
     // The events of the download set the state.
     startDownload(props.songKey).catch(failed);
   };
-  onMount(() => {
-    onCleanup(
-      watchDownload((event) =>
-        setState(event.type === 'progress' ? { kind: 'running', plan: event.plan } : afterDownload(event.result))
-      )
+  onSettled(() => {
+    const unwatch = watchDownload((event) =>
+      setState(event.type === 'progress' ? { kind: 'running', plan: event.plan } : afterDownload(event.result))
     );
     if (!downloading()) {
       read();
     }
+    return unwatch;
   });
   return (
     <Show when={state()} keyed>

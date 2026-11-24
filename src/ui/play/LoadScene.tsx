@@ -1,10 +1,11 @@
-import { createSignal, For, onCleanup, onMount } from 'solid-js';
+import { createSignal, For, onCleanup, onSettled } from 'solid-js';
 import { ringFill } from '../../model';
 import { palPicture, type PalIndex } from '../pals/pal-svg';
 import { pictureOf, SongPicture } from '../songs/SongList';
 import type { LoadPhase } from '../../model';
 import type { SongChoice } from '../songs/SongList';
-import type { Accessor, JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
+import type { Accessor } from 'solid-js';
 
 // The load scene (spec, "Screens", load scene): the cover of her song on a turning record, a fill ring around the
 // record, and the pals on the stage floor in the ready state. It shows only when the load takes longer than
@@ -67,7 +68,7 @@ export const loadSceneTiming = (): LoadSceneTiming => {
 const coverOf = (choice: SongChoice): Accessor<string | undefined> => {
   const [picture, setPicture] = createSignal<string>();
   let closed = false;
-  onMount(() => {
+  onSettled(() => {
     pictureOf(choice.key, choice.song).then(
       (url) => (closed ? URL.revokeObjectURL(url ?? '') : setPicture(url)),
       () => undefined
@@ -87,8 +88,8 @@ type Ring = {
 };
 
 /** Moves the ring towards the fill of the load phase in each frame. The ring never goes back, and it stops at a
- * failure. `data-fill` on the ring gives the fill in percent. */
-const runRing = ({ ring, phase, stopped }: Ring): void => {
+ * failure. `data-fill` on the ring gives the fill in percent. Gives the function that stops the frames. */
+const runRing = ({ ring, phase, stopped }: Ring): (() => void) => {
   let shown = 0;
   let frame = 0;
   const draw = (): void => {
@@ -102,7 +103,7 @@ const runRing = ({ ring, phase, stopped }: Ring): void => {
     frame = requestAnimationFrame(draw);
   };
   frame = requestAnimationFrame(draw);
-  onCleanup(() => cancelAnimationFrame(frame));
+  return () => cancelAnimationFrame(frame);
 };
 
 type LoadDiscProps = {
@@ -115,11 +116,7 @@ type LoadDiscProps = {
 const LoadDisc = (props: LoadDiscProps): JSX.Element => {
   const picture = coverOf(props.choice);
   let ring: SVGCircleElement | undefined;
-  onMount(() => {
-    if (ring) {
-      runRing({ ring, phase: props.phase, stopped: props.stopped });
-    }
-  });
+  onSettled(() => (ring ? runRing({ ring, phase: props.phase, stopped: props.stopped }) : undefined));
   return (
     <div class="load-disc">
       <svg viewBox="0 0 120 120">
@@ -162,8 +159,7 @@ export const LoadScene = (props: LoadSceneProps): JSX.Element => {
   const failed = (): boolean => props.state() === 'failed';
   return (
     <div
-      class="load-scene stage-backdrop"
-      classList={{ 'load-closing': props.state() === 'closing', 'load-failed': failed() }}
+      class={['load-scene stage-backdrop', { 'load-closing': props.state() === 'closing', 'load-failed': failed() }]}
       aria-hidden="true"
     >
       <LoadDisc choice={props.choice} phase={props.phase} stopped={failed} />
@@ -171,7 +167,7 @@ export const LoadScene = (props: LoadSceneProps): JSX.Element => {
         <For each={PALS}>
           {(index) => (
             <span class="band-pal">
-              <img src={palPicture(index, failed() ? 'oops' : 'ready')} alt="" draggable={false} />
+              <img src={palPicture(index, failed() ? 'oops' : 'ready')} alt="" draggable="false" />
             </span>
           )}
         </For>

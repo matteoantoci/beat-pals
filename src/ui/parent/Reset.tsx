@@ -1,6 +1,6 @@
 import { createSignal, Show } from 'solid-js';
 import { clearSave } from '../../shell/save';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The reset of the parent area: it deletes the progress after a confirmation. The Sound effects switch, the
 // downloaded songs, and the family key are not progress, so they stay.

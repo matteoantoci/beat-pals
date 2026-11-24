@@ -1,6 +1,6 @@
 import type { DownloadPlan } from '../../model';
 import type { StoreProblem } from '../../shell/songs';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The texts and the progress bar of the "Songs" section (spec, "Guided song setup"), for the download step and the
 // view after the setup.

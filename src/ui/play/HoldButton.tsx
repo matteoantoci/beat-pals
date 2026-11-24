@@ -1,5 +1,5 @@
 import { createSignal, onCleanup } from 'solid-js';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // A button that acts only after a press of 0.6 s (spec, "Screens": pause and pause screen), so a child's tap does
 // not stop the song or end the play. A ring fills around the button during the press. A lift, a cancel, or a lost
@@ -34,8 +34,7 @@ export const HoldButton = (props: HoldButtonProps): JSX.Element => {
   return (
     <button
       type="button"
-      class={`hold-button ${props.class}`}
-      classList={{ holding: holding() }}
+      class={[`hold-button ${props.class}`, { holding: holding() }]}
       aria-label={props.label}
       onPointerDown={down}
       onPointerUp={stop}

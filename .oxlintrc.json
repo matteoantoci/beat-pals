@@ -21,7 +21,7 @@
                 "message": "The game model imports no other layer."
               },
               {
-                "group": ["pixi.js", "pixi.js/**", "solid-js", "solid-js/**"],
+                "group": ["pixi.js", "pixi.js/**", "solid-js", "solid-js/**", "@solidjs/*", "@solidjs/**"],
                 "message": "The game model is pure TypeScript: no view package."
               }
             ]

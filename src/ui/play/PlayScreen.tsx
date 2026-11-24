@@ -1,4 +1,4 @@
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+import { createSignal, For, onCleanup, onSettled, Show } from 'solid-js';
 import { stopTitleMusic } from '../../sound';
 import { BEADS } from './beads';
 import { HoldButton } from './HoldButton';
@@ -7,7 +7,8 @@ import { PauseScreen } from './PauseScreen';
 import { loadPlay, type PlayHandle, type PlayHooks } from './play-load';
 import type { LoadPhase } from '../../model';
 import type { SongChoice } from '../songs/SongList';
-import type { Accessor, JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
+import type { Accessor } from 'solid-js';
 
 // The play screen (spec, "Screens"): the PixiJS canvas, the 3 pals as HTML pictures above it, the pause button, and
 // the progress beads of the song. During the load, the load scene covers it and the title music plays on; the
@@ -74,18 +75,17 @@ export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
   const pals: HTMLImageElement[] = [];
   const beads: HTMLElement[] = [];
   let handle: PlayHandle | undefined;
-  onMount(() => {
+  onSettled(() => {
     const canvas = root?.querySelector('canvas');
     const probe = root?.querySelector<HTMLElement>('.play-probe');
-    if (root === undefined || !canvas || !probe) {
-      return;
+    if (root !== undefined && canvas && probe) {
+      handle = loadPlay({ root, canvas, probe, pals, beads }, props.choice, {
+        onPause: () => setPaused(true),
+        onEnd: (result) => props.onEnd(result),
+        ...hooks,
+      });
     }
-    handle = loadPlay({ root, canvas, probe, pals, beads }, props.choice, {
-      onPause: () => setPaused(true),
-      onEnd: (result) => props.onEnd(result),
-      ...hooks,
-    });
-    onCleanup(() => handle?.stop());
+    return () => handle?.stop();
   });
   const resume = (): void => {
     setPaused(false);
@@ -94,15 +94,14 @@ export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
   const sceneShows = (): boolean => scene.state() !== 'waiting' && scene.state() !== 'closed';
   return (
     <main
-      class="play"
-      classList={{ 'play-loading': scene.state() !== 'closed' }}
+      class={['play', { 'play-loading': scene.state() !== 'closed' }]}
       ref={(el) => {
         root = el;
       }}
     >
       <canvas class="play-stage" />
       <For each={[0, 1, 2]}>
-        {() => <img class="play-pal" alt="" hidden draggable={false} ref={(el) => pals.push(el)} />}
+        {() => <img class="play-pal" alt="" hidden draggable="false" ref={(el) => pals.push(el)} />}
       </For>
       <div class="play-probe" />
       <Hud onPause={() => handle?.pause()} bead={(el) => beads.push(el)} />

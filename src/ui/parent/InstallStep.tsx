@@ -1,5 +1,5 @@
 import { For } from 'solid-js';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // Step 1 of the song setup (spec, "Guided song setup"): in a Safari tab, the songs must not download, because a
 // Safari tab has separate storage. So the step shows how to add the app to the Home Screen, with 3 pictures, and
@@ -18,7 +18,7 @@ export const InstallStep = (): JSX.Element => (
       <For each={PICTURES}>
         {(picture) => (
           <li>
-            <img src={`${import.meta.env.BASE_URL}setup/${picture.file}`} alt="" draggable={false} />
+            <img src={`${import.meta.env.BASE_URL}setup/${picture.file}`} alt="" draggable="false" />
             <span>{picture.text}</span>
           </li>
         )}

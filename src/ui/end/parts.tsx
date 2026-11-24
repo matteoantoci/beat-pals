@@ -5,7 +5,7 @@ import { Record, StarIcon } from '../songs/record';
 import { SongPicture } from '../songs/SongList';
 import type { Lane, PlayOutcome } from '../../model';
 import type { ScenePlan } from './motion';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The parts of the end scene that the motion moves. Each part puts its elements into the refs of the scene.
 
@@ -64,8 +64,7 @@ export const StarRow = (props: { readonly outcome: PlayOutcome; readonly refs: R
           <span class="end-slot">
             <StarIcon on={false} />
             <span
-              class="end-star"
-              classList={{ earned: place < props.outcome.before.stars || place === props.outcome.star }}
+              class={['end-star', { earned: place < props.outcome.before.stars || place === props.outcome.star }]}
               ref={(el) => props.refs.stars.push(el)}
             >
               <StarIcon on />
@@ -88,14 +87,14 @@ export const Band = (props: { readonly plan: ScenePlan; readonly refs: Refs }): 
     <section class="end-stage">
       <For each={LANES}>
         {(lane) => (
-          <span class="end-spot" classList={{ waiting: !props.plan.band.includes(lane) }}>
+          <span class={['end-spot', { waiting: !props.plan.band.includes(lane) }]}>
             <span class="end-shadow" />
             <span class="end-body" ref={(el) => props.refs.bodies.push(el)}>
               <img
                 class="end-pal"
                 src={palPicture(lane, dances(lane) ? 'happy' : 'idle')}
                 alt=""
-                draggable={false}
+                draggable="false"
                 ref={(el) => props.refs.pals.push(el)}
               />
             </span>

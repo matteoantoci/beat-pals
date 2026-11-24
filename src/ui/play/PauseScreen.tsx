@@ -1,5 +1,5 @@
 import { HoldButton } from './HoldButton';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The pause screen (spec, "Screens"): the song stops, and a big play button and a home button show. One tap on play
 // continues the song from the same time; that tap also unlocks a new audio context when the old one is stale. Home

@@ -1,11 +1,11 @@
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+import { createSignal, For, onCleanup, onSettled, Show } from 'solid-js';
 import { checkForUpdate, openSafeWindow } from '../../shell/update';
 import { playTitleMusic } from '../../sound';
 import { palPicture, type PalIndex } from '../pals/pal-svg';
 import { ParentCheck } from '../parent/ParentCheck';
 import { Logo } from './logo';
 import { songsReady } from './songs-ready';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The title screen (spec, "Screens"): the logo, the wordmark, the play button, and the 3 pals on the stage floor.
 // The first tap unlocks the audio (src/sound listens to the pointer events on the document) and starts the title
@@ -34,16 +34,17 @@ const onVisible = (): void => {
   }
 };
 
-/** Keeps the safe window open until the first touch, and looks for a new version when the page shows again. */
-const watchSafePoint = (): void => {
+/** Keeps the safe window open until the first touch, and looks for a new version when the page shows again. Gives
+ * the function that stops both. */
+const watchSafePoint = (): (() => void) => {
   const closeSafeWindow = openSafeWindow();
   document.addEventListener('pointerdown', closeSafeWindow, { capture: true, once: true, passive: true });
   document.addEventListener('visibilitychange', onVisible);
-  onCleanup(() => {
+  return () => {
     closeSafeWindow();
     document.removeEventListener('pointerdown', closeSafeWindow, { capture: true });
     document.removeEventListener('visibilitychange', onVisible);
-  });
+  };
 };
 
 /** The play button: a sign only, because a tap anywhere on the screen starts the game. */
@@ -60,7 +61,7 @@ export const TitleScreen = (props: TitleProps): JSX.Element => {
   const [going, setGoing] = createSignal(false);
   const ready = songsReady();
   let timer: number | undefined;
-  onMount(watchSafePoint);
+  onSettled(watchSafePoint);
   onCleanup(() => clearTimeout(timer));
   // While the parent check shows (also at the release of the logo hold), a tap belongs to the check.
   const start = (): void => {
@@ -74,7 +75,7 @@ export const TitleScreen = (props: TitleProps): JSX.Element => {
     }
   };
   return (
-    <main class="title stage-backdrop" classList={{ 'title-go': going() }} onPointerUp={start}>
+    <main class={['title stage-backdrop', { 'title-go': going() }]} onPointerUp={start}>
       <div class="title-brand">
         <Logo onHold={() => setChecking(true)} />
         <h1 class="title-word">
@@ -88,7 +89,7 @@ export const TitleScreen = (props: TitleProps): JSX.Element => {
         <For each={PALS}>
           {(index) => (
             <span class="band-pal">
-              <img src={palPicture(index, going() ? 'happy' : 'idle')} alt="" draggable={false} />
+              <img src={palPicture(index, going() ? 'happy' : 'idle')} alt="" draggable="false" />
             </span>
           )}
         </For>

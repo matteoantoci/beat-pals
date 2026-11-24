@@ -1,5 +1,5 @@
 import { onCleanup } from 'solid-js';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The logo of the game: a glossy record with a face. The disc turns slowly; the face and the shine stay still.
 // The wordmark is separate (TitleScreen). A 3-second hold on the logo opens the parent check (spec, "Screens").

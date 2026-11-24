@@ -1,4 +1,4 @@
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+import { createSignal, For, onSettled, Show } from 'solid-js';
 import { childChart, playSetup } from '../../model';
 import { loadSong } from '../../sound';
 import { decodePals } from '../pals/pal-svg';
@@ -13,7 +13,7 @@ import { demoFacts } from './fixture';
 import { freeze } from './frozen';
 import { DEMO_MARKER } from './marker';
 import { readDemo, type Demo } from './params';
-import type { JSX } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
 // The demo route of the dev server and the smoke build (spec, "Testing Decisions"): the play screen of the demo song,
 // frozen at one song time, for the screenshots of the checklist C1 to C30. It uses the parts of the play screen: the
@@ -105,11 +105,7 @@ export const DemoScreen = (props: { readonly search: string }): JSX.Element => {
   let root: HTMLElement | undefined;
   const pals: HTMLImageElement[] = [];
   const beads: HTMLElement[] = [];
-  onMount(() => {
-    if (read.ok) {
-      onCleanup(mount(root, { pals, beads, demo: read.demo, fail: setFailure }));
-    }
-  });
+  onSettled(() => (read.ok ? mount(root, { pals, beads, demo: read.demo, fail: setFailure }) : undefined));
   return (
     <main
       class={sim ? 'play demo-sim' : 'play'}
@@ -121,7 +117,7 @@ export const DemoScreen = (props: { readonly search: string }): JSX.Element => {
       <style>{demoCss}</style>
       <canvas class="play-stage" />
       <For each={[0, 1, 2]}>
-        {() => <img class="play-pal" alt="" hidden draggable={false} ref={(el) => pals.push(el)} />}
+        {() => <img class="play-pal" alt="" hidden draggable="false" ref={(el) => pals.push(el)} />}
       </For>
       <div class="play-probe" />
       <Hud onPause={nothing} bead={(el) => beads.push(el)} />
