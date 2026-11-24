@@ -1,19 +1,17 @@
 // The shapes of the ball effects, the phrase balls, and the star moment burst (prototype star-moments v2), painted
-// around (0, 0) for the texture atlas. A plain ball gets a glow from energy step 1, and a phrase ball a wide gold glow.
-// The burst has speed lines (tapered at both ends: a deep warm gold body and a thin hot core) and a light warm glow
-// at the screen edges. The soft shapes are painted small and the sprites scale them up.
+// around (0, 0) for the texture atlas. A plain ball gets a glow from energy step 1, and a phrase ball a wider and
+// stronger glow, both in the lane colour. The burst has speed lines (tapered at both ends: a deep warm gold body and
+// a thin hot core) and a light warm glow at the screen edges. The soft shapes are painted small and the sprites scale
+// them up.
 
-import { css, type Oklch } from '../pals/color';
+import { css } from '../pals/color';
 import { addSoftFade, circlePath, laneCss, ORIGIN, style } from './paint';
 import type { Lane } from '../../model';
 import type { Ctx } from './paint';
 
-/** The warm gold glow of a phrase ball. */
-const PHRASE_HALO: Oklch = [0.86, 0.17, 85];
-
 /** The step 1 glow reaches this many ball radii, the phrase glow this many. */
 export const BALL_GLOW_SHARE = 2.1;
-export const PHRASE_GLOW_SHARE = 2.3;
+export const PHRASE_GLOW_SHARE = 2.6;
 
 /**
  * Step 1: a soft glow in the lane colour around a ball of radius `r`, wider and stronger than its still halo. It
@@ -29,14 +27,15 @@ export const paintBallGlow = (ctx: Ctx, lane: Lane, r: number): void => {
 };
 
 /**
- * The wide gold glow of a phrase ball. It keeps a straight fade: its clear outer edge shows the swell on each beat,
- * which the soft fade hides (the parent liked the swell, 2026-11-24).
+ * The wide glow of a phrase ball, in the lane colour (the parent found a gold glow on the pink ball ugly,
+ * 2026-11-24). It is wider and stronger than the step 1 glow, and it keeps a straight fade: its clear outer edge
+ * shows the swell on each beat, which the soft fade hides.
  */
-export const paintPhraseGlow = (ctx: Ctx, r: number): void => {
+export const paintPhraseGlow = (ctx: Ctx, lane: Lane, r: number): void => {
   const outer = r * PHRASE_GLOW_SHARE;
   const glow = ctx.createRadialGradient(0, 0, r * 0.9, 0, 0, outer);
-  glow.addColorStop(0, css(PHRASE_HALO, 0.75));
-  glow.addColorStop(1, css(PHRASE_HALO, 0));
+  glow.addColorStop(0, laneCss(lane, 0.85).base);
+  glow.addColorStop(1, laneCss(lane, 0).base);
   style(ctx, { fillStyle: glow });
   circlePath(ctx, ORIGIN, outer);
   ctx.fill();
@@ -59,8 +58,8 @@ const gradient = (
 };
 
 const STREAK_EDGE = css([0.64, 0.17, 62], 0);
-const STREAK_BODY = css([0.64, 0.17, 62], 0.45);
-const STREAK_MID = css([0.72, 0.16, 76], 0.55);
+const STREAK_BODY = css([0.64, 0.17, 62], 0.6);
+const STREAK_MID = css([0.72, 0.16, 76], 0.7);
 const STREAK_CORE = css([0.97, 0.06, 100]);
 /** Only the alpha of the mask counts. */
 const CLEAR = 'rgba(0,0,0,0)';

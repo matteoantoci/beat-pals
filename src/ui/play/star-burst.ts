@@ -100,7 +100,7 @@ const drawLine = (parts: BurstParts, scene: BurstScene): void => {
   const ux = Math.cos(angle);
   const uy = Math.sin(angle);
   const start = (1.02 + noise(seed, 3) * 0.25) / Math.hypot(ux / clear.a, uy / clear.b);
-  const length = (70 + noise(seed, 4) * 120) * (0.5 + 0.5 * easeOut(age / 0.2));
+  const length = (90 + noise(seed, 4) * 150) * (0.5 + 0.5 * easeOut(age / 0.2));
   const tail = start + (40 + noise(seed, 5) * 60) * easeOut(age / LINE.life);
   const fade = age < LINE.up ? age / LINE.up : 1 - clamp01((age - LINE.hold) / (LINE.life - LINE.hold));
   const sprite = parts.lines.show(scene.textures.shape(shapeKey.streak), fade);
@@ -109,8 +109,8 @@ const drawLine = (parts: BurstParts, scene: BurstScene): void => {
     clear.cy + uy * tail + Math.sin(direction) * (length / 2)
   );
   sprite.rotation = direction;
-  // 6 to 11 px wide.
-  sprite.scale.set(length / STREAK.len, 0.5 + noise(seed, 6) * 0.45);
+  // 7 to 13 px wide.
+  sprite.scale.set(length / STREAK.len, 0.6 + noise(seed, 6) * 0.5);
 };
 
 /** The lines of wave `wave`, while it lives. */

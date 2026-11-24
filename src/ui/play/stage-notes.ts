@@ -2,7 +2,7 @@
 // `drawHalfPop`). A plain note is a bubble. A soft hold adds a band up to its end and a star bead at its half; while a
 // finger holds it, its head sits still on the ring, the band runs down to the ring, and the bead falls into it. A done
 // hold pops its bead. A double is 2 bubbles joined by a jelly band on 2 adjacent lanes. Each falling ball has the
-// effects of the band energy, and a phrase ball its pulsing gold glow (./ball-effects).
+// effects of the band energy, and a phrase ball its pulsing phrase glow (./ball-effects).
 
 import { shapeKey } from './atlas';
 import { drawBallBack, type Ball, type BallScene } from './ball-effects';

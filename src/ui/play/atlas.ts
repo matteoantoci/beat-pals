@@ -164,7 +164,7 @@ const shapesOf = (geometry: Geometry, band: readonly Lane[]): Shape[] => {
     ),
     ...linkShapes(geometry),
     ...energyShapes(geometry, band),
-    ...starShapes(geometry)
+    ...starShapes()
   );
   return shapes;
 };
