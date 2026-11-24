@@ -27,6 +27,19 @@ export const style = (ctx: Ctx, values: Style): void => {
   Object.assign(ctx, values);
 };
 
+/** The number of steps of a soft fade. */
+const SOFT_STEPS = 16;
+
+/**
+ * Adds the colour stops of a soft fade to `gradient`: `color(1)` at the start and clear at the end, on a smoothstep
+ * curve. The curve is flat at both ends, so a glow shows no edge. A straight fade shows its ends as rings.
+ */
+export const addSoftFade = (gradient: CanvasGradient, color: (alpha: number) => string): void => {
+  Array.from({ length: SOFT_STEPS + 1 }, (_, i) => i / SOFT_STEPS).forEach((t) => {
+    gradient.addColorStop(t, color(1 - t * t * (3 - 2 * t)));
+  });
+};
+
 export const circlePath = (ctx: Ctx, centre: Point, radius: number): void => {
   ctx.beginPath();
   ctx.arc(centre.x, centre.y, Math.max(0, radius), 0, TAU);
@@ -108,8 +121,7 @@ const paintBubbleBody = (ctx: Ctx, lane: Lane, r: number): void => {
 export const paintBubble = (ctx: Ctx, lane: Lane, size: number): void => {
   const r = size / 2;
   const halo = ctx.createRadialGradient(0, 0, r * 0.9, 0, 0, r * 1.45);
-  halo.addColorStop(0, laneCss(lane, 0.45).base);
-  halo.addColorStop(1, laneCss(lane, 0).base);
+  addSoftFade(halo, (a) => laneCss(lane, 0.45 * a).base);
   style(ctx, { fillStyle: halo });
   circlePath(ctx, ORIGIN, r * 1.45);
   ctx.fill();

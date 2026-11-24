@@ -24,7 +24,7 @@ export type NoteFrame = {
 };
 
 /** The ball of the note that the frame draws. One object serves each frame, so a frame makes no object (C20). */
-const ball: Ball = { note: 0, lane: 1, dt: 0, alpha: 0, phrase: false, hold: false };
+const ball: Ball = { note: 0, lane: 1, dt: 0, alpha: 0, phrase: false };
 
 /** The bead pops for this long when a hold is done (prototype `drawHalfPop`). */
 const POP_SEC = 0.6;
@@ -108,7 +108,6 @@ const drawFallingHold = (frame: NoteFrame, dt: number, holdSec: number): void =>
 const drawDoubleBalls = (frame: NoteFrame, lanes: readonly [Lane, Lane]): void => {
   const { scene, notes, links } = frame;
   const [left, right] = lanes;
-  ball.hold = false;
   ball.lane = left;
   drawBallBack(scene, notes, ball);
   ball.lane = right;
@@ -124,7 +123,6 @@ const drawSingle = (frame: NoteFrame, lane: Lane, holdSec: number): void => {
   const { scene, notes } = frame;
   band.lane = lane;
   ball.lane = lane;
-  ball.hold = holdSec > 0;
   drawBallBack(scene, notes, ball);
   if (holdSec > 0) {
     drawFallingHold(frame, ball.dt, holdSec);

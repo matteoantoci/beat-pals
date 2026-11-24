@@ -8,14 +8,12 @@ import {
   EDGE_GLOW_R,
   paintBallGlow,
   paintBallRim,
-  paintBallTail,
   paintEdgeGlow,
   paintPhraseGlow,
   paintPhraseRing,
   paintStreak,
   PHRASE_GLOW_SHARE,
   STREAK,
-  TAIL_SHARE,
 } from './paint-star';
 import type { Lane } from '../../model';
 import type { Geometry } from './geometry';
@@ -28,7 +26,6 @@ const square = (key: string, size: number, paint: (ctx: Ctx) => void): Shape => 
 /** The keys of the shapes of the ball effects and the star moment. */
 export const starKey = {
   ballGlow: keyOf('ball glow'),
-  ballTail: keyOf('ball tail'),
   sparkleAmber: 'sparkle amber',
   ballRim: 'ball rim',
   phraseGlow: 'phrase glow',
@@ -37,14 +34,10 @@ export const starKey = {
   edgeGlow: 'edge glow',
 } as const;
 
-/** The shapes of one lane: its ball glow and its comet tail. */
+/** The shapes of one lane: its ball glow. */
 export const laneStarShapes = (geometry: Geometry, lane: Lane): Shape[] => {
   const r = geometry.noteS / 2;
-  const len = geometry.noteS * TAIL_SHARE;
-  return [
-    square(starKey.ballGlow(lane), 2 * r * BALL_GLOW_SHARE + 2, (ctx) => paintBallGlow(ctx, lane, r)),
-    { key: starKey.ballTail(lane), w: 2 * r, h: len, paint: (ctx) => paintBallTail(ctx, lane, { r, len }) },
-  ];
+  return [square(starKey.ballGlow(lane), 2 * r * BALL_GLOW_SHARE + 2, (ctx) => paintBallGlow(ctx, lane, r))];
 };
 
 /** The shapes for all lanes: the gold rim, the phrase ball parts, and the burst. */

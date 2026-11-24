@@ -1,11 +1,11 @@
 // The shapes of the ball effects, the phrase balls, and the star moment burst (prototype star-moments v2), painted
-// around (0, 0) for the texture atlas. The ball effects grow with the band energy: a glow (step 1), a comet tail
-// (step 3), and a gold rim (gold). A phrase ball has a wide gold glow and a thick double gold ring. The burst has
-// speed lines (tapered at both ends: a deep warm gold body and a thin hot core) and a light warm
-// glow at the screen edges. The soft shapes are painted small and the sprites scale them up.
+// around (0, 0) for the texture atlas. The ball effects grow with the band energy: a glow (step 1) and a gold rim
+// (gold). A phrase ball has a wide gold glow and a thick double gold ring. The burst has speed lines (tapered at both
+// ends: a deep warm gold body and a thin hot core) and a light warm glow at the screen edges. The soft shapes are
+// painted small and the sprites scale them up.
 
 import { css, LANE_COLORS, TOKENS, type Oklch } from '../pals/color';
-import { circlePath, laneCss, ORIGIN, paintCircleLine, style } from './paint';
+import { addSoftFade, circlePath, laneCss, ORIGIN, paintCircleLine, style } from './paint';
 import type { Lane } from '../../model';
 import type { Ctx } from './paint';
 
@@ -18,17 +18,14 @@ const PHRASE_HALO: Oklch = [0.86, 0.17, 85];
 /** The step 1 glow reaches this many ball radii, the phrase glow this many. */
 export const BALL_GLOW_SHARE = 2.1;
 export const PHRASE_GLOW_SHARE = 2.3;
-/** The comet tail is this many ball sizes long. */
-export const TAIL_SHARE = 1.7;
 
-/** A radial glow from `inner` to `outer`: the colour at `alpha` at the inner radius, clear at the outer one. */
+/** A radial glow from `inner` to `outer`: the colour at `alpha` at the inner radius, a soft fade to clear at the outer one. */
 const paintRing = (
   ctx: Ctx,
   { inner, outer, color }: { inner: number; outer: number; color: (a: number) => string }
 ) => {
   const glow = ctx.createRadialGradient(0, 0, inner, 0, 0, outer);
-  glow.addColorStop(0, color(1));
-  glow.addColorStop(1, color(0));
+  addSoftFade(glow, color);
   style(ctx, { fillStyle: glow });
   circlePath(ctx, ORIGIN, outer);
   ctx.fill();
@@ -37,50 +34,6 @@ const paintRing = (
 /** Step 1: a soft glow in the lane colour around a ball of radius `r`, wider and stronger than its still halo. */
 export const paintBallGlow = (ctx: Ctx, lane: Lane, r: number): void => {
   paintRing(ctx, { inner: r * 0.9, outer: r * BALL_GLOW_SHARE, color: (a) => laneCss(lane, 0.7 * a).base });
-};
-
-/**
- * Step 3: the comet tail in the lane colour, with a light core, from the ball (at the bottom of the shape, y = `len` / 2)
- * up to its tip. `r` is the ball radius.
- */
-export const paintBallTail = (ctx: Ctx, lane: Lane, { r, len }: { r: number; len: number }): void => {
-  const bottom = len / 2;
-  const top = -len / 2;
-  const body = [laneCss(lane, 0.7).base, laneCss(lane, 0).base] as const;
-  style(ctx, {
-    fillStyle: gradient(
-      ctx,
-      [0, bottom, 0, top],
-      [
-        [0, body[0]],
-        [1, body[1]],
-      ]
-    ),
-  });
-  ctx.beginPath();
-  ctx.moveTo(-r * 0.92, bottom);
-  ctx.quadraticCurveTo(-r * 0.5, 0, 0, top);
-  ctx.quadraticCurveTo(r * 0.5, 0, r * 0.92, bottom);
-  ctx.closePath();
-  ctx.fill();
-  const coreTop = bottom - len * 0.7;
-  const core = [css(TOKENS.white, 0.55), css(TOKENS.white, 0)] as const;
-  style(ctx, {
-    fillStyle: gradient(
-      ctx,
-      [0, bottom, 0, coreTop],
-      [
-        [0, core[0]],
-        [1, core[1]],
-      ]
-    ),
-  });
-  ctx.beginPath();
-  ctx.moveTo(-r * 0.3, bottom);
-  ctx.lineTo(0, coreTop);
-  ctx.lineTo(r * 0.3, bottom);
-  ctx.closePath();
-  ctx.fill();
 };
 
 /** Gold: a thin gold rim on a darker amber line around a ball, like a small copy of the gold ring rims. */
