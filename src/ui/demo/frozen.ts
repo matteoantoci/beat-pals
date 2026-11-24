@@ -18,15 +18,24 @@ export type Frozen = { readonly view: View; readonly energy: EnergyLook };
 export const freeze = (
   chart: ChildChart,
   beats: SongFacts['beats'],
-  { t, energy }: { readonly t: number; readonly energy: EnergyStep | undefined }
+  {
+    t,
+    energy,
+    nostar = false,
+  }: { readonly t: number; readonly energy: EnergyStep | undefined; readonly nostar?: boolean }
 ): Frozen => {
   const view = makeView(chart, beats);
   const track = makeEnergyTrack();
-  const followers = { view, energy: energy === undefined ? track : undefined, stepUp: () => undefined };
+  const followers = {
+    view,
+    energy: energy === undefined ? track : undefined,
+    stepUp: () => undefined,
+    starMoment: () => undefined,
+  };
   const actions: Action[] = [...playScript(chart).filter((action) => actionTime(action) <= t), { type: 'advance', t }];
   actions.reduce((play, action) => {
     const { state, events } = apply(play, action);
-    follow(followers, action, events);
+    follow(followers, action, nostar ? events.filter((event) => event.type !== 'starMoment') : events);
     return state;
   }, startPlay(chart));
   if (energy !== undefined) {

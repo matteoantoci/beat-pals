@@ -1,45 +1,14 @@
 // The play model (spec, "Play rules", "Band energy", and "Play model interface"). It judges the taps of one play against
 // the child chart and gives the events that the play screen shows and plays. Each `t` is the song time in seconds from
 // the guarded song clock. A double counts when either of its 2 lanes is tapped. A soft hold counts at its tap, as a
-// plain note; when the finger stays down to its half point, the hold is done. An early release is never a miss.
+// plain note; when the finger stays down to its half point, the hold is done. An early release is never a miss. The
+// last note of a phrase can give a star moment (./star-moments).
 
-import { energyStep, hitEnergy, passEnergy, START_ENERGY, type Energy, type EnergyStep } from './energy';
+import { energyStep, hitEnergy, passEnergy, START_ENERGY, type Energy } from './energy';
+import { phraseEnds, starEvents } from './star-moments';
 import { goodWindows, GREAT_SEC } from './windows';
 import type { ChildChart } from '../child/child-chart';
-
-/** A lane: 0 Pip, 1 Dot, 2 Bo. */
-export type Lane = ChildChart['band'][number];
-
-/** Each action is one input of the play screen. */
-export type Action =
-  /** A pointer goes down in a lane. The play screen does not send a pointer that goes down on the pause button. */
-  | { readonly type: 'press'; readonly t: number; readonly lane: Lane; readonly pointerId: number }
-  /** A pointer goes up, or the browser cancels it. */
-  | { readonly type: 'release'; readonly t: number; readonly pointerId: number }
-  /** The song time moves on. A time lower than before (the clock after a resume) is no harm. */
-  | { readonly type: 'advance'; readonly t: number }
-  /** The play ends from the pause screen, with no result. */
-  | { readonly type: 'quit' };
-
-/** Each event is one thing that the play screen shows or plays. */
-export type PlayEvent =
-  /** A tap in `lane` hit the note `note` (index in the child chart). The clap plays at `soundAt`: the note time for
-   * an early tap, the tap time for a late tap. */
-  | {
-      readonly type: 'hit';
-      readonly note: number;
-      readonly lane: Lane;
-      readonly grade: 'great' | 'good';
-      readonly soundAt: number;
-    }
-  /** A tap in the lane of a waiting pal: the pal hops. */
-  | { readonly type: 'hop'; readonly lane: Lane }
-  /** The good window of the note ended with no hit. `note` is the index in the child chart. */
-  | { readonly type: 'faded'; readonly note: number }
-  /** The finger stayed down to the half point of the soft hold. `note` is the index in the child chart. */
-  | { readonly type: 'holdDone'; readonly note: number }
-  /** The band energy changed to this step. */
-  | { readonly type: 'energy'; readonly step: EnergyStep };
+import type { Action, Lane, PlayEvent } from './play-events';
 
 /** One play. Only the model reads its fields. */
 export type PlayState = {
@@ -56,6 +25,8 @@ export type PlayState = {
   /** The soft hold (its note index) of each pointer that hit a soft hold and is still down before its half point. */
   readonly holding: ReadonlyMap<number, number>;
   readonly energy: Energy;
+  /** For each note, the index of the phrase that ends with it, or -1. */
+  readonly phraseEnds: readonly number[];
   readonly quit: boolean;
 };
 
@@ -71,6 +42,7 @@ export const startPlay = (chart: ChildChart): PlayState => ({
   down: new Map(),
   holding: new Map(),
   energy: START_ENERGY,
+  phraseEnds: phraseEnds(chart),
   quit: false,
 });
 
@@ -108,18 +80,20 @@ const press = (play: PlayState, { t, lane, pointerId }: Extract<Action, { type: 
   }
   const energy = hitEnergy(play.energy, t);
   const grade = Math.abs(t - note.t) <= GREAT_SEC ? 'great' : 'good';
+  const state = {
+    ...play,
+    down,
+    holding: note.holdSec > 0 ? new Map(play.holding).set(pointerId, at) : play.holding,
+    hit: play.hit.with(at, true),
+    hits: play.hits + 1,
+    energy,
+  };
   return {
-    state: {
-      ...play,
-      down,
-      holding: note.holdSec > 0 ? new Map(play.holding).set(pointerId, at) : play.holding,
-      hit: play.hit.with(at, true),
-      hits: play.hits + 1,
-      energy,
-    },
+    state,
     events: [
       { type: 'hit', note: at, lane, grade, soundAt: Math.max(t, note.t) },
       ...energyEvents(play.energy, energy),
+      ...starEvents(state, at),
     ],
   };
 };
@@ -173,7 +147,7 @@ const passNotes = (play: PlayState, t: number): Outcome => {
   for (const at of faded) {
     const before = energy;
     energy = passEnergy(energy, passedAt(at));
-    events.push({ type: 'faded', note: at }, ...energyEvents(before, energy));
+    events.push({ type: 'faded', note: at }, ...energyEvents(before, energy), ...starEvents(play, at));
   }
   return { state: { ...play, passed, energy }, events };
 };

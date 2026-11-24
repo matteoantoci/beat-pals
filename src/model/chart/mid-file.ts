@@ -31,6 +31,11 @@ const CHORD_SNAP = 10;
 const DOWNBEAT = 12;
 const BEAT = 13;
 
+/** The Star Power phrase note of the guitar track, for all difficulties. */
+const STAR_POWER = 116;
+/** A section marker text event of the `EVENTS` track: `[section <name>]` or `[prc_<name>]`. */
+const SECTION_MARKER = /^\[?(?:section[ _]|prc_)/u;
+
 /** A Phase Shift SysEx payload: 'P' 'S' 0x00 <type 0x00> <difficulty> <modifier> <1 start | 0 end>. 0xFF is all difficulties. */
 const PS_HEADER = [0x50, 0x53, 0x00, 0x00];
 const PS_ALL = 0xff;
@@ -154,6 +159,16 @@ const beatsOf = (track: readonly Timed[] | undefined): BeatTick[] | undefined =>
   return beats.length > 0 ? beats : undefined;
 };
 
+/** The Star Power phrases of the guitar track and the section markers of the events track. */
+const phraseMarks = (tracks: readonly (readonly Timed[])[]): Pick<TickChart, 'starPower' | 'sections'> => ({
+  starPower: notesOf(tracks.find((track) => nameOf(track) === 'PART GUITAR') ?? [])
+    .filter((note) => note.pitch === STAR_POWER)
+    .map(({ tick, length }) => ({ tick, length })),
+  sections: (tracks.find((track) => nameOf(track) === 'EVENTS') ?? []).flatMap(({ tick, event }) =>
+    event.type === 'text' && SECTION_MARKER.test(event.text) ? [tick] : []
+  ),
+});
+
 /** Reads a notes.mid file into the facts of its song. The caller gives the metadata pairs of the song. */
 export const readMid = (bytes: Uint8Array, meta: SongMeta): ChartResult => {
   let midi;
@@ -200,6 +215,7 @@ export const readMid = (bytes: Uint8Array, meta: SongMeta): ChartResult => {
       drums: drums === undefined ? undefined : snapChords(drums),
     },
     endTick: Math.max(0, ...all.map(({ tick }) => tick)),
+    ...phraseMarks(tracks),
   };
   return buildFacts(chart, meta);
 };

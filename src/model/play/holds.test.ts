@@ -11,11 +11,14 @@ const CHART: ChildChart = {
     { t: 4, lanes: [2], holdSec: 1 },
     { t: 6, lanes: [1], holdSec: 0 },
   ],
+  phrases: [],
 };
 
 const lines = (events: readonly PlayEvent[]): string[] =>
   events.flatMap((event) =>
-    event.type === 'energy' ? [] : [`${event.type} ${'lane' in event ? event.lane : event.note}`]
+    event.type === 'energy' || event.type === 'starMoment'
+      ? []
+      : [`${event.type} ${'lane' in event ? event.lane : event.note}`]
   );
 
 describe('apply: doubles', () => {

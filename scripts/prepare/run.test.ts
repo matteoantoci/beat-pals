@@ -171,6 +171,28 @@ describe('prepareSongs', () => {
     expect(lines).toContain('paper-kites: unchanged, skipped before ffmpeg.');
   });
 
+  it('writes only the facts file again when only the facts version of the stamp changed', async () => {
+    await put('paper-kites.sng', song([['song.opus', audio(3)]]));
+    await prepare();
+    const folder = join(prepared, 'paper-kites');
+    const stamp = await readFile(join(folder, 'stamp.json'), 'utf8');
+    // A stamp of the facts version 1, which had no `facts` field.
+    await writeFile(join(folder, 'stamp.json'), stamp.replace(/\s*"facts": \d+,/u, ''));
+    await writeFile(join(folder, 'song.json'), '{}\n');
+    mixes = [];
+    lines = [];
+
+    await prepare();
+
+    expect(mixes).toEqual([]);
+    expect(lines).toEqual([
+      'paper-kites: facts refreshed, the audio and the cover stay.',
+      'prepare-song: 0 prepared, 1 refreshed, 0 unchanged, 0 skipped, 0 failed.',
+    ]);
+    expect(JSON.parse(await readFile(join(folder, 'song.json'), 'utf8'))).toMatchObject({ id: 'paper-kites' });
+    expect(await readFile(join(folder, 'song.m4a'), 'utf8')).toBe('mix');
+  });
+
   it('prepares a song again when its picture override changes', async () => {
     await put('paper-kites.sng', song([['song.opus', audio(3)]]));
     await prepare();
@@ -196,7 +218,7 @@ describe('prepareSongs', () => {
       'moss-garden.png: skipped, no .sng file has this name.',
       'notes.txt: skipped, it is not a .sng file or a picture override.',
       'fern-hill: skipped, This is not an SNG file: it does not start with SNGPKG.',
-      'prepare-song: 0 prepared, 0 unchanged, 1 skipped, 0 failed.',
+      'prepare-song: 0 prepared, 0 refreshed, 0 unchanged, 1 skipped, 0 failed.',
     ]);
     expect(await readdir(prepared)).toEqual([]);
   });
@@ -211,7 +233,7 @@ describe('prepareSongs', () => {
     expect(lines).toEqual([
       'moss-garden: skipped, The .sng file has no audio part to mix.',
       'paper-kites: skipped, The chart has no lead guitar notes.',
-      'prepare-song: 0 prepared, 0 unchanged, 2 skipped, 0 failed.',
+      'prepare-song: 0 prepared, 0 refreshed, 0 unchanged, 2 skipped, 0 failed.',
     ]);
   });
 
@@ -238,7 +260,7 @@ describe('prepareSongs', () => {
 
     expect(code).toBe(0);
     expect(lines).toContain('paper-kites: failed, ffmpeg failed: no codec');
-    expect(lines.at(-1)).toBe('prepare-song: 1 prepared, 0 unchanged, 0 skipped, 1 failed.');
+    expect(lines.at(-1)).toBe('prepare-song: 1 prepared, 0 refreshed, 0 unchanged, 0 skipped, 1 failed.');
     expect(await readdir(prepared)).toEqual(['moss-garden']);
   });
 

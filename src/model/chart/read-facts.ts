@@ -4,25 +4,41 @@
 
 import type { SongFacts } from './facts';
 
-const isFacts = (value: unknown): value is SongFacts => {
+/** A facts file from before the star moments has no phrases. It stays in the last store on a device until the
+ * download of the new store is complete, and an offline start reads it. */
+type OldFacts = Omit<SongFacts, 'phrases' | 'phraseSource'> & Partial<Pick<SongFacts, 'phrases' | 'phraseSource'>>;
+
+const isFacts = (value: unknown): value is OldFacts => {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
   const fields = new Map<string, unknown>(Object.entries(value));
+  const phrases = fields.get('phrases');
   return (
     fields.get('version') === 1 &&
     Array.isArray(fields.get('beats')) &&
     Array.isArray(fields.get('notes')) &&
-    Array.isArray(fields.get('fills'))
+    Array.isArray(fields.get('fills')) &&
+    (phrases === undefined || Array.isArray(phrases))
   );
+};
+
+/** Old facts with no phrases play with no star moments. */
+const withPhrases = (value: OldFacts): SongFacts =>
+  value.phrases && value.phraseSource
+    ? { ...value, phrases: value.phrases, phraseSource: value.phraseSource }
+    : { ...value, phrases: [], phraseSource: 'fallback' };
+
+const parse = (json: string): unknown => {
+  try {
+    return JSON.parse(json);
+  } catch {
+    return undefined;
+  }
 };
 
 /** The facts of the JSON text, or undefined when the text is not a facts file of version 1. */
 export const readFacts = (json: string): SongFacts | undefined => {
-  try {
-    const value: unknown = JSON.parse(json);
-    return isFacts(value) ? value : undefined;
-  } catch {
-    return undefined;
-  }
+  const value = parse(json);
+  return isFacts(value) ? withPhrases(value) : undefined;
 };

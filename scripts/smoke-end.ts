@@ -44,9 +44,11 @@ export const endScene = async (page: Page, ms: number, shots: string | undefined
     /^\{"version":1,"progress":\{"[a-z0-9-]+":\{"color":0,"stars":0,"weakPlays":1\}\}\}$/u.test(save),
     save
   );
-  // A weak play keeps level 0, so the card shows the empty shelf again: no record and no stars.
+  // A weak play keeps level 0, so the card shows the empty shelf again: the empty record and 3 empty stars.
   check(
     'song list: the empty shelf of level 0 after a weak play',
-    (await shows(page, '.song-card', 2000)) && (await page.$$('.song-record[role="img"], .song-stars')).length === 0
+    (await shows(page, '.song-card', 2000)) &&
+      (await page.$$('.song-record[role="img"]')).length === 0 &&
+      (await page.$$('.song-stars[aria-label="0 stars"]')).length === 1
   );
 };

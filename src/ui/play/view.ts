@@ -47,6 +47,10 @@ export type View = {
   /** The soft holds that are done, in time order. */
   readonly dones: readonly HoldDone[];
   readonly hits: readonly HitRecord[];
+  /** 1 for each note of the chart that is in a phrase: it shows as a phrase ball. */
+  readonly phraseNotes: Uint8Array;
+  /** The song times of the star moments so far, in time order. */
+  readonly stars: readonly number[];
   /** Pip, Dot, and Bo. */
   readonly lanes: readonly [LaneState, LaneState, LaneState];
   readonly first: Windows;
@@ -103,8 +107,13 @@ const hitRecords = (
       );
 };
 
-/** What the view remembers of the play so far: the hit notes, the soft holds, the hits, and the done holds. */
-type Memory = Pick<View, 'hitNotes' | 'holds'> & { readonly hits: HitRecord[]; readonly dones: HoldDone[] };
+/** What the view remembers of the play so far: the hit notes, the soft holds, the hits, the done holds, and the star
+ * moments; and the phrase notes of the chart. */
+type Memory = Pick<View, 'hitNotes' | 'holds' | 'phraseNotes'> & {
+  readonly hits: HitRecord[];
+  readonly dones: HoldDone[];
+  readonly stars: number[];
+};
 
 /** The view object of the frames over the memory, and the update that moves it to a song time. */
 const frameView = (
@@ -152,8 +161,19 @@ const frameView = (
 
 export const makeView = (chart: ChildChart, beats: readonly Beat[]): LiveView => {
   const holds = makeHolds(chart.notes.length);
-  const memory: Memory = { hitNotes: new Uint8Array(chart.notes.length), holds: holds.holds, hits: [], dones: [] };
-  const { hits, dones } = memory;
+  const phraseNotes = new Uint8Array(chart.notes.length);
+  for (const { first, last } of chart.phrases) {
+    phraseNotes.fill(1, first, last + 1);
+  }
+  const memory: Memory = {
+    hitNotes: new Uint8Array(chart.notes.length),
+    holds: holds.holds,
+    phraseNotes,
+    hits: [],
+    dones: [],
+    stars: [],
+  };
+  const { hits, dones, stars } = memory;
   const record = (hit: Extract<PlayEvent, { type: 'hit' }>, t: number, action: Action): void => {
     memory.hitNotes[hit.note] = 1;
     if ((chart.notes[hit.note]?.holdSec ?? 0) > 0 && action.type === 'press') {
@@ -166,6 +186,8 @@ export const makeView = (chart: ChildChart, beats: readonly Beat[]): LiveView =>
       record(event, t, action);
     } else if (event.type === 'holdDone') {
       dones.push({ note: event.note, at: t });
+    } else if (event.type === 'starMoment') {
+      stars.push(t);
     }
   };
   const { view, update } = frameView(chart, beats, memory);

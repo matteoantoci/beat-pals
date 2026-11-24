@@ -113,6 +113,31 @@ const ENTRIES: readonly CreditEntry[] = [
       'peak at -1 dBFS.',
   },
   {
+    kind: 'sound',
+    title: 'Sliding Trailer Woosh',
+    author: 'qubodup',
+    licence: 'CC0-1.0',
+    url: 'https://freesound.org/people/qubodup/sounds/171255/',
+    files: ['public/sounds/star-moment.wav'],
+    change:
+      'Made from the Freesound HQ preview (MP3). Converted to mono WAV, 16-bit, 44.1 kHz, with the silence at the ' +
+      'start and the end removed and the peak at -1 dBFS. Mixed with "Shine Chime" into the star moment sound: the ' +
+      'whoosh at full level, the chime at 0.6 and 0.4 s later, a limiter at -1 dBFS, cut with a 0.5 s fade-out. The ' +
+      'game plays it a little higher or lower and louder or softer each time.',
+  },
+  {
+    kind: 'sound',
+    title: 'Shine Chime',
+    author: 'Qvantor',
+    licence: 'CC0-1.0',
+    url: 'https://freesound.org/people/Qvantor/sounds/879797/',
+    files: ['public/sounds/star-moment.wav'],
+    change:
+      'Made from the Freesound HQ preview (MP3). Converted to mono WAV, 16-bit, 44.1 kHz, with the silence at the ' +
+      'start and the end removed and the peak at -1 dBFS. Mixed into the star moment sound after "Sliding Trailer ' +
+      'Woosh", at 0.6 and 0.4 s later.',
+  },
+  {
     kind: 'picture',
     title: 'App icon',
     author: 'Beat Pals',

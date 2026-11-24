@@ -1,16 +1,17 @@
 // The notes of the play screen (prototype play-style A: `drawBubble`, `drawTail`, `drawBead`, `drawDouble`,
 // `drawHalfPop`). A plain note is a bubble. A soft hold adds a band up to its end and a star bead at its half; while a
 // finger holds it, its head sits still on the ring, the band runs down to the ring, and the bead falls into it. A done
-// hold pops its bead. A double is 2 bubbles joined by a jelly band on 2 adjacent lanes.
+// hold pops its bead. A double is 2 bubbles joined by a jelly band on 2 adjacent lanes. Each falling ball has the
+// effects of the band energy, and a phrase ball its gold glow and ring (./ball-effects).
 
 import { shapeKey } from './atlas';
+import { drawBallBack, drawBallFront, type Ball, type BallScene } from './ball-effects';
 import { clamp01, laneX, noteY } from './geometry';
 import { HOLD } from './held';
 import { BAND_SHARE } from './hold-shapes';
 import { BAND_DOT_GAP, BAND_STRIP } from './paint-holds';
 import { lastShown, MISS_FADE_SEC, type View } from './view';
 import type { Lane } from '../../model';
-import type { EffectScene } from './effects';
 import type { Pool } from './pool';
 
 /** What the notes of one frame need. `notes` are clipped to the chutes; `links` are not. */
@@ -19,8 +20,11 @@ export type NoteFrame = {
   /** The parts that cross between the chutes or sit on the rings: doubles, held heads, and popped beads. */
   readonly links: Pool;
   readonly view: View;
-  readonly scene: EffectScene;
+  readonly scene: BallScene;
 };
+
+/** The ball of the note that the frame draws. One object serves each frame, so a frame makes no object (C20). */
+const ball: Ball = { note: 0, lane: 1, dt: 0, alpha: 0, phrase: false, hold: false };
 
 /** The bead pops for this long when a hold is done (prototype `drawHalfPop`). */
 const POP_SEC = 0.6;
@@ -100,8 +104,39 @@ const drawFallingHold = (frame: NoteFrame, dt: number, holdSec: number): void =>
   bead.position.set(laneX(geometry, band.lane), noteY(geometry, dt + holdSec / 2));
 };
 
+/** A double at the note of `ball` and `band`, with the ball effects of its 2 lanes. */
+const drawDoubleBalls = (frame: NoteFrame, lanes: readonly [Lane, Lane]): void => {
+  const { scene, notes, links } = frame;
+  const [left, right] = lanes;
+  ball.hold = false;
+  ball.lane = left;
+  drawBallBack(scene, notes, ball);
+  ball.lane = right;
+  drawBallBack(scene, notes, ball);
+  drawDouble(frame, lanes);
+  drawBallFront(scene, links, ball);
+  ball.lane = left;
+  drawBallFront(scene, links, ball);
+};
+
+/** A plain note or a falling soft hold at the note of `ball` and `band`, with its ball effects. */
+const drawSingle = (frame: NoteFrame, lane: Lane, holdSec: number): void => {
+  const { scene, notes } = frame;
+  band.lane = lane;
+  ball.lane = lane;
+  ball.hold = holdSec > 0;
+  drawBallBack(scene, notes, ball);
+  if (holdSec > 0) {
+    drawFallingHold(frame, ball.dt, holdSec);
+  }
+  notes
+    .show(scene.textures.shape(shapeKey.bubble(lane)), band.alpha)
+    .position.set(laneX(scene.geometry, lane), band.anchor);
+  drawBallFront(scene, notes, ball);
+};
+
 const drawNote = (frame: NoteFrame, at: number): void => {
-  const { notes, view, scene } = frame;
+  const { view, scene } = frame;
   const note = view.chart.notes[at];
   const dt = (note?.t ?? 0) - view.t;
   if (note !== undefined && view.hitNotes[at] === 1) {
@@ -111,21 +146,20 @@ const drawNote = (frame: NoteFrame, at: number): void => {
   if (note === undefined || dt < -MISS_FADE_SEC) {
     return;
   }
-  const { geometry, textures } = scene;
+  const { geometry } = scene;
   const y = noteY(geometry, dt);
   // A note fades in at the top, and a missed note fades out below its ring.
   band.alpha = clamp01(Math.min((y - geometry.topY + 20) / 60, dt < 0 ? 1 + dt / MISS_FADE_SEC : 1));
   band.anchor = y;
+  ball.note = at;
+  ball.dt = dt;
+  ball.alpha = band.alpha;
+  ball.phrase = view.phraseNotes[at] === 1;
   if (note.lanes.length === 2) {
-    drawDouble(frame, note.lanes);
-    return;
+    drawDoubleBalls(frame, note.lanes);
+  } else {
+    drawSingle(frame, note.lanes[0], note.holdSec);
   }
-  const [lane] = note.lanes;
-  band.lane = lane;
-  if (note.holdSec > 0) {
-    drawFallingHold(frame, dt, note.holdSec);
-  }
-  notes.show(textures.shape(shapeKey.bubble(lane)), band.alpha).position.set(laneX(geometry, lane), y);
 };
 
 /** The pop of the star bead of a done hold: up from the ring, with a fade (prototype `drawHalfPop`). */

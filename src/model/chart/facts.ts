@@ -3,6 +3,7 @@
 // `TickChart`, and `buildFacts` makes the facts from it.
 
 import { beatTicks, type BeatTick, type TimeSignature } from './beats';
+import { phraseTicks, type PhraseSource, type StarPower } from './phrases';
 import { tickClock, type Tempo } from './tempo';
 
 /** A chord or a single note. `frets` 0 to 4 are green to orange, and 7 is open. */
@@ -19,6 +20,10 @@ export type SongFacts = {
   notes: FactsNote[];
   /** The notes of other parts that fill the long rests of the lead guitar. */
   fills: { part: FillPart; notes: FactsNote[] }[];
+  /** The phrases for the star moments, in time order, apart: from `t` (included) to `end` (not included). */
+  phrases: { t: number; end: number }[];
+  /** `chart`: the Star Power phrases of the lead guitar. `fallback`: the chart has none, so a rule made them. */
+  phraseSource: PhraseSource;
 };
 
 /** The parts that fill a long guitar rest, in the order of choice. */
@@ -51,6 +56,10 @@ export type TickChart = {
   beats: readonly BeatTick[] | undefined;
   /** The last tick of the chart. The beats from time signatures continue to the end of its bar. */
   endTick: number;
+  /** The Star Power phrases of the lead guitar, at the difficulty of `guitar`. */
+  starPower: readonly StarPower[];
+  /** The ticks of the section markers of the chart. */
+  sections: readonly number[];
 };
 
 const MS_PER_SECOND = 1000;
@@ -116,6 +125,12 @@ export const buildFacts = (chart: TickChart, meta: SongMeta): ChartResult => {
   const seconds = tickClock(chart.tempos, chart.resolution);
   const delay = meta.delay === 0 ? chart.offsetSec : meta.delay / MS_PER_SECOND;
   const beatSource = chart.beats ?? beatTicks(chart.timeSignatures, chart.resolution, chart.endTick);
+  const phrases = phraseTicks(chart.starPower, {
+    beats: beatSource,
+    firstNote: Math.min(...chart.guitar.map((note) => note.tick)),
+    sections: chart.sections,
+    endTick: chart.endTick,
+  });
   const beats = beatSource.map(({ tick, downbeat }) => ({
     t: round(seconds(tick) + delay),
     downbeat,
@@ -132,6 +147,11 @@ export const buildFacts = (chart: TickChart, meta: SongMeta): ChartResult => {
       const fill = fillOf(chart.parts, window);
       return fill === undefined ? [] : [{ part: fill.part, notes: chords(fill.notes, seconds, delay) }];
     }),
+    phrases: phrases.ranges.map(({ start, end }) => ({
+      t: round(seconds(start) + delay),
+      end: round(seconds(end) + delay),
+    })),
+    phraseSource: phrases.source,
   };
   return { ok: true, facts };
 };

@@ -152,8 +152,8 @@ const watchBarePals = async (page: Page): Promise<void> => {
   });
 };
 
-/** The test song is in the list at level 0, with no record and no stars, and a tap starts it with running audio. The
- * context runs since the title tap, so it shows no change, or a change that ends in `running`. */
+/** The test song is in the list at level 0, with the empty record and 3 empty stars, and a tap starts it with
+ * running audio. The context runs since the title tap, so it shows no change, or a change that ends in `running`. */
 const startSong = async (page: Page, audio: AudioRecord, shots: string | undefined): Promise<boolean> => {
   check('title screen: the play button shows with a ready song', await shows(page, '.title-play'));
   await shot(page, shots, 'title-portrait');
@@ -161,8 +161,9 @@ const startSong = async (page: Page, audio: AudioRecord, shots: string | undefin
   await tap(page, '.title');
   check('song list: the test song shows', await shows(page, '.song-card'));
   check(
-    'song list: no record and no stars at level 0',
-    (await page.$$('.song-record[role="img"]')).length === 0 && (await page.$$('.song-stars')).length === 0
+    'song list: the empty record and 3 empty stars at level 0',
+    (await page.$$('.song-record[role="img"]')).length === 0 &&
+      (await page.$$('.song-stars[aria-label="0 stars"]')).length === 1
   );
   await shot(page, shots, 'songs-portrait');
   audio.reset();

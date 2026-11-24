@@ -17,6 +17,8 @@ const factsWith = (beats: Beat[], notes: readonly number[]): SongFacts => ({
   beats,
   notes: notes.map((t) => ({ t, frets: [0], lenSec: 0 })),
   fills: [],
+  phrases: [],
+  phraseSource: 'fallback',
 });
 
 describe('childChart off-beat notes at platinum', () => {

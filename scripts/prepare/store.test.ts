@@ -32,7 +32,18 @@ const prepare = async ({ id, title, audio, cover }: Song) => {
   const folder = join(prepared, id);
   songIds.add(id);
   await mkdir(folder, { recursive: true });
-  const facts = { version: 1, id, title, artist: 'The Lanterns', charter: 'Mossy', beats: [], notes: [], fills: [] };
+  const facts = {
+    version: 1,
+    id,
+    title,
+    artist: 'The Lanterns',
+    charter: 'Mossy',
+    beats: [],
+    notes: [],
+    fills: [],
+    phrases: [],
+    phraseSource: 'fallback',
+  };
   await writeFile(join(folder, 'song.json'), `${JSON.stringify(facts)}\n`);
   await writeFile(join(folder, 'song.m4a'), audio);
   await writeFile(join(folder, 'stamp.json'), '{}\n');

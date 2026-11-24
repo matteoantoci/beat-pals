@@ -1,7 +1,9 @@
 // The texture atlas of the play screen (C20: one atlas). Each shape of the moving parts (notes, beat pills, ring
-// layers, hit effects, and the band energy) is painted one time for each layout into one 2D canvas. A simple shelf
-// packer places the shapes in rows. Each shape paints around (0, 0), so its sprite takes the anchor 0.5.
+// layers, hit effects, the band energy, the ball effects, and the star moment burst) is painted one time for each
+// layout into one 2D canvas. A simple shelf packer (./atlas-pack) places the shapes in rows. Each shape paints around
+// (0, 0), so its sprite takes the anchor 0.5.
 
+import { pack, type Frame } from './atlas-pack';
 import { clapShapes, holdKey, holdShapes, keyOf, laneKeys, linkShapes, POP_SHARE } from './hold-shapes';
 import { laneCss, LEMON, paintBubble, paintCircleLine, paintDisc, paintPill, WHITE } from './paint';
 import {
@@ -34,18 +36,14 @@ import {
 } from './paint-fx';
 import { paintHeldBands, paintPopStar } from './paint-holds';
 import { CHUTE_SHARE } from './paint-stage';
+import { laneStarShapes, starKey, starShapes } from './star-shapes';
 import type { Lane } from '../../model';
 import type { Geometry } from './geometry';
 import type { Ctx } from './paint';
 
-/** A place in the atlas, in CSS px. */
-export type Frame = { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
-
 type Shape = { readonly key: string; readonly w: number; readonly h: number; readonly paint: (ctx: Ctx) => void };
 
 const LANES: readonly Lane[] = [0, 1, 2];
-const ROW_WIDTH = 1024;
-const PAD = 2;
 /** The beat pill of a downbeat is wider. */
 const PILL_SHARE = { beat: 0.32, downbeat: 0.46 } as const;
 /** The white core of a great hit. */
@@ -88,6 +86,8 @@ export const shapeKey = {
   goldRim: 'gold rim',
   goldFloor: 'gold floor',
   goldWave: 'gold wave',
+  /** The ball effects, the phrase balls, and the star moment burst (./star-shapes). */
+  ...starKey,
 } as const;
 
 const square = (key: string, size: number, paint: (ctx: Ctx) => void): Shape => ({ key, w: size, h: size, paint });
@@ -150,7 +150,8 @@ const shapesOf = (geometry: Geometry, band: readonly Lane[]): Shape[] => {
       ...pillShapes(geometry, lane),
       ...ringShapes(r, lane),
       ...holdShapes(geometry, lane),
-      ...sprinkleShapes(lane)
+      ...sprinkleShapes(lane),
+      ...laneStarShapes(geometry, lane)
     );
   }
   shapes.push(
@@ -162,28 +163,10 @@ const shapesOf = (geometry: Geometry, band: readonly Lane[]): Shape[] => {
       paintPopStar(ctx, geometry.noteS * POP_SHARE)
     ),
     ...linkShapes(geometry),
-    ...energyShapes(geometry, band)
+    ...energyShapes(geometry, band),
+    ...starShapes(geometry)
   );
   return shapes;
-};
-
-/** Places the shapes in rows, left to right. */
-const pack = (shapes: readonly Shape[]): { frames: Map<string, Frame>; width: number; height: number } => {
-  const frames = new Map<string, Frame>();
-  let x = 0;
-  let y = 0;
-  let rowHeight = 0;
-  for (const shape of shapes) {
-    const w = Math.ceil(shape.w) + PAD;
-    const h = Math.ceil(shape.h) + PAD;
-    const wrap = x + w > ROW_WIDTH;
-    y += wrap ? rowHeight : 0;
-    rowHeight = wrap ? h : Math.max(rowHeight, h);
-    x = wrap ? 0 : x;
-    frames.set(shape.key, { x: x + PAD / 2, y: y + PAD / 2, w: Math.ceil(shape.w), h: Math.ceil(shape.h) });
-    x += w;
-  }
-  return { frames, width: ROW_WIDTH, height: y + rowHeight };
 };
 
 /** Paints all shapes of the layout for the band into one canvas at `resolution` pixels for each CSS px. */

@@ -2,7 +2,8 @@
 // for example `?demo=gold.1&energy=3&t=2.4&sim`. The record color and its stars give the play setup, as the
 // progress of a song does. `energy` sets the band energy step (0 to 3, or gold); without it, the screen shows the
 // energy that the play reached. `t` is the song time where the screen freezes (default 0). `sim` draws the iPhone 12
-// notch and home indicator with their safe areas, and `reduce` turns on reduced motion.
+// notch and home indicator with their safe areas, and `reduce` turns on reduced motion. `nostar` shows the same frame
+// with no star moment: the reference frame of the flash area measure (C11) of the star moment burst.
 
 import { RECORD_COLORS } from '../../model';
 import type { EnergyStep, SongProgress } from '../../model';
@@ -13,6 +14,7 @@ export type Demo = {
   readonly t: number;
   readonly sim: boolean;
   readonly reduce: boolean;
+  readonly nostar: boolean;
 };
 
 type Read<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly reason: string };
@@ -68,6 +70,6 @@ export const readDemo = (search: string): { ok: true; demo: Demo } | { ok: false
   if (!t.ok) {
     return t;
   }
-  const flags = { sim: query.has('sim'), reduce: query.has('reduce') };
+  const flags = { sim: query.has('sim'), reduce: query.has('reduce'), nostar: query.has('nostar') };
   return { ok: true, demo: { progress: progress.value, energy: energy.value, t: t.value, ...flags } };
 };

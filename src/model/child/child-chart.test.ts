@@ -37,6 +37,8 @@ const factsWith = (beats: Beat[], notes: readonly number[], fills: SongFacts['fi
   beats,
   notes: notes.map((t) => ({ t, frets: [0], lenSec: 0 })),
   fills,
+  phrases: [],
+  phraseSource: 'fallback',
 });
 
 /** The note times of the child chart at level 0 (no record), with a note on each beat of the facts. */
@@ -138,6 +140,7 @@ describe('childChart notes and band', () => {
         { t: 0, lanes: [1], holdSec: 0 },
         { t: 1, lanes: [1], holdSec: 0 },
       ],
+      phrases: [],
     });
   });
 
@@ -145,5 +148,54 @@ describe('childChart notes and band', () => {
     const facts = factsWith(steadyBeats(0.5, 1), [0]);
     const bands = RECORD_COLORS.map((color) => childChart(facts, color, 0).band);
     expect(bands).toEqual([[1], [0, 1], [0, 1, 2], [0, 1, 2], [0, 1, 2]]);
+  });
+});
+
+/** Facts with a beat and a note each second for 32 s, and these phrases. Every beat is a child note at step 2. */
+const everySecond = (phrases: SongFacts['phrases']): SongFacts => ({
+  ...factsWith(
+    steadyBeats(1, 8),
+    Array.from({ length: 32 }, (_, at) => at)
+  ),
+  phrases,
+});
+
+describe('childChart phrases', () => {
+  it('gives each phrase the child notes in its time range, from its start up to before its end', () => {
+    const facts = {
+      ...factsWith(steadyBeats(0.5, 4), [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]),
+      phrases: [{ t: 0.5, end: 2.5 }],
+    };
+    expect(childChart(facts, 'none', 2).phrases).toEqual([{ first: 1, last: 4 }]);
+  });
+
+  it('grows a phrase with fewer than 4 child notes to 4, and drops it when the next phrase leaves no room', () => {
+    const facts = everySecond([
+      { t: 2, end: 3.5 },
+      { t: 20, end: 21 },
+      { t: 22, end: 26 },
+    ]);
+    expect(childChart(facts, 'none', 2).phrases).toEqual([
+      { first: 2, last: 5 },
+      { first: 22, last: 25 },
+    ]);
+  });
+
+  it('drops a phrase that starts less than 8 s after the last note of the phrase before', () => {
+    const facts = everySecond([
+      { t: 0, end: 4 },
+      { t: 10, end: 14 },
+      { t: 12, end: 16 },
+    ]);
+    expect(childChart(facts, 'none', 2).phrases).toEqual([
+      { first: 0, last: 3 },
+      { first: 12, last: 15 },
+    ]);
+  });
+
+  it('keeps a phrase at a slow speed step by growing it over the notes of that step', () => {
+    const facts = everySecond([{ t: 4, end: 6 }]);
+    // Step 0 keeps beats 1 and 3 of each bar: 0, 2, 4, 6, and so on.
+    expect(childChart(facts, 'bronze', 0).phrases).toEqual([{ first: 2, last: 5 }]);
   });
 });

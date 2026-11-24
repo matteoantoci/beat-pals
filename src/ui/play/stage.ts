@@ -1,16 +1,19 @@
 // The PixiJS play screen (spec, "Screens": play screen; ADR 0002). It draws the still stage, the beat pills, the
-// rings, the notes, and the hit effects; the pals are HTML pictures above it. Rules of C20: one texture atlas, sprite
-// pools, no Graphics drawn again in a frame, no filters, one mask, and resolution 2 at most with autoDensity.
+// rings, the notes with their energy effects and phrase balls, the hit effects, and the star moment burst; the pals are
+// HTML pictures above it. Rules of C20: one texture atlas, sprite pools, no Graphics drawn again in a frame, no
+// filters, one mask, and resolution 2 at most with autoDensity.
 
 import { Application } from 'pixi.js';
 import { LOOK_AHEAD } from '../../model';
 import { hex, TOKENS } from '../pals/color';
 import { shapeKey } from './atlas';
-import { drawHit, type EffectScene } from './effects';
+import { phrasePulse, type BallScene } from './ball-effects';
+import { drawHit } from './effects';
 import { drawEnergy, type EnergyScene } from './energy-stage';
 import { clamp01, laneX, noteY } from './geometry';
 import { drawNotes, type NoteFrame } from './stage-notes';
 import { dress, makeParts, type Parts } from './stage-parts';
+import { drawBurst, type BurstScene } from './star-burst';
 import { makeTextures, type Textures } from './textures';
 import type { Lane } from '../../model';
 import type { EnergyLook } from './energy';
@@ -39,9 +42,23 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] };
  */
 type Frame = {
   readonly parts: Parts;
-  readonly scene: Mutable<EffectScene>;
+  readonly scene: Mutable<BallScene>;
   readonly notes: Mutable<NoteFrame>;
   readonly energy: Mutable<EnergyScene>;
+  readonly burst: Mutable<BurstScene>;
+};
+
+/** The energy before the first frame. */
+const NO_ENERGY: EnergyLook = { step: 0, fades: [0, 0, 0, 0], levelUp: undefined };
+
+/** The seconds since the last beat at or before the frame time, or Infinity. */
+const beatAge = (view: View): number => {
+  let at = view.first.beat;
+  while ((view.beats[at + 1]?.t ?? Number.POSITIVE_INFINITY) <= view.t) {
+    at += 1;
+  }
+  const age = view.t - (view.beats[at]?.t ?? Number.NEGATIVE_INFINITY);
+  return age >= 0 ? age : Number.POSITIVE_INFINITY;
 };
 
 const drawBeat = ({ parts, notes: { view }, scene }: Frame, at: number): void => {
@@ -84,17 +101,42 @@ const drawFrame = (frame: Frame): void => {
   }
   parts.effects.end();
   drawEnergy(parts.energy, energy);
+  drawBurst(parts.burst, frame.burst);
   parts.app.render();
+};
+
+/**
+ * Fills in the frame for the view at its song time and the band energy. `frame.scene.reduced` is already set. The
+ * latest star moment is the last one at or before the frame time: the view remembers them in time order.
+ */
+const fillFrame = (frame: Frame, view: View, energy: EnergyLook): void => {
+  const { scene, notes, energy: look, burst } = frame;
+  const { reduced } = scene;
+  scene.t = view.t;
+  scene.energy = energy;
+  scene.pulse = phrasePulse(beatAge(view), reduced);
+  notes.view = view;
+  look.reduced = reduced;
+  look.t = view.t;
+  look.energy = energy;
+  look.beats = view.beats;
+  look.beat = view.first.beat;
+  burst.reduced = reduced;
+  burst.t = view.t;
+  burst.beats = view.beats;
+  burst.starAt = view.stars.at(-1) ?? Number.NEGATIVE_INFINITY;
 };
 
 /** The resize and the draw of the stage, over the textures of the layout. */
 const control = (parts: Parts, geometry: Geometry): Omit<Stage, 'destroy'> & { textures: () => Textures } => {
-  const scene: Mutable<EffectScene> = {
+  const scene: Mutable<BallScene> = {
     pool: parts.effects,
     geometry,
     textures: makeTextures(geometry, parts.band, RESOLUTION),
     reduced: false,
     t: 0,
+    energy: NO_ENERGY,
+    pulse: 1,
   };
   dress(parts, geometry, scene.textures);
   let frame: Frame | undefined;
@@ -109,6 +151,8 @@ const control = (parts: Parts, geometry: Geometry): Omit<Stage, 'destroy'> & { t
       if (frame) {
         frame.energy.geometry = next;
         frame.energy.textures = scene.textures;
+        frame.burst.geometry = next;
+        frame.burst.textures = scene.textures;
       }
     },
     draw: (view, reduced, energy) => {
@@ -117,16 +161,10 @@ const control = (parts: Parts, geometry: Geometry): Omit<Stage, 'destroy'> & { t
         scene,
         notes: { notes: parts.notes, links: parts.links, view, scene },
         energy: { ...scene, energy, beats: view.beats, beat: 0 },
+        burst: { ...scene, beats: view.beats, starAt: Number.NEGATIVE_INFINITY },
       };
       scene.reduced = reduced;
-      scene.t = view.t;
-      frame.notes.view = view;
-      const look = frame.energy;
-      look.reduced = reduced;
-      look.t = view.t;
-      look.energy = energy;
-      look.beats = view.beats;
-      look.beat = view.first.beat;
+      fillFrame(frame, view, energy);
       drawFrame(frame);
     },
   };

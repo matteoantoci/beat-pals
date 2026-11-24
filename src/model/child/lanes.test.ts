@@ -13,6 +13,8 @@ const melody = (frets: readonly (readonly number[])[], beatSec = 0.5): SongFacts
   beats: frets.map((_, at) => ({ t: at * beatSec, downbeat: at % 4 === 0 })),
   notes: frets.map((note, at) => ({ t: at * beatSec, frets: [...note], lenSec: 0 })),
   fills: [],
+  phrases: [],
+  phraseSource: 'fallback',
 });
 
 /** The lane of each child note at step 2 (every beat). */

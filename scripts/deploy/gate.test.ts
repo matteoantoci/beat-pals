@@ -33,7 +33,7 @@ const newKey = async (name: string): Promise<MacKey> => {
 const prepare = async (prepared: string, song: typeof SONG) => {
   const folder = join(prepared, song.id);
   await mkdir(folder, { recursive: true });
-  const facts = { version: 1, ...song, beats: [], notes: [], fills: [] };
+  const facts = { version: 1, ...song, beats: [], notes: [], fills: [], phrases: [], phraseSource: 'fallback' };
   await writeFile(join(folder, 'song.json'), `${JSON.stringify(facts)}\n`);
   await writeFile(join(folder, 'song.m4a'), `${song.id} audio`);
 };

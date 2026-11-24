@@ -57,11 +57,20 @@ const Disc = (props: { readonly color: Exclude<RecordColor, 'none'> }): JSX.Elem
   );
 };
 
-/** The record of a color, or an empty place of the same size at level 0 (no record). */
+/** The place of the record at level 0, in the look of an empty star: a dark disc with a light rim and its label
+ * ring, so the card has no hole before the first record. */
+const EmptyDisc = (): JSX.Element => (
+  <svg class="song-record" viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="29" fill={STAR_OFF.fill} stroke={STAR_OFF.stroke} stroke-width="2" />
+    <circle cx="32" cy="32" r="10" fill="none" stroke={STAR_OFF.stroke} stroke-width="2" />
+  </svg>
+);
+
+/** The record of a color, or the empty place of the record at level 0 (no record). */
 export const Record = (props: { readonly color: RecordColor }): JSX.Element => {
   const disc = (): Exclude<RecordColor, 'none'> | undefined => (props.color === 'none' ? undefined : props.color);
   return (
-    <Show when={disc()} fallback={<svg class="song-record" viewBox="0 0 64 64" aria-hidden="true" />}>
+    <Show when={disc()} fallback={<EmptyDisc />}>
       {(color) => <Disc color={color()} />}
     </Show>
   );

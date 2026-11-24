@@ -189,7 +189,7 @@ export const startPlayLoop = (parts: PlayLoopParts): PlayLoop => {
   down.clear();
   beadsFull = -1;
   energy = makeEnergyTrack();
-  followers = { view: parts.view, energy, stepUp: (step, t) => parts.song.levelUp(step, t) };
+  followers = { view: parts.view, energy, stepUp: parts.song.levelUp, starMoment: parts.song.starMoment };
   lastT = Number.NaN;
   unwatch = listen(parts);
   parts.song.start(parts.chart.notes[0]?.t ?? Number.POSITIVE_INFINITY);

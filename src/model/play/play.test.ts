@@ -6,10 +6,11 @@ import type { Action, ChildChart, Lane, PlayEvent } from '../index';
 /** A child chart with a plain note in `lane` at each time. All 3 pals are in the band unless `band` says else. */
 const chartOf = (
   times: readonly number[],
-  { lane = 1, band = [0, 1, 2] }: { lane?: Lane; band?: Lane[] } = {}
+  { lane = 1, band = [0, 1, 2], phrases = [] }: { lane?: Lane; band?: Lane[]; phrases?: ChildChart['phrases'] } = {}
 ): ChildChart => ({
   band,
   notes: times.map((t) => ({ t, lanes: [lane], holdSec: 0 })),
+  phrases,
 });
 
 /** `count` notes 0.5 s apart from 2 s on: each good window is 0.225 s (45% of the gap). */
@@ -28,6 +29,8 @@ const story = (events: readonly PlayEvent[]): string[] =>
         return `${event.type} ${event.note}`;
       case 'energy':
         return `energy ${event.step}`;
+      case 'starMoment':
+        return `star moment ${event.phrase}`;
       default: {
         const unhandled: never = event;
         return unhandled;
@@ -231,6 +234,58 @@ describe('apply: band energy', () => {
     ]);
     expect(story(inGap.events).slice(-2)).toEqual(['energy 1', 'faded 4']);
     expect(energySteps(inGap.events)).toEqual(['energy 1']);
+  });
+});
+
+/** The star moment lines of a play. */
+const stars = (events: readonly PlayEvent[]): string[] =>
+  story(events).filter((line) => line.startsWith('star moment'));
+
+/** The line before each star moment, with no energy lines. */
+const beforeStars = (events: readonly PlayEvent[]): string[] => {
+  const lines = story(events).filter((line) => !line.startsWith('energy'));
+  return lines.flatMap((line, at) => (line.startsWith('star moment') ? [lines[at - 1] ?? ''] : []));
+};
+
+describe('apply: star moments', () => {
+  /** 14 notes 1 s apart from 2 s on: a phrase of 8 notes (2 to 9) and a phrase of 4 notes (10 to 13). */
+  const chart = chartOf(
+    range(0, 14).map((at) => 2 + at),
+    {
+      phrases: [
+        { first: 2, last: 9 },
+        { first: 10, last: 13 },
+      ],
+    }
+  );
+
+  it('gives a star moment at the hit of the last note of a phrase when 6 of its 8 notes were hit', () => {
+    const played = playOut(chart, { offset: tapOnly(0, 1, 2, 4, 6, 7, 8, 9) });
+    expect(stars(played.events)).toEqual(['star moment 0']);
+    expect(beforeStars(played.events)).toEqual(['hit 1 great at 11']);
+  });
+
+  it('gives no star moment when 5 of its 8 notes were hit, and no other event changes', () => {
+    const played = playOut(chart, { offset: tapOnly(0, 1, 2, 4, 7, 8, 9) });
+    expect(stars(played.events)).toEqual([]);
+    expect(result(played.end)).toBe(7 / 14);
+  });
+
+  it('gives the star moment when the missed last note of the phrase passes', () => {
+    const played = playOut(chart, { offset: tapOnly(2, 3, 4, 5, 6, 7, 8) });
+    expect(stars(played.events)).toEqual(['star moment 0']);
+    expect(beforeStars(played.events)).toEqual(['faded 9']);
+  });
+
+  it('counts only the notes of the phrase: 3 of 4 is enough, 2 of 4 is not', () => {
+    const enough = playOut(chart, { offset: tapOnly(10, 11, 13) });
+    expect(stars(enough.events)).toEqual(['star moment 1']);
+    const short = playOut(chart, { offset: tapOnly(...range(0, 10), 10, 13) });
+    expect(stars(short.events)).toEqual(['star moment 0']);
+  });
+
+  it('gives each phrase its own star moment, one time', () => {
+    expect(stars(playOut(chart).events)).toEqual(['star moment 0', 'star moment 1']);
   });
 });
 

@@ -111,9 +111,7 @@ const SongCard = (props: { readonly card: Card; readonly onTap: () => void }): J
       </button>
       <div class="song-shelf">
         <Record color={RECORD_COLORS[progress.color]} />
-        <Show when={progress.color > 0}>
-          <Stars count={progress.stars} />
-        </Show>
+        <Stars count={progress.stars} />
       </div>
       <span class="song-title">{props.card.song.title}</span>
     </li>

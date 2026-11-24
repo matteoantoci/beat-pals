@@ -8,6 +8,7 @@ import { laneX } from './geometry';
 import { CHUTE_SHARE } from './paint-stage';
 import { makePool, type Pool } from './pool';
 import { makeRing, type Ring } from './rings';
+import { dressBurst, makeBurstParts, type BurstParts } from './star-burst';
 import type { Lane } from '../../model';
 import type { Geometry } from './geometry';
 import type { Textures } from './textures';
@@ -27,6 +28,8 @@ export type Parts = {
   readonly links: Pool;
   readonly effects: Pool;
   readonly energy: EnergyParts;
+  /** The star moment burst, over everything on the canvas (the pals are above the canvas). */
+  readonly burst: BurstParts;
 };
 
 /** The chute shape of a lane as a Graphics path, for the glow and the note mask. */
@@ -49,6 +52,7 @@ export const dress = (parts: Parts, geometry: Geometry, textures: Textures): voi
     ring.container.position.set(laneX(geometry, lane), geometry.hitY);
   }
   dressEnergy(parts.energy, geometry, textures);
+  dressBurst(parts.burst, geometry, textures);
 };
 
 export const makeParts = (app: Application, band: readonly Lane[]): Parts => {
@@ -72,5 +76,6 @@ export const makeParts = (app: Application, band: readonly Lane[]): Parts => {
   const links = makePool(layer());
   const effects = makePool(layer());
   const energy = makeEnergyParts({ back: energyBack, rims, front: layer() }, band);
-  return { app, band, backdrop, lanes, mask, pills, notes: makePool(noteLayer), links, effects, energy };
+  const burst = makeBurstParts(layer());
+  return { app, band, backdrop, lanes, mask, pills, notes: makePool(noteLayer), links, effects, energy, burst };
 };

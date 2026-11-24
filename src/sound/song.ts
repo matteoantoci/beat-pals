@@ -3,7 +3,7 @@
 // Only one song stays in memory, so the state of that song is the state of this module.
 import { firstSongTime, songTime, startAt } from '../model';
 import { songBoostDb, songMeter } from './boost';
-import { levelUpShot, startEffect, type LevelUpStep, type Shot } from './effects';
+import { levelUpShot, starMomentShot, startEffect, type LevelUpStep, type Shot } from './effects';
 import { currentContext, decode, onReplaced } from './engine';
 
 /** What the play screen hears from the song. In both cases, the song paused itself before the call. */
@@ -28,8 +28,9 @@ export type Song = {
   readonly resume: () => void;
   /** Plays a clap at a song time, the great clap for a great hit. A past time plays now. The switch turns it off. */
   readonly clap: (at: number, great: boolean) => void;
-  /** Plays the level-up sound of an energy step at a song time, as a clap. */
+  /** Plays the level-up sound of an energy step at a song time, as a clap; `starMoment` the star moment sound. */
   readonly levelUp: (step: LevelUpStep, at: number) => void;
+  readonly starMoment: (at: number) => void;
   /** Cancels the claps that did not play yet. */
   readonly cancelClaps: () => void;
   /** Stops the song and frees its audio. */
@@ -183,6 +184,7 @@ const handle = (id: number, duration: number): Song => {
     },
     clap: (at, great) => effect(id, { effect: great ? 'clap-great' : 'clap', rate: 1 }, at),
     levelUp: (step, at) => effect(id, levelUpShot(step), at),
+    starMoment: (at) => effect(id, starMomentShot(Math.random), at),
     cancelClaps: mine(cancelClaps),
     release: mine(release),
   };

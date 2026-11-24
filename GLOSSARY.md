@@ -102,6 +102,18 @@ _Avoid_: Combo, streak, multiplier, power, hype
 The short sound and effect when band energy reaches a new step.
 _Avoid_: Bonus, achievement
 
+**Phrase**:
+A short run of notes for a star moment: a Star Power phrase of the human chart, or a phrase that a rule makes when the chart has none.
+_Avoid_: Star Power, section, combo
+
+**Phrase ball**:
+A note of a phrase. It falls as the usual ball with a wide gold glow and a thick double gold ring.
+_Avoid_: Star note, gold note, special note
+
+**Star moment**:
+The reward when the child hits at least 3 in 4 notes of a phrase: speed lines and sparkles at the screen edges, all three pals cheer, and the star moment sound plays. A missed phrase costs nothing.
+_Avoid_: Star Power, bonus, combo, gold move
+
 ## Progress
 
 **Record color**:

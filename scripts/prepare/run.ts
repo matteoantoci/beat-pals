@@ -1,6 +1,7 @@
 // The prepare step of `prepare-song` (spec, "The song pipeline"). For each song of the inbox it writes
 // `<prepared>/<song-id>/` with `song.m4a`, the cover picture (`cover.jpg` or `cover.png`, none for a plain card),
-// `song.json` (the facts file), and `stamp.json`. A song with an unchanged stamp is skipped before ffmpeg runs.
+// `song.json` (the facts file), and `stamp.json`. A song with an unchanged stamp is skipped before ffmpeg runs, and a
+// song whose stamp changed only in its facts version gets only its facts file again.
 // Each song is built in a hidden work folder and then replaces the old folder, so a stopped run leaves no
 // half-written song folder. A prepared folder whose `.sng` file left the inbox is removed.
 
@@ -29,23 +30,45 @@ type Options = {
   only?: string | undefined;
 };
 
-type Outcome = 'prepared' | 'unchanged' | 'skipped' | 'failed';
+type Outcome = 'prepared' | 'refreshed' | 'unchanged' | 'skipped' | 'failed';
 
 // Increase this number only when a change to the prepare step must reach every song: a new number changes the
 // stamp of every song, so the next run prepares every song again.
 const PIPELINE_VERSION = 1;
+// Increase this number when the facts file changes (the chart reader of the model): the next run writes the facts
+// file of every song again and keeps its audio and its cover, so their store names stay. Version 2: the phrases.
+const FACTS_VERSION = 2;
 const STAMP = 'stamp.json';
 
 const sha256 = (bytes: Uint8Array): string => createHash('sha256').update(bytes).digest('hex');
 
-/** The stamp of a song: its source files and the pipeline version. Not the ffmpeg version. */
+/** The stamp of a song: its source files, the pipeline version, and the facts version. Not the ffmpeg version. */
 const stampOf = (sng: Uint8Array, override: Uint8Array | undefined): string => {
   const stamp = {
     pipeline: PIPELINE_VERSION,
+    facts: FACTS_VERSION,
     sng: sha256(sng),
     picture: override === undefined ? null : sha256(override),
   };
   return `${JSON.stringify(stamp, null, 2)}\n`;
+};
+
+/** The fields of a stamp without its facts version, or undefined for a stamp that is not a JSON object. */
+const audioPart = (stamp: string): string | undefined => {
+  try {
+    const parsed: unknown = JSON.parse(stamp);
+    return typeof parsed === 'object' && parsed !== null
+      ? JSON.stringify(Object.entries(parsed).filter(([key]) => key !== 'facts'))
+      : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/** True when the old stamp differs from the new one only in the facts version: the audio and the cover stay. */
+const onlyFactsChanged = (old: string | undefined, stamp: string): boolean => {
+  const before = old === undefined ? undefined : audioPart(old);
+  return before !== undefined && before === audioPart(stamp);
 };
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
@@ -94,15 +117,47 @@ const build = async (
   }
 };
 
-const prepareOne = async (song: InboxSong, { inbox, prepared, encoder, log }: Options): Promise<Outcome> => {
+/** Writes the song folder of the plan with ffmpeg, and logs it. */
+const buildSong = async (
+  target: { id: string; folder: string; stamp: string },
+  plan: SongPlan,
+  { encoder, log }: Options
+): Promise<Outcome> => {
+  log(`${target.id}: preparing`);
+  plan.log.forEach((line) => log(`  ${line}`));
+  try {
+    (await build(target, plan, encoder)).forEach((line) => log(`  ${line}`));
+  } catch (error) {
+    log(`${target.id}: failed, ${messageOf(error)}`);
+    return 'failed';
+  }
+  log(`${target.id}: prepared.`);
+  return 'prepared';
+};
+
+/** Writes only the facts file and the stamp of a prepared song, and logs it: its audio and its cover stay. */
+const refreshFacts = async (
+  target: { id: string; folder: string; stamp: string },
+  plan: SongPlan,
+  log: Options['log']
+): Promise<Outcome> => {
+  await writeFile(join(target.folder, 'song.json'), `${JSON.stringify(plan.facts)}\n`);
+  // The stamp goes last, so a stopped run writes the facts again next time.
+  await writeFile(join(target.folder, STAMP), target.stamp);
+  log(`${target.id}: facts refreshed, the audio and the cover stay.`);
+  return 'refreshed';
+};
+
+const prepareOne = async (song: InboxSong, options: Options): Promise<Outcome> => {
+  const { inbox, prepared, log } = options;
   const sng = await readFile(join(inbox, song.sng));
   const override =
     song.override === undefined
       ? undefined
       : { name: song.override, bytes: await readFile(join(inbox, song.override)) };
-  const stamp = stampOf(sng, override?.bytes);
-  const folder = join(prepared, song.id);
-  if ((await readFile(join(folder, STAMP), 'utf8').catch(() => undefined)) === stamp) {
+  const target = { id: song.id, folder: join(prepared, song.id), stamp: stampOf(sng, override?.bytes) };
+  const old = await readFile(join(target.folder, STAMP), 'utf8').catch(() => undefined);
+  if (old === target.stamp) {
     log(`${song.id}: unchanged, skipped before ffmpeg.`);
     return 'unchanged';
   }
@@ -111,16 +166,9 @@ const prepareOne = async (song: InboxSong, { inbox, prepared, encoder, log }: Op
     log(`${song.id}: skipped, ${result.reason}`);
     return 'skipped';
   }
-  log(`${song.id}: preparing`);
-  result.plan.log.forEach((line) => log(`  ${line}`));
-  try {
-    (await build({ folder, stamp }, result.plan, encoder)).forEach((line) => log(`  ${line}`));
-  } catch (error) {
-    log(`${song.id}: failed, ${messageOf(error)}`);
-    return 'failed';
-  }
-  log(`${song.id}: prepared.`);
-  return 'prepared';
+  return onlyFactsChanged(old, target.stamp)
+    ? refreshFacts(target, result.plan, log)
+    : buildSong(target, result.plan, options);
 };
 
 /** Removes each prepared song folder whose id has no `.sng` file in the inbox, with a log line for each. */
@@ -152,7 +200,7 @@ export const prepareSongs = async (options: Options): Promise<number> => {
     Promise.resolve([])
   );
   const count = (outcome: Outcome) => outcomes.filter((each) => each === outcome).length;
-  const summary = (['prepared', 'unchanged', 'skipped', 'failed'] as const).map(
+  const summary = (['prepared', 'refreshed', 'unchanged', 'skipped', 'failed'] as const).map(
     (each) => `${String(count(each))} ${each}`
   );
   options.log(`prepare-song: ${summary.join(', ')}.`);

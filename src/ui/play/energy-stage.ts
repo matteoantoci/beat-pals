@@ -47,7 +47,7 @@ export type EnergyScene = {
 };
 
 /** A still random number from 0 to 1 for a pair of integers, so a frozen time shows the same sparkles. */
-const noise = (a: number, b: number): number => {
+export const noise = (a: number, b: number): number => {
   let h = Math.imul(a ^ 0x9e_37_79_b9, 0x85_eb_ca_6b) ^ Math.imul(b + 0x63_2b_e5_ab, 0xc2_b2_ae_35);
   h = Math.imul(h ^ (h >>> 13), 0x27_d4_eb_2f);
   return ((h ^ (h >>> 16)) >>> 0) / 4_294_967_296;

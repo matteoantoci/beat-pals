@@ -15,6 +15,8 @@ const factsWith = (notes: FactsNote[]): SongFacts => ({
   beats: BEATS,
   notes,
   fills: [],
+  phrases: [],
+  phraseSource: 'fallback',
 });
 
 /** A note on each beat from 0 s with these frets. */

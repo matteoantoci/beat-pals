@@ -2,10 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { readDemo } from './params';
 
 describe('readDemo', () => {
-  it('reads the color, the stars, the energy step, the time, and the 2 flags', () => {
-    expect(readDemo('?demo=gold.1&energy=3&t=2.4&sim&reduce')).toEqual({
+  it('reads the color, the stars, the energy step, the time, and the 3 flags', () => {
+    expect(readDemo('?demo=gold.1&energy=3&t=2.4&sim&reduce&nostar')).toEqual({
       ok: true,
-      demo: { progress: { color: 3, stars: 1, weakPlays: 0 }, energy: 3, t: 2.4, sim: true, reduce: true },
+      demo: {
+        progress: { color: 3, stars: 1, weakPlays: 0 },
+        energy: 3,
+        t: 2.4,
+        sim: true,
+        reduce: true,
+        nostar: true,
+      },
     });
   });
 
@@ -17,7 +24,14 @@ describe('readDemo', () => {
   it('starts at song time 0 with the energy of the play and no flags when only the record is given', () => {
     expect(readDemo('?demo=none.0')).toEqual({
       ok: true,
-      demo: { progress: { color: 0, stars: 0, weakPlays: 0 }, energy: undefined, t: 0, sim: false, reduce: false },
+      demo: {
+        progress: { color: 0, stars: 0, weakPlays: 0 },
+        energy: undefined,
+        t: 0,
+        sim: false,
+        reduce: false,
+        nostar: false,
+      },
     });
   });
 

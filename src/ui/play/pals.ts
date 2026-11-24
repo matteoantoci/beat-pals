@@ -5,7 +5,7 @@
 
 import { palPicture } from '../pals/pal-svg';
 import { laneX } from './geometry';
-import { bandPose, beat, idlePose, pose, waitingPose } from './pal-poses';
+import { bandPose, beat, cheerPose, idlePose, pose, waitingPose } from './pal-poses';
 import type { Lane, SongFacts } from '../../model';
 import type { EnergyLook } from './energy';
 import type { Geometry } from './geometry';
@@ -137,15 +137,18 @@ export const makePals = (
     const now = beatNow(view);
     beat.phase = beatPhase(view, now);
     beat.strong = strong[now] === true;
+    const cheerAge = view.t - (view.stars.at(-1) ?? Number.NEGATIVE_INFINITY);
     let bandHitAge = Number.POSITIVE_INFINITY;
     for (const lane of band) {
       idlePose(lane, energy, reduced);
       bandPose(view.lanes[lane], reduced);
+      cheerPose(lane, cheerAge, reduced);
       place(at, lane);
       bandHitAge = Math.min(bandHitAge, view.lanes[lane].hitAge);
     }
     for (const lane of waiting) {
       waitingPose(view.t - (hops[lane] ?? Number.NEGATIVE_INFINITY), bandHitAge, reduced);
+      cheerPose(lane, cheerAge, reduced);
       place(at, lane);
     }
   };

@@ -103,3 +103,50 @@ export const waitingPose = (hopAge: number, bandHitAge: number, reduced: boolean
   still(hopAge < HOP_SMILE_SEC || bandHitAge < WAIT_SMILE_SEC ? 'happy' : 'idle');
   pose.ty = hop(hopAge, reduced);
 };
+
+/** The cheer of a star moment lasts this long. */
+const CHEER_SEC = 1.1;
+
+/** A squash of the pose: `amount` from 0 to 1 makes it this much lower and this much wider. */
+const squash = (amount: number, lower: number, wider: number): void => {
+  pose.sy = 1 - lower * amount;
+  pose.sx = 1 + wider * amount;
+};
+
+/** The big jump of the cheer at its share `p`: 40 px up, Pip and Bo leaning outward (`side`), Dot wiggling. */
+const cheerJump = (p: number, side: number): void => {
+  const up = Math.sin(Math.PI * p);
+  pose.ty = -40 * up;
+  squash((1 - p) * up, -0.1, -0.05);
+  pose.rot = side === 0 ? 8 * Math.sin(2 * Math.PI * p) : side * 12 * up;
+};
+
+/**
+ * The cheer of a star moment (prototype star-moments `cheer`), for all 3 pals together, `age` seconds after its start:
+ * a crouch, a jump of 40 px with Pip and Bo leaning outward and Dot wiggling, a squash on landing, one more hop of
+ * 14 px, and a last small squash. In normal play a hit jump is 16 px or less, so the cheer is clearly bigger. Reduced
+ * motion: only the happy face. Outside the cheer, the pose stays as it is.
+ */
+export const cheerPose = (lane: Lane, age: number, reduced: boolean): void => {
+  if (age < 0 || age >= CHEER_SEC) {
+    return;
+  }
+  still('happy');
+  if (reduced) {
+    return;
+  }
+  const side = lane - 1;
+  if (age < 0.08) {
+    squash(age / 0.08, 0.14, 0.08);
+  } else if (age < 0.56) {
+    cheerJump((age - 0.08) / 0.48, side);
+  } else if (age < 0.66) {
+    squash(Math.sin((Math.PI * (age - 0.56)) / 0.1), 0.12, 0.07);
+  } else if (age < 0.96) {
+    const up = Math.sin((Math.PI * (age - 0.66)) / 0.3);
+    pose.ty = -14 * up;
+    pose.rot = -side * 6 * up;
+  } else {
+    squash(Math.sin((Math.PI * (age - 0.96)) / 0.14), 0.05, 0.03);
+  }
+};

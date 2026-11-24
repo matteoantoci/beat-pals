@@ -1,8 +1,9 @@
 // The .chart reader (chart-formats.md, section 2). It reads the text into a `TickChart` and makes the facts.
 // Sections can come in any order, and events in a section can come in the wrong order.
 
-import { highestDifficulty } from './difficulty';
+import { highestDifficulty, pickDifficulty } from './difficulty';
 import { buildFacts, type ChartResult, type SongMeta, type TickNote } from './facts';
+import type { StarPower } from './phrases';
 
 /** One `<tick> = <code> <values>` line of a section. */
 type ChartEvent = { tick: number; code: string; values: string[] };
@@ -77,6 +78,20 @@ const drumNotes = (lines: readonly string[] | undefined): TickNote[] =>
     return [{ tick, fret: KICKS.has(pad) ? OPEN : pad - 1, length: Number(length) || 0 }];
   });
 
+/** The Star Power phrases of an instrument section: `S 2 <length>`. Other `S` types are drum fills and the like. */
+const starPowerOf = (lines: readonly string[] | undefined): StarPower[] =>
+  eventsOf(lines).flatMap(({ tick, code, values: [type, length] }) =>
+    code === 'S' && type === '2' ? [{ tick, length: Number(length) || 0 }] : []
+  );
+
+/** A section marker of the `[Events]` section: `E "section <name>"`, also with brackets or the `prc_` form. */
+const SECTION_MARKER = /^"?\[?(?:section[ _]|prc_)/u;
+
+const sectionTicks = (lines: readonly string[] | undefined): number[] =>
+  eventsOf(lines).flatMap(({ tick, code, values }) =>
+    code === 'E' && SECTION_MARKER.test(values.join(' ')) ? [tick] : []
+  );
+
 const temposOf = (sync: readonly ChartEvent[]) =>
   sync
     .filter((event) => event.code === 'B')
@@ -116,19 +131,23 @@ export const readChart = (text: string, meta: SongMeta): ChartResult => {
     return { ok: false, reason: 'The chart has no Resolution in its [Song] section.' };
   }
   const sync = eventsOf(sections.get('SyncTrack'));
+  const guitarSection = (difficulty: string) => sections.get(`${difficulty}Single`);
+  const guitarDifficulty = pickDifficulty((difficulty) => fretNotes(guitarSection(difficulty)));
   const chart = {
     resolution,
     offsetSec: Number(song.get('Offset')) || 0,
     tempos: temposOf(sync),
     timeSignatures: timeSignaturesOf(sync),
     beats: undefined,
-    guitar: highestDifficulty((difficulty) => fretNotes(sections.get(`${difficulty}Single`))),
+    guitar: guitarDifficulty === undefined ? undefined : fretNotes(guitarSection(guitarDifficulty)),
     parts: {
       bass: highestDifficulty((difficulty) => fretNotes(sections.get(`${difficulty}DoubleBass`))),
       keys: highestDifficulty((difficulty) => fretNotes(sections.get(`${difficulty}Keyboard`))),
       drums: highestDifficulty((difficulty) => drumNotes(sections.get(`${difficulty}Drums`))),
     },
     endTick: endTickOf(sections),
+    starPower: guitarDifficulty === undefined ? [] : starPowerOf(guitarSection(guitarDifficulty)),
+    sections: sectionTicks(sections.get('Events')),
   };
   return buildFacts(chart, meta);
 };
