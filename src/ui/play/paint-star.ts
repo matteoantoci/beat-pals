@@ -11,7 +11,7 @@ import type { Ctx } from './paint';
 
 /** The step 1 glow reaches this many ball radii, the phrase glow this many. */
 export const BALL_GLOW_SHARE = 2.1;
-export const PHRASE_GLOW_SHARE = 2.6;
+export const PHRASE_GLOW_SHARE = 2.4;
 
 /**
  * Step 1: a soft glow in the lane colour around a ball of radius `r`, wider and stronger than its still halo. It
@@ -28,13 +28,13 @@ export const paintBallGlow = (ctx: Ctx, lane: Lane, r: number): void => {
 
 /**
  * The wide glow of a phrase ball, in the lane colour (the parent found a gold glow on the pink ball ugly,
- * 2026-11-24). It is wider and stronger than the step 1 glow, and it keeps a straight fade: its clear outer edge
- * shows the swell on each beat, which the soft fade hides.
+ * 2026-11-24). It is wider than the step 1 glow but lighter (the parent found alpha 0.85 to 2.6 radii too strong), and
+ * it keeps a straight fade: its clear outer edge shows the swell on each beat, which the soft fade hides.
  */
 export const paintPhraseGlow = (ctx: Ctx, lane: Lane, r: number): void => {
   const outer = r * PHRASE_GLOW_SHARE;
   const glow = ctx.createRadialGradient(0, 0, r * 0.9, 0, 0, outer);
-  glow.addColorStop(0, laneCss(lane, 0.85).base);
+  glow.addColorStop(0, laneCss(lane, 0.6).base);
   glow.addColorStop(1, laneCss(lane, 0).base);
   style(ctx, { fillStyle: glow });
   circlePath(ctx, ORIGIN, outer);
