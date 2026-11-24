@@ -151,11 +151,11 @@ describe('childChart notes and band', () => {
   });
 });
 
-/** Facts with a beat and a note each second for 32 s, and these phrases. Every beat is a child note at step 2. */
+/** Facts with a beat and a note each second for 64 s, and these phrases. Every beat is a child note at step 2. */
 const everySecond = (phrases: SongFacts['phrases']): SongFacts => ({
   ...factsWith(
-    steadyBeats(1, 8),
-    Array.from({ length: 32 }, (_, at) => at)
+    steadyBeats(1, 16),
+    Array.from({ length: 64 }, (_, at) => at)
   ),
   phrases,
 });
@@ -172,24 +172,24 @@ describe('childChart phrases', () => {
   it('grows a phrase with fewer than 4 child notes to 4, and drops it when the next phrase leaves no room', () => {
     const facts = everySecond([
       { t: 2, end: 3.5 },
-      { t: 20, end: 21 },
-      { t: 22, end: 26 },
+      { t: 40, end: 41 },
+      { t: 42, end: 46 },
     ]);
     expect(childChart(facts, 'none', 2).phrases).toEqual([
       { first: 2, last: 5 },
-      { first: 22, last: 25 },
+      { first: 42, last: 45 },
     ]);
   });
 
-  it('drops a phrase that starts less than 8 s after the last note of the phrase before', () => {
+  it('drops a phrase that starts less than 30 s after the last note of the phrase before', () => {
     const facts = everySecond([
       { t: 0, end: 4 },
-      { t: 10, end: 14 },
-      { t: 12, end: 16 },
+      { t: 30, end: 34 },
+      { t: 36, end: 40 },
     ]);
     expect(childChart(facts, 'none', 2).phrases).toEqual([
       { first: 0, last: 3 },
-      { first: 12, last: 15 },
+      { first: 36, last: 39 },
     ]);
   });
 

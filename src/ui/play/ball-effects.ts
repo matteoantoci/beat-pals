@@ -1,11 +1,11 @@
-// The effects of the falling balls (prototype star-moments v2, `drawBallBack`, `drawBallFront`, `drawPhraseBack`,
-// `drawPhraseFront`). They grow with the band energy, on all notes: step 1 a glow in the lane colour, and gold a thin
-// gold rim. Steps 2 and 3 add no ball effect: the parent removed the sparkle trail and the comet tail (2026-11-24),
-// because a ball with a trail or a tail looks longer and the child can tap too early. Each step keeps the effects
-// below it, and each fades in and out with its step over 0.8 s. The back effects go into the pool of the notes, which
-// the chutes clip, so each stays in its own lane (C5). They belong to the falling ball, not to a hit, so the limits of
-// the hit effects (C4) do not change. A phrase ball has a wide gold glow that swells by 12% on each beat (its size,
-// not its brightness, C12), and a thick double gold ring instead of the gold rim.
+// The effects of the falling balls (prototype star-moments v2, `drawBallBack`, `drawPhraseBack`). A plain ball gets
+// one effect from the band energy: from step 1, a glow in the lane colour that fades in and out with its step over
+// 0.8 s. A phrase ball has a wide gold glow that swells by 12% on each beat (its size, not its brightness, C12). The
+// parent removed the sparkle trail, the comet tail, the gold rim of the plain balls, and the double gold ring of the
+// phrase balls (2026-11-24): a trail or a tail makes a ball look longer, so the child can tap too early, and the
+// pulsing glow alone marks a phrase ball best (a gold ring looked like the yellow ball of Dot). The effects go into
+// the pool of the notes, which the chutes clip, so each stays in its own lane (C5). They belong to the falling ball,
+// not to a hit, so the limits of the hit effects (C4) do not change.
 
 import { shapeKey } from './atlas';
 import { laneX, noteY } from './geometry';
@@ -31,31 +31,20 @@ const PULSE = { grow: 0.12, settle: 12 } as const;
 export const phrasePulse = (age: number, reduced: boolean): number =>
   reduced || age < 0 ? 1 : 1 + PULSE.grow * Math.exp(-age * PULSE.settle);
 
-/** The effects behind a ball, in the clipped pool of the notes: the glow and the phrase glow. */
+/**
+ * The glow behind a ball, in the clipped pool of the notes: the pulsing gold glow of a phrase ball, else the lane
+ * glow from energy step 1. A phrase ball gets only its gold glow, so the 2 glows do not stack into one bright spot,
+ * and a yellow phrase ball does not look like a plain yellow ball.
+ */
 export const drawBallBack = (scene: BallScene, notes: Pool, ball: Ball): void => {
   const { geometry, textures, energy } = scene;
   const x = laneX(geometry, ball.lane);
   const y = noteY(geometry, ball.dt);
-  const { fades } = energy;
-  if (fades[0] > 0) {
-    notes.show(textures.shape(shapeKey.ballGlow(ball.lane)), ball.alpha * fades[0]).position.set(x, y);
-  }
   if (ball.phrase) {
     const glow = notes.show(textures.shape(shapeKey.phraseGlow), ball.alpha);
     glow.position.set(x, y);
     glow.scale.set(scene.pulse);
+  } else if (energy.fades[0] > 0) {
+    notes.show(textures.shape(shapeKey.ballGlow(ball.lane)), ball.alpha * energy.fades[0]).position.set(x, y);
   }
-};
-
-/** The ring over a ball at `y`: the thick double gold ring of a phrase ball, else the gold rim at gold. */
-export const drawBallFront = (scene: BallScene, pool: Pool, ball: Ball): void => {
-  const { geometry, textures } = scene;
-  const gold = scene.energy.fades[3];
-  if (!ball.phrase && gold <= 0) {
-    return;
-  }
-  const key = ball.phrase ? shapeKey.phraseRing : shapeKey.ballRim;
-  pool
-    .show(textures.shape(key), ball.alpha * (ball.phrase ? 1 : gold))
-    .position.set(laneX(geometry, ball.lane), noteY(geometry, ball.dt));
 };

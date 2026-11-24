@@ -7,10 +7,8 @@ import {
   BALL_GLOW_SHARE,
   EDGE_GLOW_R,
   paintBallGlow,
-  paintBallRim,
   paintEdgeGlow,
   paintPhraseGlow,
-  paintPhraseRing,
   paintStreak,
   PHRASE_GLOW_SHARE,
   STREAK,
@@ -27,9 +25,7 @@ const square = (key: string, size: number, paint: (ctx: Ctx) => void): Shape => 
 export const starKey = {
   ballGlow: keyOf('ball glow'),
   sparkleAmber: 'sparkle amber',
-  ballRim: 'ball rim',
   phraseGlow: 'phrase glow',
-  phraseRing: 'phrase ring',
   streak: 'streak',
   edgeGlow: 'edge glow',
 } as const;
@@ -40,14 +36,12 @@ export const laneStarShapes = (geometry: Geometry, lane: Lane): Shape[] => {
   return [square(starKey.ballGlow(lane), 2 * r * BALL_GLOW_SHARE + 2, (ctx) => paintBallGlow(ctx, lane, r))];
 };
 
-/** The shapes for all lanes: the gold rim, the phrase ball parts, and the burst. */
+/** The shapes for all lanes: the phrase glow and the burst. */
 export const starShapes = (geometry: Geometry): Shape[] => {
   const r = geometry.noteS / 2;
   return [
     square(starKey.sparkleAmber, 2 * SPARKLE_R + 2, (ctx) => paintEnergySparkle(ctx, css(LANE_COLORS[1].dark))),
-    square(starKey.ballRim, 2 * (r + 4), (ctx) => paintBallRim(ctx, r)),
     square(starKey.phraseGlow, 2 * r * PHRASE_GLOW_SHARE + 2, (ctx) => paintPhraseGlow(ctx, r)),
-    square(starKey.phraseRing, 2 * (r + 9), (ctx) => paintPhraseRing(ctx, r)),
     { key: starKey.streak, w: STREAK.len, h: STREAK.w, paint: paintStreak },
     square(starKey.edgeGlow, 2 * EDGE_GLOW_R, paintEdgeGlow),
   ];

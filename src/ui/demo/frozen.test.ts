@@ -40,9 +40,9 @@ describe('freeze', () => {
     expect(energy.step).toBeGreaterThan(0);
   });
 
-  it('shows the star moment of the first phrase of the demo song, and none with nostar', () => {
+  it('shows the star moment of the only phrase of the demo song, and none with nostar', () => {
     const chart = chartOf(GOLD);
-    expect(chart.phrases).toHaveLength(2);
+    expect(chart.phrases).toHaveLength(1);
     const { view } = freeze(chart, demoFacts().beats, { t: 23, energy: 'gold' });
     expect(view.stars).toHaveLength(1);
     expect(view.stars[0]).toBeGreaterThan(18);

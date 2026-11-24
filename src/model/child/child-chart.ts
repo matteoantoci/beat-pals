@@ -47,14 +47,15 @@ export const bandOf = (color: RecordColor): readonly Lane[] => BANDS[color];
 /** A phrase has at least this many child notes: a shorter one grows, and one that cannot grow is dropped (a first
  * value). */
 const MIN_PHRASE_NOTES = 4;
-/** The last note of a phrase and the first note of the next one are at least this far apart (a first value). */
-const PHRASE_GAP_SEC = 8;
+/** The last note of a phrase and the first note of the next one are at least this far apart: about 4 star moments in
+ * a song of 3 minutes (the parent found 8 s too often, 2026-11-24). */
+const PHRASE_GAP_SEC = 30;
 
 /**
  * The phrases of the facts over the child notes, in time order. Each phrase takes the child notes in its time range.
  * A phrase with fewer than 4 grows forward to 4 notes from its first note, but not up to the start of the next phrase
- * of the facts; one that still has fewer than 4 is dropped. A phrase whose first note comes less than 8 s after the
- * last note of the phrase before is dropped, so the star moments do not crowd.
+ * of the facts; one that still has fewer than 4 is dropped. A phrase whose first note comes less than 30 s after the
+ * last note of the phrase before is dropped, so the star moments stay special.
  */
 const childPhrases = (phrases: SongFacts['phrases'], notes: readonly { t: number }[]): ChildPhrase[] => {
   /** The index of the first note at or after `t`, or the number of notes. */

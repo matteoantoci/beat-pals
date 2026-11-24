@@ -1,57 +1,45 @@
 // The shapes of the ball effects, the phrase balls, and the star moment burst (prototype star-moments v2), painted
-// around (0, 0) for the texture atlas. The ball effects grow with the band energy: a glow (step 1) and a gold rim
-// (gold). A phrase ball has a wide gold glow and a thick double gold ring. The burst has speed lines (tapered at both
-// ends: a deep warm gold body and a thin hot core) and a light warm glow at the screen edges. The soft shapes are
-// painted small and the sprites scale them up.
+// around (0, 0) for the texture atlas. A plain ball gets a glow from energy step 1, and a phrase ball a wide gold glow.
+// The burst has speed lines (tapered at both ends: a deep warm gold body and a thin hot core) and a light warm glow
+// at the screen edges. The soft shapes are painted small and the sprites scale them up.
 
-import { css, LANE_COLORS, TOKENS, type Oklch } from '../pals/color';
-import { addSoftFade, circlePath, laneCss, ORIGIN, paintCircleLine, style } from './paint';
+import { css, type Oklch } from '../pals/color';
+import { addSoftFade, circlePath, laneCss, ORIGIN, style } from './paint';
 import type { Lane } from '../../model';
 import type { Ctx } from './paint';
 
-/** The amber of the gold rims: the dark shade of lemon (C27), as on the gold ring rims. */
-const AMBER: Oklch = LANE_COLORS[1].dark;
-/** The gold of the phrase rings and the warm gold glow of a phrase ball. */
-const GOLD: Oklch = [0.9, 0.17, 90];
+/** The warm gold glow of a phrase ball. */
 const PHRASE_HALO: Oklch = [0.86, 0.17, 85];
 
 /** The step 1 glow reaches this many ball radii, the phrase glow this many. */
 export const BALL_GLOW_SHARE = 2.1;
 export const PHRASE_GLOW_SHARE = 2.3;
 
-/** A radial glow from `inner` to `outer`: the colour at `alpha` at the inner radius, a soft fade to clear at the outer one. */
-const paintRing = (
-  ctx: Ctx,
-  { inner, outer, color }: { inner: number; outer: number; color: (a: number) => string }
-) => {
-  const glow = ctx.createRadialGradient(0, 0, inner, 0, 0, outer);
-  addSoftFade(glow, color);
+/**
+ * Step 1: a soft glow in the lane colour around a ball of radius `r`, wider and stronger than its still halo. It
+ * fades on the soft curve, so it shows no ring.
+ */
+export const paintBallGlow = (ctx: Ctx, lane: Lane, r: number): void => {
+  const outer = r * BALL_GLOW_SHARE;
+  const glow = ctx.createRadialGradient(0, 0, r * 0.9, 0, 0, outer);
+  addSoftFade(glow, (a) => laneCss(lane, 0.7 * a).base);
   style(ctx, { fillStyle: glow });
   circlePath(ctx, ORIGIN, outer);
   ctx.fill();
 };
 
-/** Step 1: a soft glow in the lane colour around a ball of radius `r`, wider and stronger than its still halo. */
-export const paintBallGlow = (ctx: Ctx, lane: Lane, r: number): void => {
-  paintRing(ctx, { inner: r * 0.9, outer: r * BALL_GLOW_SHARE, color: (a) => laneCss(lane, 0.7 * a).base });
-};
-
-/** Gold: a thin gold rim on a darker amber line around a ball, like a small copy of the gold ring rims. */
-export const paintBallRim = (ctx: Ctx, r: number): void => {
-  paintCircleLine(ctx, r + 1, { width: 4, color: css(AMBER) });
-  paintCircleLine(ctx, r + 1, { width: 2, color: css(TOKENS.lemon) });
-};
-
-/** The wide gold glow of a phrase ball. */
+/**
+ * The wide gold glow of a phrase ball. It keeps a straight fade: its clear outer edge shows the swell on each beat,
+ * which the soft fade hides (the parent liked the swell, 2026-11-24).
+ */
 export const paintPhraseGlow = (ctx: Ctx, r: number): void => {
-  paintRing(ctx, { inner: r * 0.9, outer: r * PHRASE_GLOW_SHARE, color: (a) => css(PHRASE_HALO, 0.75 * a) });
-};
-
-/** The thick double gold ring of a phrase ball: amber and gold, with a thin white outer line. */
-export const paintPhraseRing = (ctx: Ctx, r: number): void => {
-  paintCircleLine(ctx, r + 4, { width: 7, color: css(AMBER) });
-  paintCircleLine(ctx, r + 4, { width: 4, color: css(GOLD) });
-  paintCircleLine(ctx, r + 7.5, { width: 1.5, color: css(TOKENS.white, 0.8) });
+  const outer = r * PHRASE_GLOW_SHARE;
+  const glow = ctx.createRadialGradient(0, 0, r * 0.9, 0, 0, outer);
+  glow.addColorStop(0, css(PHRASE_HALO, 0.75));
+  glow.addColorStop(1, css(PHRASE_HALO, 0));
+  style(ctx, { fillStyle: glow });
+  circlePath(ctx, ORIGIN, outer);
+  ctx.fill();
 };
 
 /** A speed line is painted this long and this wide; the sprite scales it. Its head points to +x. */
