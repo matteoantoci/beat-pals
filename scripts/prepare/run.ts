@@ -8,6 +8,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { readGrid } from './grid.ts';
 import { type InboxSong, readInbox } from './inbox.ts';
 import { type Picture, planSong, type SongPlan } from './plan.ts';
 
@@ -42,30 +43,33 @@ const STAMP = 'stamp.json';
 
 const sha256 = (bytes: Uint8Array): string => createHash('sha256').update(bytes).digest('hex');
 
-/** The stamp of a song: its source files, the pipeline version, and the facts version. Not the ffmpeg version. */
-const stampOf = (sng: Uint8Array, override: Uint8Array | undefined): string => {
+/** The stamp of a song: its source files, the pipeline version, and the facts version. Not the ffmpeg version. A song
+ * with no grid override has no `grid` field, so the stamps of the other songs stay as before the grid override. */
+const stampOf = (sng: Uint8Array, override: Uint8Array | undefined, grid: Uint8Array | undefined): string => {
   const stamp = {
     pipeline: PIPELINE_VERSION,
     facts: FACTS_VERSION,
     sng: sha256(sng),
     picture: override === undefined ? null : sha256(override),
+    ...(grid !== undefined && { grid: sha256(grid) }),
   };
   return `${JSON.stringify(stamp, null, 2)}\n`;
 };
 
-/** The fields of a stamp without its facts version, or undefined for a stamp that is not a JSON object. */
+/** The fields of a stamp without its facts version and its grid override, or undefined for a stamp that is not a JSON
+ * object. The grid override changes only the facts file. */
 const audioPart = (stamp: string): string | undefined => {
   try {
     const parsed: unknown = JSON.parse(stamp);
     return typeof parsed === 'object' && parsed !== null
-      ? JSON.stringify(Object.entries(parsed).filter(([key]) => key !== 'facts'))
+      ? JSON.stringify(Object.entries(parsed).filter(([key]) => key !== 'facts' && key !== 'grid'))
       : undefined;
   } catch {
     return undefined;
   }
 };
 
-/** True when the old stamp differs from the new one only in the facts version: the audio and the cover stay. */
+/** True when the old stamp differs from the new one only in its facts fields: the audio and the cover stay. */
 const onlyFactsChanged = (old: string | undefined, stamp: string): boolean => {
   const before = old === undefined ? undefined : audioPart(old);
   return before !== undefined && before === audioPart(stamp);
@@ -155,13 +159,18 @@ const prepareOne = async (song: InboxSong, options: Options): Promise<Outcome> =
     song.override === undefined
       ? undefined
       : { name: song.override, bytes: await readFile(join(inbox, song.override)) };
-  const target = { id: song.id, folder: join(prepared, song.id), stamp: stampOf(sng, override?.bytes) };
+  const grid = await readGrid(inbox, song.grid);
+  if (!grid.ok) {
+    log(`${song.id}: skipped, ${grid.reason}`);
+    return 'skipped';
+  }
+  const target = { id: song.id, folder: join(prepared, song.id), stamp: stampOf(sng, override?.bytes, grid.bytes) };
   const old = await readFile(join(target.folder, STAMP), 'utf8').catch(() => undefined);
   if (old === target.stamp) {
     log(`${song.id}: unchanged, skipped before ffmpeg.`);
     return 'unchanged';
   }
-  const result = planSong(song.id, sng, override);
+  const result = planSong(song.id, sng, { picture: override, grid: grid.grid });
   if (!result.ok) {
     log(`${song.id}: skipped, ${result.reason}`);
     return 'skipped';

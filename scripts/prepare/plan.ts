@@ -4,6 +4,7 @@
 
 import { readSongChart, type SongFacts } from '../../src/model/index.ts';
 import { readSng, type Sng, type SngFile } from '../lib/sng.ts';
+import { type GridOverride, steadyBeats } from './grid.ts';
 
 type PictureType = 'jpg' | 'png';
 
@@ -23,6 +24,9 @@ type PlanResult = { ok: true; plan: SongPlan } | { ok: false; reason: string };
 
 /** The picture override of the inbox, `songs/<song-id>.jpg` or `.png`. */
 type Override = { name: string; bytes: Uint8Array };
+
+/** The overrides of the inbox for one song: its picture and its beat grid. */
+type Overrides = { picture: Override | undefined; grid: GridOverride | undefined };
 
 /** The file types that Clone Hero plays (chart-formats.md, "Audio"). */
 const AUDIO = /^(.+)\.(?:opus|ogg|mp3|wav)$/u;
@@ -100,8 +104,8 @@ const readFacts = (id: string, files: readonly SngFile[], metadata: ReadonlyMap<
   return readSongChart({ ...(mid && { mid }), ...(chart && { chart: utf8.decode(chart) }) }, meta);
 };
 
-/** Plans one song from the bytes of its `.sng` file and its picture override. */
-export const planSong = (id: string, sng: Uint8Array, override: Override | undefined): PlanResult => {
+/** Plans one song from the bytes of its `.sng` file and its overrides: the picture and the grid (./grid.ts). */
+export const planSong = (id: string, sng: Uint8Array, { picture: override, grid }: Overrides): PlanResult => {
   let container: Sng;
   try {
     container = readSng(sng);
@@ -118,5 +122,11 @@ export const planSong = (id: string, sng: Uint8Array, override: Override | undef
   }
   const picture = pickPicture(override, container.files);
   const audioLog = `audio: ${mix.map((file) => file.name).join(', ')}`;
-  return { ok: true, plan: { facts: facts.facts, mix, picture, log: [audioLog, ...log, pictureLog(picture)] } };
+  const beats = grid === undefined ? facts.facts.beats : steadyBeats(grid, facts.facts.beats.at(-1)?.t ?? 0);
+  const gridLog =
+    grid === undefined ? [] : [`grid: the override, ${String(grid.bpm)} BPM, a downbeat at ${String(grid.downbeat)} s`];
+  return {
+    ok: true,
+    plan: { facts: { ...facts.facts, beats }, mix, picture, log: [audioLog, ...log, pictureLog(picture), ...gridLog] },
+  };
 };

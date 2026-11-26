@@ -204,6 +204,31 @@ describe('prepareSongs', () => {
     expect(await readdir(join(prepared, 'paper-kites'))).toContain('cover.png');
   });
 
+  it('replaces the beats with the steady grid of a grid override, and writes only the facts file again', async () => {
+    await put('paper-kites.sng', song([['song.opus', audio(3)]]));
+    await prepare();
+    mixes = [];
+    lines = [];
+    await put('paper-kites.grid.json', text.encode('{ "bpm": 100, "downbeat": 0.25, "beatsPerBar": 2 }'));
+
+    await prepare();
+
+    expect(mixes).toEqual([]);
+    expect(lines).toEqual([
+      'paper-kites: facts refreshed, the audio and the cover stay.',
+      'prepare-song: 0 prepared, 1 refreshed, 0 unchanged, 0 skipped, 0 failed.',
+    ]);
+    // The chart grid is 120 BPM from 0.25 s to its last beat at 1.75 s.
+    const facts: unknown = JSON.parse(await readFile(join(prepared, 'paper-kites', 'song.json'), 'utf8'));
+    expect(facts).toMatchObject({
+      beats: [
+        { t: 0.25, downbeat: true },
+        { t: 0.85, downbeat: false },
+        { t: 1.45, downbeat: true },
+      ],
+    });
+  });
+
   it('skips and logs a bad song id, other files, and a file that is not an SNG container', async () => {
     await put('Paper Kites.sng', song([['song.opus', audio(3)]]));
     await put('notes.txt', text.encode('a note'));
@@ -216,7 +241,7 @@ describe('prepareSongs', () => {
     expect(lines).toEqual([
       'Paper Kites.sng: skipped, the song id does not match ^[a-z0-9-]+$.',
       'moss-garden.png: skipped, no .sng file has this name.',
-      'notes.txt: skipped, it is not a .sng file or a picture override.',
+      'notes.txt: skipped, it is not a .sng file, a picture override, or a grid override.',
       'fern-hill: skipped, This is not an SNG file: it does not start with SNGPKG.',
       'prepare-song: 0 prepared, 0 refreshed, 0 unchanged, 1 skipped, 0 failed.',
     ]);

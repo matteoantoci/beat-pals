@@ -12,6 +12,7 @@ import {
   type SongFacts,
   type SpeedStep,
 } from '../../src/model/index.ts';
+import { readGrid } from './grid.ts';
 import { type InboxSong, readInbox } from './inbox.ts';
 import { planSong } from './plan.ts';
 
@@ -122,7 +123,12 @@ const songReport = (facts: SongFacts): string[] => {
 
 /** Prints the report lines of one song of the inbox. Gives true when the song has a child chart. */
 const reportOne = async (inbox: string, song: InboxSong, log: Options['log']): Promise<boolean> => {
-  const result = planSong(song.id, await readFile(join(inbox, song.sng)), undefined);
+  const grid = await readGrid(inbox, song.grid);
+  if (!grid.ok) {
+    log(`${song.id}: no child chart, ${grid.reason}`);
+    return false;
+  }
+  const result = planSong(song.id, await readFile(join(inbox, song.sng)), { picture: undefined, grid: grid.grid });
   if (!result.ok) {
     log(`${song.id}: no child chart, ${result.reason}`);
     return false;
