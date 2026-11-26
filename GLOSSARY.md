@@ -125,7 +125,7 @@ The result of a play: the notes hit divided by the notes plus the empty taps. Th
 _Avoid_: Points, hit ratio, accuracy
 
 **Empty tap**:
-A tap that hits no note and lowers the score: a second tap on a hit note, or at level 0 a tap in a rest. It changes nothing in the play. After two weak plays at level 0, no tap is empty there.
+A tap that hits no note and lowers the score. At level 0, it is a second tap on a hit note or a tap in a rest. At the colors (bronze and up), it is a tap in another band lane, inside the good window of a hit note. It changes nothing in the play. After two weak plays at level 0, no tap is empty there.
 _Avoid_: Wrong tap, false tap, mistake, overstrum
 
 **Speed step**:

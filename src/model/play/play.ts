@@ -6,7 +6,7 @@
 // `pointerup` and the `pointercancel` of a touch (WebKit 322561), so a hold that misses its release still ends at its
 // half point. An empty tap (./empty-taps) gives no event and changes nothing in the play, but it lowers the score.
 
-import { isEmptyTap, type EmptyTaps, type HitTap } from './empty-taps';
+import { missedTap, otherLaneEmpties, type EmptyTaps, type StrayTap } from './empty-taps';
 import { energyStep, hitEnergy, passEnergy, START_ENERGY, type Energy } from './energy';
 import { phraseEnds, starEvents } from './star-moments';
 import { goodWindows, GREAT_SEC } from './windows';
@@ -22,12 +22,14 @@ export type PlayState = {
   readonly chart: ChildChart;
   /** The good window of each note, in seconds. */
   readonly good: readonly number[];
-  /** The tap that hit each note, or undefined for a note with no hit. */
-  readonly hit: readonly (HitTap | undefined)[];
+  /** True for each note that a tap hit. */
+  readonly hit: readonly boolean[];
   readonly hits: number;
   readonly emptyTaps: EmptyTaps;
   /** The number of taps that hit no note and count against the score. */
   readonly emptyCount: number;
+  /** The taps that hit no note and wait for the 'other-lane' rule (./empty-taps). */
+  readonly stray: readonly StrayTap[];
   /** The notes before this index passed the end of their good window: a tap can no longer hit them. */
   readonly passed: number;
   /** The song time of the last tap in each lane, or -Infinity before the first tap. */
@@ -46,10 +48,11 @@ type Outcome = { readonly state: PlayState; readonly events: readonly PlayEvent[
 export const startPlay = (chart: ChildChart, emptyTaps: EmptyTaps): PlayState => ({
   chart,
   good: goodWindows(chart.notes.map((note) => note.t)),
-  hit: chart.notes.map(() => undefined),
+  hit: chart.notes.map(() => false),
   hits: 0,
   emptyTaps,
   emptyCount: 0,
+  stray: [],
   passed: 0,
   tapAt: [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY],
   holding: new Map(),
@@ -88,8 +91,7 @@ const press = (play: PlayState, { t, lane, pointerId }: Extract<Action, { type: 
   const at = nearestOpen(play, lane, t);
   const note = at === undefined ? undefined : play.chart.notes[at];
   if (at === undefined || note === undefined) {
-    const emptyCount = isEmptyTap(play, lane, t) ? play.emptyCount + 1 : play.emptyCount;
-    return { state: { ...play, tapAt, emptyCount }, events: [] };
+    return { state: missedTap({ ...play, tapAt }, lane, t), events: [] };
   }
   const energy = hitEnergy(play.energy, t);
   const grade = Math.abs(t - note.t) <= GREAT_SEC ? 'great' : 'good';
@@ -97,7 +99,7 @@ const press = (play: PlayState, { t, lane, pointerId }: Extract<Action, { type: 
     ...play,
     tapAt,
     holding: note.holdSec > 0 ? new Map(play.holding).set(pointerId, at) : play.holding,
-    hit: play.hit.with(at, { t, lane }),
+    hit: play.hit.with(at, true),
     hits: play.hits + 1,
     energy,
   };
@@ -150,9 +152,8 @@ const passNotes = (play: PlayState, t: number): Outcome => {
   if (passed === play.passed) {
     return { state: play, events: [] };
   }
-  const faded = Array.from({ length: passed - play.passed }, (_, step) => play.passed + step).filter(
-    (at) => !play.hit[at]
-  );
+  const closed = Array.from({ length: passed - play.passed }, (_, step) => play.passed + step);
+  const faded = closed.filter((at) => !play.hit[at]);
   const events: PlayEvent[] = [];
   let energy = play.energy;
   for (const at of faded) {
@@ -160,7 +161,9 @@ const passNotes = (play: PlayState, t: number): Outcome => {
     energy = passEnergy(energy, passedAt(at));
     events.push({ type: 'faded', note: at }, ...energyEvents(before, energy), ...starEvents(play, at));
   }
-  return { state: { ...play, passed, energy }, events };
+  const judged = otherLaneEmpties(play, closed, passedAt(passed - 1));
+  const emptyCount = play.emptyCount + judged.count;
+  return { state: { ...play, passed, energy, emptyCount, stray: judged.stray }, events };
 };
 
 /** The soft holds at their half point are done. Then the notes pass: see `passNotes`. */
@@ -192,12 +195,16 @@ export const apply = (play: PlayState, action: Action): Outcome => {
   }
 };
 
-/** The score of the play: notes hit divided by the notes in the child chart plus the empty taps. Null after `quit`. */
+/**
+ * The score of the play: notes hit divided by the notes in the child chart plus the empty taps. The stray taps of the
+ * notes that did not pass yet count too, because the song can end before its last note passes. Null after `quit`.
+ */
 export const result = (play: PlayState): number | null => {
   if (play.quit) {
     return null;
   }
-  const total = play.chart.notes.length + play.emptyCount;
+  const pending = otherLaneEmpties(play, [...play.hit.keys()].slice(play.passed), Number.POSITIVE_INFINITY).count;
+  const total = play.chart.notes.length + play.emptyCount + pending;
   return total === 0 ? 0 : play.hits / total;
 };
 

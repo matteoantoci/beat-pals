@@ -57,7 +57,7 @@ describe('apply: soft holds', () => {
   });
 
   it('finishes a hold at its release after the half point, with no advance before the release', () => {
-    const played = playActions(startPlay(CHART, 'second'), [
+    const played = playActions(startPlay(CHART, 'other-lane'), [
       { type: 'press', t: 4, lane: 2, pointerId: 7 },
       { type: 'release', t: 4.6, pointerId: 7 },
     ]);
@@ -65,7 +65,7 @@ describe('apply: soft holds', () => {
   });
 
   it('gives no holdDone for a release before the half point', () => {
-    const played = playActions(startPlay(CHART, 'second'), [
+    const played = playActions(startPlay(CHART, 'other-lane'), [
       { type: 'press', t: 4, lane: 2, pointerId: 7 },
       { type: 'release', t: 4.4, pointerId: 7 },
     ]);

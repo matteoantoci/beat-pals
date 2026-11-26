@@ -106,7 +106,7 @@ describe('apply: hits', () => {
       { type: 'press', t: 2.5, lane: 1, pointerId: 3 },
       { type: 'advance', t: 4 },
     ];
-    const played = playActions(startPlay(chartOf([2, 2.5]), 'second'), actions);
+    const played = playActions(startPlay(chartOf([2, 2.5]), 'other-lane'), actions);
     // As a tap of its own, the second contact would hit the note at 2.5 s early, as a good hit.
     expect(story(played.events)).toEqual(['hit 1 good at 2.1875', 'hit 1 great at 2.5']);
   });
@@ -122,7 +122,7 @@ describe('apply: hits', () => {
       ]),
       { type: 'advance', t: 5 },
     ];
-    const played = playActions(startPlay(chartOf([2, 3, 4]), 'second'), actions);
+    const played = playActions(startPlay(chartOf([2, 3, 4]), 'other-lane'), actions);
     expect(story(played.events)).toEqual(['hit 1 great at 2', 'hit 1 great at 3', 'hit 1 great at 4']);
   });
 
@@ -137,12 +137,12 @@ describe('apply: hits', () => {
     expect(result(played.end)).toBe(0.5);
   });
 
-  it('gives no event for an extra tap, and a second tap on a hit note lowers the score', () => {
+  it('gives no event for an extra tap, and a second tap on a hit note lowers the score at level 0', () => {
     const extra = [
       { t: 2.5, lane: 1 },
       { t: 3.5, lane: 0 },
     ] as const;
-    const played = playOut(chartOf([2, 3, 4]), { extra });
+    const played = playOut(chartOf([2, 3, 4]), { extra }, 'second-and-rest');
     expect(story(played.events)).toEqual(['hit 1 great at 2', 'hit 1 great at 3', 'hit 1 great at 4']);
     // The tap at 2.5 s is as near to the hit note at 2 s as to the note at 3 s, so it is a second tap. Lane 0 has no
     // note, so its tap is not empty.
@@ -163,7 +163,7 @@ describe('apply: hits', () => {
       { type: 'press', t: 2.9375, lane: 1, pointerId: 1 },
       { type: 'advance', t: 4 },
     ];
-    const played = playActions(startPlay(chartOf([2, 3]), 'second'), actions);
+    const played = playActions(startPlay(chartOf([2, 3]), 'other-lane'), actions);
     expect(story(played.events)).toEqual(['faded 0', 'hit 1 great at 3']);
   });
 });
@@ -243,7 +243,7 @@ describe('apply: band energy', () => {
     const start = playOut(chart, { offset: tapOnly(0, 1, 2, 3) });
     expect(story(start.events).slice(-4)).toEqual(['energy 1', 'faded 4', 'faded 5', 'energy 0']);
     // The same taps, with the song time stopped in the gap.
-    const inGap = playActions(startPlay(chart, 'second'), [
+    const inGap = playActions(startPlay(chart, 'other-lane'), [
       ...[2, 2.5, 3, 3.5].flatMap((t, pointerId): Action[] => [
         { type: 'press', t, lane: 1, pointerId },
         { type: 'release', t: t + 0.0625, pointerId },
@@ -310,7 +310,7 @@ describe('apply: star moments', () => {
 describe('apply: quit', () => {
   it('ends the play with no result, and the play changes nothing after it', () => {
     const chart = chartOf([2, 3]);
-    const played = playActions(startPlay(chart, 'second'), [
+    const played = playActions(startPlay(chart, 'other-lane'), [
       { type: 'press', t: 2, lane: 1, pointerId: 1 },
       { type: 'quit' },
     ]);
@@ -329,7 +329,7 @@ describe('result: empty taps', () => {
 
   it('counts a tap in a rest only at level 0', () => {
     expect(result(playOut(wide, { extra: restTap }, 'second-and-rest').end)).toBe(2 / 3);
-    expect(result(playOut(wide, { extra: restTap }, 'second').end)).toBe(1);
+    expect(result(playOut(wide, { extra: restTap }, 'other-lane').end)).toBe(1);
   });
 
   it('counts a late tap that misses its note only as the miss', () => {
@@ -348,27 +348,34 @@ describe('result: empty taps', () => {
     expect(result(playOut(wide, { extra }, 'free').end)).toBe(1);
   });
 
-  it('takes a tap on the other lane of a hit double within 0.2 s as part of that tap', () => {
-    const doubles: ChildChart = {
-      band: [0, 1, 2],
-      notes: [2, 3].map((t) => ({ t, lanes: [1, 2], holdSec: 0 })),
-      phrases: [],
-    };
+  it('counts a tap in another band lane inside the window of a hit note at the colors, also before the hit', () => {
+    // A palm: lane 2 lands just before the hit in lane 1, and lane 0 just after it.
     const extra = [
-      { t: 2.03125, lane: 2 },
-      { t: 3.25, lane: 2 },
+      { t: 1.96875, lane: 2 },
+      { t: 2.03125, lane: 0 },
     ] as const;
-    // The partner tap at 2.03 s is part of the hit; the tap at 3.25 s comes too late for that.
-    expect(result(playOut(doubles, { extra }).end)).toBe(2 / 3);
+    expect(result(playOut(wide, { extra }, 'other-lane').end)).toBe(2 / 4);
   });
 
-  it('counts a tap in the hit lane of a double as a second tap, also after a partner tap', () => {
+  it('leaves a second tap in the lane of the hit note free at the colors', () => {
+    expect(result(playOut(chartOf([2, 3, 4]), { extra: [{ t: 2.5, lane: 1 }] }, 'other-lane').end)).toBe(1);
+  });
+
+  it('counts a tap in the wrong lane near a missed note only as the miss', () => {
+    const played = playOut(wide, { offset: tapOnly(1), extra: [{ t: 2, lane: 0 }] }, 'other-lane');
+    expect(result(played.end)).toBe(1 / 2);
+  });
+
+  it('never counts a tap in the other lane of a hit double', () => {
     const doubles: ChildChart = { band: [0, 1, 2], notes: [{ t: 2, lanes: [1, 2], holdSec: 0 }], phrases: [] };
-    // Lane 1 hits at 2 s, lane 2 is the partner at 2.15 s, and lane 1 taps again at 2.3 s.
-    const extra = [
-      { t: 2.15, lane: 2 },
-      { t: 2.3, lane: 1 },
-    ] as const;
-    expect(result(playOut(doubles, { extra }).end)).toBe(1 / 2);
+    expect(result(playOut(doubles, { extra: [{ t: 2.03125, lane: 2 }] }, 'other-lane').end)).toBe(1);
+  });
+
+  it('counts the other-lane taps of a hit note that did not pass yet when the song ends', () => {
+    const played = playActions(startPlay(chartOf([2]), 'other-lane'), [
+      { type: 'press', t: 2, lane: 1, pointerId: 1 },
+      { type: 'press', t: 2.03125, lane: 0, pointerId: 2 },
+    ]);
+    expect(result(played.end)).toBe(1 / 2);
   });
 });

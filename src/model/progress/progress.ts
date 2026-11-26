@@ -81,7 +81,7 @@ export const playSetup = (progress: SongProgress): PlaySetup => {
     step: steppedDown ? STEP_BELOW[earned] : earned,
     steppedDown,
     rests: false,
-    emptyTaps: 'second',
+    emptyTaps: 'other-lane',
   };
 };
 

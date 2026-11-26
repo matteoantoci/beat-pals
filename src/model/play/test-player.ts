@@ -77,6 +77,6 @@ export const playActions = (play: PlayState, actions: readonly Action[]): Played
     { events: [], end: play }
   );
 
-/** Plays the chart with these touches, from the start to past the last note. Only second taps are empty by default. */
-export const playOut = (chart: ChildChart, touches: Touches = {}, emptyTaps: EmptyTaps = 'second'): Played =>
+/** Plays the chart with these touches, from the start to past the last note. By default the 'other-lane' rule judges. */
+export const playOut = (chart: ChildChart, touches: Touches = {}, emptyTaps: EmptyTaps = 'other-lane'): Played =>
   playActions(startPlay(chart, emptyTaps), playScript(chart, touches));

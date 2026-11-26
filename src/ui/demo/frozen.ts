@@ -40,7 +40,7 @@ export const freeze = (
       follow(followers, action, nostar ? events.filter((event) => event.type !== 'starMoment') : events);
       return state;
     },
-    startPlay(chart, 'second')
+    startPlay(chart, 'other-lane')
   );
   if (energy !== undefined) {
     track.record(energy, t - SETTLE_SEC);

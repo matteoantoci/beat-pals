@@ -26,13 +26,13 @@ describe('playSetup', () => {
     expect(playSetup({ color: 0, stars: 0, weakPlays: 1 })).toMatchObject({ emptyTaps: 'second-and-rest' });
   });
 
-  it('plays the speed step of the stars of the color, with no rests and with second taps counted', () => {
+  it('plays the speed step of the stars of the color, with no rests and with other-lane taps counted', () => {
     expect(playSetup({ color: 1, stars: 1, weakPlays: 0 })).toEqual({
       color: 'bronze',
       step: 1,
       steppedDown: false,
       rests: false,
-      emptyTaps: 'second',
+      emptyTaps: 'other-lane',
     });
     expect(playSetup({ color: 3, stars: 2, weakPlays: 1 })).toMatchObject({
       color: 'gold',
@@ -45,13 +45,13 @@ describe('playSetup', () => {
     expect(playSetup({ color: 4, stars: 3, weakPlays: 0 })).toMatchObject({ color: 'platinum', step: 2 });
   });
 
-  it('steps down one speed step after 2 weak plays, and still counts second taps', () => {
+  it('steps down one speed step after 2 weak plays, and still counts other-lane taps', () => {
     expect(playSetup({ color: 2, stars: 2, weakPlays: 2 })).toEqual({
       color: 'silver',
       step: 1,
       steppedDown: true,
       rests: false,
-      emptyTaps: 'second',
+      emptyTaps: 'other-lane',
     });
     expect(playSetup({ color: 4, stars: 3, weakPlays: 2 })).toMatchObject({ step: 1, steppedDown: true });
   });
