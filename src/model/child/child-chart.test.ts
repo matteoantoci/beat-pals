@@ -47,7 +47,7 @@ const onEveryBeat = (beats: Beat[], step: SpeedStep): number[] => {
     beats,
     beats.map((beat) => beat.t)
   );
-  return childChart(facts, 'none', step).notes.map((note) => note.t);
+  return childChart(facts, { color: 'none', step }).notes.map((note) => note.t);
 };
 
 /** Notes on beats 2 and 4 of 0.5 s beats, from 0.5 s on: beats that step 0 does not keep. */
@@ -60,7 +60,7 @@ describe('childChart speed steps', () => {
     ['136 BPM', steady136],
   ])('gives strictly more notes at each step than at the step below, at %s', (_tempo, text) => {
     const facts = factsOf(text);
-    const counts = STEPS.map((step) => childChart(facts, 'none', step).notes.length);
+    const counts = STEPS.map((step) => childChart(facts, { color: 'none', step }).notes.length);
     expect(counts).toEqual([8, 12, 16]);
   });
   it('keeps beats 1 and 3 at step 0, beats 1 to 3 at step 1, and every beat at step 2 in 4/4', () => {
@@ -92,13 +92,22 @@ describe('childChart speed steps', () => {
   it('keeps no beat before the first downbeat', () => {
     expect(onEveryBeat(steadyBeats(0.5, 1, { pickup: 2 }), 2)).toEqual([1, 1.5, 2, 2.5]);
   });
+
+  it('rests on the last counted beat of each bar where every counted beat has a note, at level 0 only', () => {
+    // Bar 1 has a note on each beat. Bar 2 has no note on beat 3, so the guitar already rests there.
+    const facts = factsWith(steadyBeats(0.5, 2), [0, 0.5, 1, 1.5, 2, 2.5, 3.5]);
+    const times = (rests: boolean): number[] =>
+      childChart(facts, { color: 'none', step: 2, rests }).notes.map((note) => note.t);
+    expect(times(true)).toEqual([0, 0.5, 1, 2, 2.5, 3.5]);
+    expect(times(false)).toEqual([0, 0.5, 1, 1.5, 2, 2.5, 3.5]);
+  });
 });
 
 describe('childChart filter', () => {
   // Beats of 1 s, so a note is on a beat within 0.1 s of it.
   const beats = steadyBeats(1, 1);
   const timesOf = (notes: readonly number[], fills: SongFacts['fills'] = []): number[] =>
-    childChart(factsWith(beats, notes, fills), 'none', 2).notes.map((note) => note.t);
+    childChart(factsWith(beats, notes, fills), { color: 'none', step: 2 }).notes.map((note) => note.t);
 
   it('takes a note within 10% of a beat length of a kept beat and drops the notes between the beats', () => {
     expect(timesOf([0.1, 0.5, 1.125, 2.75, 2.875, 3.0625])).toEqual([0.1, 3.0625]);
@@ -117,7 +126,7 @@ describe('childChart filter', () => {
     // 7 bars of 0.5 s beats at step 0: the kept beats are 1 and 3 of each bar, 1 s apart.
     const slowBeats = steadyBeats(0.5, 7);
     const stepZero = (notes: readonly number[]): number[] =>
-      childChart(factsWith(slowBeats, notes), 'none', 0).notes.map((note) => note.t);
+      childChart(factsWith(slowBeats, notes), { color: 'none', step: 0 }).notes.map((note) => note.t);
 
     it('lets the dropped notes on a beat join a gap of more than 8 s, at the spacing of the kept beats', () => {
       // 1.25 is on no beat, so it never joins.
@@ -134,7 +143,7 @@ describe('childChart filter', () => {
 describe('childChart notes and band', () => {
   it('gives a plain note on Dot for each note at level 0', () => {
     const facts = factsWith(steadyBeats(0.5, 1), [0, 1]);
-    expect(childChart(facts, 'none', 0)).toEqual({
+    expect(childChart(facts, { color: 'none', step: 0 })).toEqual({
       band: [1],
       notes: [
         { t: 0, lanes: [1], holdSec: 0 },
@@ -146,7 +155,7 @@ describe('childChart notes and band', () => {
 
   it('puts Dot in the band at level 0, Pip at bronze, and Bo from silver on', () => {
     const facts = factsWith(steadyBeats(0.5, 1), [0]);
-    const bands = RECORD_COLORS.map((color) => childChart(facts, color, 0).band);
+    const bands = RECORD_COLORS.map((color) => childChart(facts, { color, step: 0 }).band);
     expect(bands).toEqual([[1], [0, 1], [0, 1, 2], [0, 1, 2], [0, 1, 2]]);
   });
 });
@@ -166,7 +175,7 @@ describe('childChart phrases', () => {
       ...factsWith(steadyBeats(0.5, 4), [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]),
       phrases: [{ t: 0.5, end: 2.5 }],
     };
-    expect(childChart(facts, 'none', 2).phrases).toEqual([{ first: 1, last: 4 }]);
+    expect(childChart(facts, { color: 'none', step: 2 }).phrases).toEqual([{ first: 1, last: 4 }]);
   });
 
   it('grows a phrase with fewer than 4 child notes to 4, and drops it when the next phrase leaves no room', () => {
@@ -175,7 +184,7 @@ describe('childChart phrases', () => {
       { t: 40, end: 41 },
       { t: 42, end: 46 },
     ]);
-    expect(childChart(facts, 'none', 2).phrases).toEqual([
+    expect(childChart(facts, { color: 'none', step: 2 }).phrases).toEqual([
       { first: 2, last: 5 },
       { first: 42, last: 45 },
     ]);
@@ -187,7 +196,7 @@ describe('childChart phrases', () => {
       { t: 30, end: 34 },
       { t: 36, end: 40 },
     ]);
-    expect(childChart(facts, 'none', 2).phrases).toEqual([
+    expect(childChart(facts, { color: 'none', step: 2 }).phrases).toEqual([
       { first: 0, last: 3 },
       { first: 36, last: 39 },
     ]);
@@ -196,6 +205,6 @@ describe('childChart phrases', () => {
   it('keeps a phrase at a slow speed step by growing it over the notes of that step', () => {
     const facts = everySecond([{ t: 4, end: 6 }]);
     // Step 0 keeps beats 1 and 3 of each bar: 0, 2, 4, 6, and so on.
-    expect(childChart(facts, 'bronze', 0).phrases).toEqual([{ first: 2, last: 5 }]);
+    expect(childChart(facts, { color: 'bronze', step: 0 }).phrases).toEqual([{ first: 2, last: 5 }]);
   });
 });

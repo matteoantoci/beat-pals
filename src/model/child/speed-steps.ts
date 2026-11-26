@@ -72,10 +72,10 @@ const keeps = (step: SpeedStep, place: number, count: number): boolean => {
   return step === 2 || place < count - 1 || place === 0;
 };
 
-/** The beats of the facts that the speed step keeps, in time order, with their lengths. */
-export const keptBeats = (beats: SongFacts['beats'], step: SpeedStep): TimedBeat[] => {
+/** The beats of the facts that the speed step keeps, bar by bar in time order, with their lengths. */
+export const keptBars = (beats: SongFacts['beats'], step: SpeedStep): TimedBeat[][] => {
   const timed = timedBeats(beats);
-  return countedBars(beats, timed).flatMap((bar) =>
+  return countedBars(beats, timed).map((bar) =>
     bar.flatMap((at, place) => (keeps(step, place, bar.length) ? (timed[at] ?? []) : []))
   );
 };

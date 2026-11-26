@@ -90,10 +90,6 @@ _Avoid_: Score, perfect, correct
 A note that passes with no hit; it changes nothing.
 _Avoid_: Error, fail, mistake
 
-**Hit ratio**:
-The share of the notes of a play that were hit.
-_Avoid_: Score, accuracy, percentage, grade
-
 **Band energy**:
 The mood of the band in a play, which rises with hits through steps 1, 2, 3, and gold, and falls only one step at a time.
 _Avoid_: Combo, streak, multiplier, power, hype
@@ -121,15 +117,23 @@ The level of skill on one song. There are 5 levels: level 0, bronze, silver, gol
 _Avoid_: Level, cup, medal, trophy, rank, tier
 
 **Star**:
-A mark of progress inside a record color, earned by one play with a hit ratio of about 70% or more; a star is never lost.
-_Avoid_: Point, reward, score
+A mark of progress inside a record color, earned by one play with a score of 80% or more; a star is never lost.
+_Avoid_: Point, reward
+
+**Score**:
+The result of a play: the notes hit divided by the notes plus the empty taps. The child never sees it as a number.
+_Avoid_: Points, hit ratio, accuracy
+
+**Empty tap**:
+A tap that hits no note and lowers the score: a second tap on a hit note, or at level 0 a tap in a rest. It changes nothing in the play. After two weak plays at level 0, no tap is empty there.
+_Avoid_: Wrong tap, false tap, mistake, overstrum
 
 **Speed step**:
 The beat pattern of a play, set by the stars of the current record color: beats 1 and 3 of each bar, then 3 of 4 beats, then every beat.
 _Avoid_: Difficulty, tempo, speed level
 
 **Weak play**:
-A play with a hit ratio below about 70%.
+A play with a score below 80%.
 _Avoid_: Failed play, lost play, bad play
 
 **Step down**:

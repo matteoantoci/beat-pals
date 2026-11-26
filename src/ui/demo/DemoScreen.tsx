@@ -41,8 +41,7 @@ const songLength = async (beats: readonly number[]): Promise<number> => {
 /** Draws the frozen frame. Gives the function that frees the stage. */
 const show = async (elements: Elements, demo: Demo): Promise<() => void> => {
   const facts = demoFacts();
-  const { color, step } = playSetup(demo.progress);
-  const chart = childChart(facts, color, step);
+  const chart = childChart(facts, playSetup(demo.progress));
   const duration = await songLength(facts.beats.map((beat) => beat.t));
   await decodePals();
   const stage = await createStage(elements.canvas, measure(elements), chart.band);

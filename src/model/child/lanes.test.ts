@@ -19,7 +19,7 @@ const melody = (frets: readonly (readonly number[])[], beatSec = 0.5): SongFacts
 
 /** The lane of each child note at step 2 (every beat). */
 const lanesOf = (facts: SongFacts, color: RecordColor): number[] =>
-  childChart(facts, color, 2).notes.map((note) => note.lanes[0]);
+  childChart(facts, { color, step: 2 }).notes.map((note) => note.lanes[0]);
 
 const single = (frets: readonly number[]): number[][] => frets.map((fret) => [fret]);
 

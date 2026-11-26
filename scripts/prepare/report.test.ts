@@ -52,13 +52,13 @@ describe('reportSongs', () => {
     await writeFile(join(inbox, 'quiet-hum.sng'), sng('Quiet Hum', NO_GUITAR));
     const lines: string[] = [];
     await reportSongs({ inbox, log: (line) => lines.push(line) });
-    expect(lines.slice(0, 5)).toEqual([
+    expect(lines.slice(0, 3)).toEqual([
       'paper-kites: Paper Kites / The Lanterns | notes to 0:03 | beat 0.50 s (120 BPM)',
       '  color    step  notes  per min  longest gap       lanes',
-      '  none        0      4     68.6  1.0 s at 0:00     Dot 100%',
-      '  none        1      6    102.9  1.0 s at 0:01     Dot 100%',
-      '  none        2      8    137.1  0.5 s at 0:00     Dot 100%',
+      // Level 0 has one play: every beat, with a rest on the last beat of each full bar.
+      '  none        2      6    102.9  1.0 s at 0:01     Dot 100%',
     ]);
+    expect(lines.filter((line) => line.startsWith('  none '))).toHaveLength(1);
     expect(lines.filter((line) => line.startsWith('  platinum '))).toHaveLength(3);
     expect(lines.slice(-2)).toEqual([
       'quiet-hum: no child chart, The chart has no lead guitar notes.',

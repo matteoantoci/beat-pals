@@ -2,43 +2,71 @@ import { describe, expect, it } from 'vitest';
 import { danceOf, NEW_SONG, playSetup, outcomeOf } from '../index';
 import type { SongProgress } from '../index';
 
-const GOOD = 0.7;
-const WEAK = 0.69;
+const GOOD = 0.8;
+const WEAK = 0.79;
 
-/** The progress after the plays, one hit ratio each, from a new song. */
-const after = (ratios: readonly number[], from: SongProgress = NEW_SONG): SongProgress =>
-  ratios.reduce((progress, ratio) => outcomeOf(progress, ratio).after, from);
+/** The progress after the plays, one score each, from a new song. */
+const after = (scores: readonly number[], from: SongProgress = NEW_SONG): SongProgress =>
+  scores.reduce((progress, score) => outcomeOf(progress, score).after, from);
 
 describe('playSetup', () => {
-  it('plays a new song at level 0 (no record), at every beat (the last speed step)', () => {
-    expect(playSetup(NEW_SONG)).toEqual({ color: 'none', step: 2, steppedDown: false });
+  it('plays a new song at level 0 (no record), at every beat with rests, and counts rest taps', () => {
+    expect(playSetup(NEW_SONG)).toEqual({
+      color: 'none',
+      step: 2,
+      steppedDown: false,
+      rests: true,
+      emptyTaps: 'second-and-rest',
+    });
   });
 
-  it('never steps down at level 0', () => {
-    expect(playSetup({ color: 0, stars: 0, weakPlays: 2 })).toEqual({ color: 'none', step: 2, steppedDown: false });
+  it('never steps down at level 0, but after 2 weak plays no empty tap counts there (the escape)', () => {
+    const escape = { color: 'none', step: 2, steppedDown: false, rests: true, emptyTaps: 'free' };
+    expect(playSetup({ color: 0, stars: 0, weakPlays: 2 })).toEqual(escape);
+    expect(playSetup({ color: 0, stars: 0, weakPlays: 1 })).toMatchObject({ emptyTaps: 'second-and-rest' });
   });
 
-  it('plays the speed step of the stars of the color', () => {
-    expect(playSetup({ color: 1, stars: 1, weakPlays: 0 })).toEqual({ color: 'bronze', step: 1, steppedDown: false });
-    expect(playSetup({ color: 3, stars: 2, weakPlays: 1 })).toEqual({ color: 'gold', step: 2, steppedDown: false });
+  it('plays the speed step of the stars of the color, with no rests and with second taps counted', () => {
+    expect(playSetup({ color: 1, stars: 1, weakPlays: 0 })).toEqual({
+      color: 'bronze',
+      step: 1,
+      steppedDown: false,
+      rests: false,
+      emptyTaps: 'second',
+    });
+    expect(playSetup({ color: 3, stars: 2, weakPlays: 1 })).toMatchObject({
+      color: 'gold',
+      step: 2,
+      steppedDown: false,
+    });
   });
 
   it('keeps platinum with 3 stars at the last speed step', () => {
-    expect(playSetup({ color: 4, stars: 3, weakPlays: 0 })).toEqual({ color: 'platinum', step: 2, steppedDown: false });
+    expect(playSetup({ color: 4, stars: 3, weakPlays: 0 })).toMatchObject({ color: 'platinum', step: 2 });
   });
 
-  it('steps down one speed step after 2 weak plays', () => {
-    expect(playSetup({ color: 2, stars: 2, weakPlays: 2 })).toEqual({ color: 'silver', step: 1, steppedDown: true });
-    expect(playSetup({ color: 4, stars: 3, weakPlays: 2 })).toEqual({ color: 'platinum', step: 1, steppedDown: true });
+  it('steps down one speed step after 2 weak plays, and still counts second taps', () => {
+    expect(playSetup({ color: 2, stars: 2, weakPlays: 2 })).toEqual({
+      color: 'silver',
+      step: 1,
+      steppedDown: true,
+      rests: false,
+      emptyTaps: 'second',
+    });
+    expect(playSetup({ color: 4, stars: 3, weakPlays: 2 })).toMatchObject({ step: 1, steppedDown: true });
   });
 
   it('does not step down at the first speed step of a color', () => {
-    expect(playSetup({ color: 1, stars: 0, weakPlays: 2 })).toEqual({ color: 'bronze', step: 0, steppedDown: false });
+    expect(playSetup({ color: 1, stars: 0, weakPlays: 2 })).toMatchObject({
+      color: 'bronze',
+      step: 0,
+      steppedDown: false,
+    });
   });
 });
 
 describe('outcomeOf', () => {
-  it('earns the next star at 70%', () => {
+  it('earns the next star at 80%', () => {
     const outcome = outcomeOf({ color: 1, stars: 0, weakPlays: 0 }, GOOD);
 
     expect(outcome.after).toEqual({ color: 1, stars: 1, weakPlays: 0 });
@@ -55,7 +83,7 @@ describe('outcomeOf', () => {
     expect(outcome.joins).toBe(0);
   });
 
-  it('earns nothing below 70% and takes nothing away', () => {
+  it('earns nothing below 80% and takes nothing away', () => {
     const outcome = outcomeOf({ color: 1, stars: 2, weakPlays: 0 }, WEAK);
 
     expect(outcome.after).toEqual({ color: 1, stars: 2, weakPlays: 1 });
@@ -120,6 +148,12 @@ describe('outcomeOf', () => {
     expect(outcome.after).toEqual({ color: 1, stars: 1, weakPlays: 0 });
     expect(outcome.star).toBe(0);
   });
+
+  it('opens bronze with a good play at the escape of level 0', () => {
+    const escape = after([WEAK, WEAK]);
+    expect(playSetup(escape)).toMatchObject({ emptyTaps: 'free' });
+    expect(outcomeOf(escape, GOOD)).toMatchObject({ after: { color: 1, stars: 0, weakPlays: 0 }, opened: 'bronze' });
+  });
 });
 
 describe('danceOf', () => {
@@ -128,13 +162,13 @@ describe('danceOf', () => {
     expect(danceOf(0.39)).toBe('band');
   });
 
-  it('makes the band and the waiting pals dance from 40% to below 70%', () => {
+  it('makes the band and the waiting pals dance from 40% to below 80%', () => {
     expect(danceOf(0.4)).toBe('band-and-waiting');
-    expect(danceOf(0.69)).toBe('band-and-waiting');
+    expect(danceOf(0.79)).toBe('band-and-waiting');
   });
 
-  it('makes all pals dance with confetti from 70%', () => {
-    expect(danceOf(0.7)).toBe('party');
+  it('makes all pals dance with confetti from 80%, as a good play', () => {
+    expect(danceOf(0.8)).toBe('party');
     expect(danceOf(1)).toBe('party');
   });
 });

@@ -5,7 +5,7 @@
 // of the dev and smoke builds does (src/ui/demo/), to play the demo chart up to its frozen time.
 
 import { apply, startPlay } from '../index';
-import type { Action, ChildChart, Lane, PlayEvent, PlayState } from '../index';
+import type { Action, ChildChart, EmptyTaps, Lane, PlayEvent, PlayState } from '../index';
 
 /** How the player taps. */
 type Touches = {
@@ -77,6 +77,6 @@ export const playActions = (play: PlayState, actions: readonly Action[]): Played
     { events: [], end: play }
   );
 
-/** Plays the chart with these touches, from the start to past the last note. */
-export const playOut = (chart: ChildChart, touches: Touches = {}): Played =>
-  playActions(startPlay(chart), playScript(chart, touches));
+/** Plays the chart with these touches, from the start to past the last note. Only second taps are empty by default. */
+export const playOut = (chart: ChildChart, touches: Touches = {}, emptyTaps: EmptyTaps = 'second'): Played =>
+  playActions(startPlay(chart, emptyTaps), playScript(chart, touches));

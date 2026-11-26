@@ -65,9 +65,9 @@ export const clearSave = (): boolean => {
 /** The progress of one song: level 0 (no record) before its first play. */
 export const progressOf = (songId: string): SongProgress => songProgress(progress(), songId);
 
-/** Finds the outcome of a song play from its hit ratio, keeps the new progress, and writes the save. */
-export const savePlay = (songId: string, ratio: number): PlayOutcome => {
-  const outcome = outcomeOf(progressOf(songId), ratio);
+/** Finds the outcome of a song play from its score, keeps the new progress, and writes the save. */
+export const savePlay = (songId: string, score: number): PlayOutcome => {
+  const outcome = outcomeOf(progressOf(songId), score);
   saved = withSong(progress(), songId, outcome.after);
   writeSave();
   return outcome;

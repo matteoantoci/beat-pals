@@ -3,11 +3,11 @@
 // passes run in this order: the filter, the lane mapping, the doubles, and the holds.
 
 import { addDoubles, type NoteLanes } from './doubles';
-import { filterNotes, refillGaps } from './filter';
+import { filterNotes, refillGaps, restInFullBars } from './filter';
 import { holdLengths } from './holds';
 import { type Lane, mapLanes } from './lanes';
 import { addOffBeat } from './off-beat';
-import { keptBeats, type SpeedStep, timedBeats } from './speed-steps';
+import { keptBars, type SpeedStep, timedBeats } from './speed-steps';
 import type { SongFacts } from '../chart/facts';
 
 /** A note of the child chart. `holdSec` is 0 for a plain note. */
@@ -78,11 +78,15 @@ const childPhrases = (phrases: SongFacts['phrases'], notes: readonly { t: number
   }, []);
 };
 
+/** What a play asks of its child chart. `rests` gives the rest of level 0 in each full bar (`restInFullBars`). */
+export type ChartSetup = { readonly color: RecordColor; readonly step: SpeedStep; readonly rests?: boolean };
+
 /** The child chart of the facts for one play. */
-export const childChart = (facts: SongFacts, color: RecordColor, step: SpeedStep): ChildChart => {
+export const childChart = (facts: SongFacts, { color, step, rests = false }: ChartSetup): ChildChart => {
   const notes = [...facts.notes, ...facts.fills.flatMap((fill) => fill.notes)].toSorted((a, b) => a.t - b.t);
   const beats = timedBeats(facts.beats);
-  const kept = keptBeats(facts.beats, step);
+  const bars = keptBars(facts.beats, step);
+  const kept = rests ? restInFullBars(notes, bars) : bars.flat();
   const onBeat = refillGaps(notes, filterNotes(notes, kept), { kept, beats });
   const filtered = color === 'platinum' ? addOffBeat(notes, onBeat, { beats, step }) : onBeat;
   const band = BANDS[color];

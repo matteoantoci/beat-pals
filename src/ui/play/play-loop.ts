@@ -3,7 +3,7 @@
 // the audio clock"). The play model judges; the view, the stage, and the pals only show.
 // Only one play runs at a time, so the state of that play is the state of this module (as in src/sound/song.ts).
 
-import { apply, result, startPlay } from '../../model';
+import { apply, firstNoteTime, result } from '../../model';
 import { watchLifecycle } from '../../shell/lifecycle';
 import { keepScreenOn } from '../../shell/wake-lock';
 import { fillBeads, fullBeads } from './beads';
@@ -11,7 +11,7 @@ import { makeEnergyTrack } from './energy';
 import { actionTime, follow, type Followers } from './follow';
 import { reducedMotion } from './reduced-motion';
 import { watchTaps } from './taps';
-import type { Action, ChildChart, PlayEvent, PlayState } from '../../model';
+import type { Action, PlayEvent, PlayState } from '../../model';
 import type { Song } from '../../sound';
 import type { Geometry } from './geometry';
 import type { Pals } from './pals';
@@ -25,7 +25,7 @@ const STALL_MS = 1000;
 export type PlayLoopParts = {
   readonly root: HTMLElement;
   readonly beads: readonly HTMLElement[];
-  readonly chart: ChildChart;
+  readonly start: PlayState;
   readonly song: Song;
   readonly stage: Stage;
   readonly pals: Pals;
@@ -33,7 +33,7 @@ export type PlayLoopParts = {
   readonly geometry: () => Geometry;
   /** The play paused itself: show the pause screen. */
   readonly onPause: () => void;
-  /** The song ended (the hit ratio) or the play ended from the pause screen (null). */
+  /** The song ended (the score) or the play ended from the pause screen (null). */
   readonly onEnd: (result: number | null) => void;
 };
 
@@ -185,14 +185,14 @@ const listen = (parts: PlayLoopParts): (() => void) => {
 
 /** Starts the song and the play. */
 export const startPlayLoop = (parts: PlayLoopParts): PlayLoop => {
-  play = startPlay(parts.chart);
+  play = parts.start;
   down.clear();
   beadsFull = -1;
   energy = makeEnergyTrack();
   followers = { view: parts.view, energy, stepUp: parts.song.levelUp, starMoment: parts.song.starMoment };
   lastT = Number.NaN;
   unwatch = listen(parts);
-  parts.song.start(parts.chart.notes[0]?.t ?? Number.POSITIVE_INFINITY);
+  parts.song.start(firstNoteTime(parts.start));
   run(parts);
   return {
     pause: () => pause(parts),

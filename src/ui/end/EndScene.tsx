@@ -11,7 +11,7 @@ import type { JSX } from '@solidjs/web';
 
 // The end scene (spec, "Screens"): the result of the play in pictures, with no numbers. The record of the play
 // slides out of the song sleeve, a new star flies to its place, a new record color slides out after a third star,
-// and at silver and gold the new pal jumps into the band (the join scene). The pals dance by the hit ratio. The
+// and at silver and gold the new pal jumps into the band (the join scene). The pals dance by the score. The
 // record, the star, and the join have their sounds (Sound effects switch). Then one button goes back to the song list.
 // Taps: each `pointerdown` in the first 2 s does nothing, and a pointer that went down before the scene never
 // gives a `pointerdown` here. After that, one tap skips to the final state, and the sounds still to come do not
@@ -24,8 +24,8 @@ const DEAF_MS = 2000;
 
 type EndSceneProps = {
   readonly choice: SongChoice;
-  /** The hit ratio of the play. */
-  readonly ratio: number;
+  /** The score of the play. */
+  readonly score: number;
   readonly outcome: PlayOutcome;
   readonly onDone: () => void;
 };
@@ -96,7 +96,7 @@ export const EndScene = (props: EndSceneProps): JSX.Element => {
     star: props.outcome.star,
     opened: props.outcome.opened !== null,
     joins: props.outcome.joins,
-    dance: danceOf(props.ratio),
+    dance: danceOf(props.score),
     band: bandOf(RECORD_COLORS[props.outcome.before.color]),
   };
   const refs: Refs = { stars: [], bodies: [], pals: [] };

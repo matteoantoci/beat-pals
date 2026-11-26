@@ -15,7 +15,7 @@ import type { PlayElements } from './fit';
 export type PlayHooks = {
   /** The play paused itself (hidden page, stopped audio, still clock): show the pause screen. */
   readonly onPause: () => void;
-  /** The song ended (the hit ratio), or the play ended from the pause screen (null). */
+  /** The song ended (the score), or the play ended from the pause screen (null). */
   readonly onEnd: (result: number | null) => void;
   /** The load moved on: the fill ring follows it. */
   readonly onLoad: (phase: LoadPhase) => void;

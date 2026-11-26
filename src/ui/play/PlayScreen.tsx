@@ -17,7 +17,7 @@ import type { Accessor } from 'solid-js';
 
 type PlayScreenProps = {
   readonly choice: SongChoice;
-  /** The hit ratio at the end of the song, or null for a play with no result. */
+  /** The score at the end of the song, or null for a play with no result. */
   readonly onEnd: (result: number | null) => void;
 };
 

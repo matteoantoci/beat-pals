@@ -1,12 +1,14 @@
 // The progress of one song (spec, "Progress"): the record color, the stars of that color, and the weak plays in a
-// row. A play at 70% or more earns the next star, and the third star opens the next color with 0 stars. Level 0 has
-// no record and no stars: one good play at every beat earns the bronze record. Stars are never lost. After 2 weak
-// plays, the next play uses the speed step one below, inside the same color only; a good play at that lower step
-// earns no star, so a star is always earned at her own speed.
+// row. A play with a score of 80% or more earns the next star, and the third star opens the next color with 0 stars.
+// Level 0 has no record and no stars: one good play at every beat earns the bronze record. Stars are never lost.
+// After 2 weak plays, the next play uses the speed step one below, inside the same color only; a good play at that
+// lower step earns no star, so a star is always earned at her own speed. Level 0 never steps down: after 2 weak plays
+// there, no empty tap counts (the escape), so she cannot stay stuck before bronze.
 
 import { bandOf, RECORD_COLORS, type RecordColor } from '../child/child-chart';
 import type { Lane } from '../child/lanes';
 import type { SpeedStep } from '../child/speed-steps';
+import type { EmptyTaps } from '../play/empty-taps';
 
 /** color: 0 (no record) to 4 platinum. stars: the stars of that color (3 only at platinum, the top). */
 export type SongProgress = {
@@ -18,9 +20,9 @@ export type SongProgress = {
 /** A song with no play yet: level 0, with no record and no stars. */
 export const NEW_SONG: SongProgress = { color: 0, stars: 0, weakPlays: 0 };
 
-/** The lowest hit ratio of a good play. */
-const GOOD_RATIO = 0.7;
-/** Below this hit ratio only the band dances. */
+/** The lowest score of a good play. A blind steady tap at level 0 scores at most about 75% (2026-11-26). */
+const STAR_SCORE = 0.8;
+/** Below this score only the band dances. */
 const BAND_DANCES_BELOW = 0.4;
 
 /** The record color and the speed step of the next play of a song. */
@@ -29,6 +31,10 @@ type PlaySetup = {
   readonly step: SpeedStep;
   /** True when 2 weak plays put this play one speed step below the earned step. */
   readonly steppedDown: boolean;
+  /** True at level 0: a rest on the last beat of each full bar (`childChart`). */
+  readonly rests: boolean;
+  /** Which taps that hit no note lower the score. */
+  readonly emptyTaps: EmptyTaps;
 };
 
 /** What one play changed, for the save and for the end scene. */
@@ -52,16 +58,31 @@ const STEP_BELOW: Readonly<Record<SpeedStep, SpeedStep>> = { 0: 0, 1: 0, 2: 1 };
 const NEXT_STAR = { 0: 1, 1: 2, 2: 3 } as const;
 const NEXT_COLOR = { 0: 1, 1: 2, 2: 3, 3: 4 } as const;
 
-/** Level 0 (no record) plays every beat (speed step 2), and it never steps down. */
-const FIRST_LEVEL: PlaySetup = { color: 'none', step: 2, steppedDown: false };
+/** Level 0 (no record) plays every beat (speed step 2) with a rest in each full bar, counts taps in its rests, and
+ * never steps down. */
+const FIRST_LEVEL: PlaySetup = {
+  color: 'none',
+  step: 2,
+  steppedDown: false,
+  rests: true,
+  emptyTaps: 'second-and-rest',
+};
+/** Level 0 after 2 weak plays: no empty tap counts. */
+const FIRST_LEVEL_ESCAPE: PlaySetup = { ...FIRST_LEVEL, emptyTaps: 'free' };
 
 export const playSetup = (progress: SongProgress): PlaySetup => {
   if (progress.color === 0) {
-    return FIRST_LEVEL;
+    return progress.weakPlays === 2 ? FIRST_LEVEL_ESCAPE : FIRST_LEVEL;
   }
   const earned = EARNED_STEP[progress.stars];
   const steppedDown = progress.weakPlays === 2 && earned > 0;
-  return { color: RECORD_COLORS[progress.color], step: steppedDown ? STEP_BELOW[earned] : earned, steppedDown };
+  return {
+    color: RECORD_COLORS[progress.color],
+    step: steppedDown ? STEP_BELOW[earned] : earned,
+    steppedDown,
+    rests: false,
+    emptyTaps: 'second',
+  };
 };
 
 /** The pal of the opened color that is not in the band of the color before. */
@@ -70,10 +91,10 @@ const joinerOf = (before: SongProgress, opened: RecordColor): Lane | null => {
   return bandOf(opened).find((lane) => !old.includes(lane)) ?? null;
 };
 
-/** The progress after a play with the hit ratio `ratio`. */
-export const outcomeOf = (before: SongProgress, ratio: number): PlayOutcome => {
+/** The progress after a play with this score. */
+export const outcomeOf = (before: SongProgress, score: number): PlayOutcome => {
   const nothing = { before, star: null, opened: null, joins: null } as const;
-  if (ratio < GOOD_RATIO) {
+  if (score < STAR_SCORE) {
     return { ...nothing, after: { ...before, weakPlays: before.weakPlays === 0 ? 1 : 2 } };
   }
   // Platinum with 3 stars is the top, and a good play at the lower step earns no star.
@@ -91,10 +112,10 @@ export const outcomeOf = (before: SongProgress, ratio: number): PlayOutcome => {
   return { before, after: { color, stars: 0, weakPlays: 0 }, star: earned, opened, joins: joinerOf(before, opened) };
 };
 
-/** Below 40% the band dances; to below 70% the waiting pals dance too; from 70% all pals dance with confetti. */
-export const danceOf = (ratio: number): Dance => {
-  if (ratio < BAND_DANCES_BELOW) {
+/** Below 40% the band dances; to below 80% the waiting pals dance too; from 80% all pals dance with confetti. */
+export const danceOf = (score: number): Dance => {
+  if (score < BAND_DANCES_BELOW) {
     return 'band';
   }
-  return ratio < GOOD_RATIO ? 'band-and-waiting' : 'party';
+  return score < STAR_SCORE ? 'band-and-waiting' : 'party';
 };

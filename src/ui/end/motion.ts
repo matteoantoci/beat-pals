@@ -5,7 +5,7 @@
 // - 2.2 s: after a third star, the old record goes back into the sleeve, its stars go out, and the record of the
 //   new color slides out at 2.6 s.
 // - 3.3 s: at silver and gold, the new pal jumps into the band and lands at 4.3 s.
-// The pals dance by the hit ratio, and confetti falls at 70% or more (party.ts). With reduced motion, each part
+// The pals dance by the score, and confetti falls at 80% or more (party.ts). With reduced motion, each part
 // fades in place: no spin, no jump, no dance, no confetti (C16).
 // The sounds follow the same timeline (`sceneSounds`): the record at each slide-out, the star at its pop, and the
 // new pal at its landing. With reduced motion, the parts fade in at the same moments, so the sounds keep their times.
@@ -175,7 +175,7 @@ const join = ({ parts, reduced }: Scene, lane: Lane): void => {
   sparkle(parts.landSparks, LAND_AT);
 };
 
-/** The dancers by the hit ratio, each with its start: the new pal dances after it lands. */
+/** The dancers by the score, each with its start: the new pal dances after it lands. */
 const danceStarts = (plan: ScenePlan): ReadonlyMap<Lane, number> => {
   const lanes: readonly Lane[] = plan.dance === 'band' ? plan.band : [0, 1, 2];
   const first = (lane: Lane): number => (lane === plan.joins ? LAND_AT + SQUASH_SEC : DANCE_FROM);

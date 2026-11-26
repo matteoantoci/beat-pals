@@ -24,7 +24,7 @@ const onBeats = (frets: readonly number[][]): FactsNote[] =>
   frets.map((fret, at) => ({ t: at / 2, frets: fret, lenSec: 0 }));
 
 const lanesOf = (notes: FactsNote[], color: 'silver' | 'gold' = 'gold'): number[][] =>
-  childChart(factsWith(notes), color, 2).notes.map((note) => note.lanes);
+  childChart(factsWith(notes), { color, step: 2 }).notes.map((note) => note.lanes);
 
 describe('childChart doubles', () => {
   it('makes a chord on a downbeat a double on Pip + Dot from Dot, and keeps a chord off the downbeat single', () => {
@@ -50,7 +50,7 @@ describe('childChart doubles', () => {
     const doubles = lanesOf(notes).flatMap((lanes, at) => (lanes.length === 2 ? [at] : []));
     expect(doubles).toEqual([0, 4, 8]);
     // With chords on beats 1 and 3 of a bar only at step 0, the 3-note rule drops every second downbeat chord.
-    const sparse = childChart(factsWith(notes), 'gold', 0).notes.map((note) => note.lanes.length);
+    const sparse = childChart(factsWith(notes), { color: 'gold', step: 0 }).notes.map((note) => note.lanes.length);
     expect(sparse).toEqual([2, 1, 1, 1, 2, 1]);
   });
 
@@ -60,7 +60,7 @@ describe('childChart doubles', () => {
 });
 
 const holdsOf = (notes: FactsNote[], color: 'silver' | 'gold' = 'gold'): number[] =>
-  childChart(factsWith(notes), color, 2).notes.map((note) => note.holdSec);
+  childChart(factsWith(notes), { color, step: 2 }).notes.map((note) => note.holdSec);
 
 describe('childChart holds', () => {
   it('cuts a sustain at the next note minus its good window', () => {
@@ -105,7 +105,7 @@ describe('childChart at platinum', () => {
       { t: 0.5, frets: [1], lenSec: 1 },
       { t: 2, frets: [1], lenSec: 0 },
     ];
-    const chart = childChart(factsWith(notes), 'platinum', 2).notes;
+    const chart = childChart(factsWith(notes), { color: 'platinum', step: 2 }).notes;
     expect(chart.some((note) => note.lanes.length === 2)).toBe(true);
     expect(chart.some((note) => note.holdSec > 0)).toBe(true);
   });

@@ -3,7 +3,7 @@
 // A failed step gives its reason for the parent area. A load that a newer load replaced frees each part that it
 // made and gives undefined.
 
-import { childChart, decodeTime, nextDecodeRate, playSetup, readFacts } from '../../model';
+import { childChart, decodeTime, nextDecodeRate, playSetup, readFacts, startPlay } from '../../model';
 import { loadDecodeRate, storeDecodeRate, type LoadProblemKind } from '../../shell/load-notes';
 import { progressOf } from '../../shell/save';
 import { loadSoundOn } from '../../shell/settings';
@@ -118,8 +118,8 @@ export const loadParts = async (request: LoadRequest): Promise<Loaded | LoadFail
   if (!request.live()) {
     return undefined;
   }
-  const { color, step } = playSetup(progressOf(request.choice.song.id));
-  const chart = childChart(facts, color, step);
+  const setup = playSetup(progressOf(request.choice.song.id));
+  const chart = childChart(facts, setup);
   const song = await decodeSong(request, files.audio);
   if (isFailure(song)) {
     return song;
@@ -130,5 +130,12 @@ export const loadParts = async (request: LoadRequest): Promise<Loaded | LoadFail
   }
   const { elements } = request;
   const pals = makePals(elements.pals, chart.band, facts.beats);
-  return { chart, song, stage, pals, view: makeView(chart, facts.beats), ...watchResize(elements, { stage, pals }) };
+  return {
+    start: startPlay(chart, setup.emptyTaps),
+    song,
+    stage,
+    pals,
+    view: makeView(chart, facts.beats),
+    ...watchResize(elements, { stage, pals }),
+  };
 };

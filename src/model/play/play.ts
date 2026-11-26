@@ -4,8 +4,9 @@
 // plain note; when the finger stays down to its half point, the hold is done. An early release is never a miss. The
 // last note of a phrase can give a star moment (./star-moments). No rule waits for a release: iOS can drop both the
 // `pointerup` and the `pointercancel` of a touch (WebKit 322561), so a hold that misses its release still ends at its
-// half point.
+// half point. An empty tap (./empty-taps) gives no event and changes nothing in the play, but it lowers the score.
 
+import { isEmptyTap, type EmptyTaps, type HitTap } from './empty-taps';
 import { energyStep, hitEnergy, passEnergy, START_ENERGY, type Energy } from './energy';
 import { phraseEnds, starEvents } from './star-moments';
 import { goodWindows, GREAT_SEC } from './windows';
@@ -21,9 +22,12 @@ export type PlayState = {
   readonly chart: ChildChart;
   /** The good window of each note, in seconds. */
   readonly good: readonly number[];
-  /** True for each note that a tap hit. */
-  readonly hit: readonly boolean[];
+  /** The tap that hit each note, or undefined for a note with no hit. */
+  readonly hit: readonly (HitTap | undefined)[];
   readonly hits: number;
+  readonly emptyTaps: EmptyTaps;
+  /** The number of taps that hit no note and count against the score. */
+  readonly emptyCount: number;
   /** The notes before this index passed the end of their good window: a tap can no longer hit them. */
   readonly passed: number;
   /** The song time of the last tap in each lane, or -Infinity before the first tap. */
@@ -39,11 +43,13 @@ export type PlayState = {
 type Outcome = { readonly state: PlayState; readonly events: readonly PlayEvent[] };
 
 /** The play of a child chart, before the song starts. */
-export const startPlay = (chart: ChildChart): PlayState => ({
+export const startPlay = (chart: ChildChart, emptyTaps: EmptyTaps): PlayState => ({
   chart,
   good: goodWindows(chart.notes.map((note) => note.t)),
-  hit: chart.notes.map(() => false),
+  hit: chart.notes.map(() => undefined),
   hits: 0,
+  emptyTaps,
+  emptyCount: 0,
   passed: 0,
   tapAt: [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY],
   holding: new Map(),
@@ -82,7 +88,8 @@ const press = (play: PlayState, { t, lane, pointerId }: Extract<Action, { type: 
   const at = nearestOpen(play, lane, t);
   const note = at === undefined ? undefined : play.chart.notes[at];
   if (at === undefined || note === undefined) {
-    return { state: { ...play, tapAt }, events: [] };
+    const emptyCount = isEmptyTap(play, lane, t) ? play.emptyCount + 1 : play.emptyCount;
+    return { state: { ...play, tapAt, emptyCount }, events: [] };
   }
   const energy = hitEnergy(play.energy, t);
   const grade = Math.abs(t - note.t) <= GREAT_SEC ? 'great' : 'good';
@@ -90,7 +97,7 @@ const press = (play: PlayState, { t, lane, pointerId }: Extract<Action, { type: 
     ...play,
     tapAt,
     holding: note.holdSec > 0 ? new Map(play.holding).set(pointerId, at) : play.holding,
-    hit: play.hit.with(at, true),
+    hit: play.hit.with(at, { t, lane }),
     hits: play.hits + 1,
     energy,
   };
@@ -185,10 +192,14 @@ export const apply = (play: PlayState, action: Action): Outcome => {
   }
 };
 
-/** The hit ratio of the play: notes hit divided by notes in the child chart. Null after `quit`. */
+/** The score of the play: notes hit divided by the notes in the child chart plus the empty taps. Null after `quit`. */
 export const result = (play: PlayState): number | null => {
   if (play.quit) {
     return null;
   }
-  return play.chart.notes.length === 0 ? 0 : play.hits / play.chart.notes.length;
+  const total = play.chart.notes.length + play.emptyCount;
+  return total === 0 ? 0 : play.hits / total;
 };
+
+/** The song time of the first note of the play, or Infinity for a chart with no note. */
+export const firstNoteTime = (play: PlayState): number => play.chart.notes[0]?.t ?? Number.POSITIVE_INFINITY;

@@ -33,11 +33,15 @@ export const freeze = (
     starMoment: () => undefined,
   };
   const actions: Action[] = [...playScript(chart).filter((action) => actionTime(action) <= t), { type: 'advance', t }];
-  actions.reduce((play, action) => {
-    const { state, events } = apply(play, action);
-    follow(followers, action, nostar ? events.filter((event) => event.type !== 'starMoment') : events);
-    return state;
-  }, startPlay(chart));
+  // The test player taps each note on time, so no tap is empty.
+  actions.reduce(
+    (play, action) => {
+      const { state, events } = apply(play, action);
+      follow(followers, action, nostar ? events.filter((event) => event.type !== 'starMoment') : events);
+      return state;
+    },
+    startPlay(chart, 'second')
+  );
   if (energy !== undefined) {
     track.record(energy, t - SETTLE_SEC);
   }

@@ -66,6 +66,16 @@ export const filterNotes = (notes: readonly FactsNote[], kept: readonly TimedBea
 };
 
 /**
+ * The kept beats with a rest at level 0. A bar of more than one kept beat loses its last beat when every kept beat
+ * has a note on it. So a guitar that plays every beat gives no metronome. A bar where the guitar already rests stays
+ * as it is (2026-11-26).
+ */
+export const restInFullBars = (notes: readonly FactsNote[], bars: readonly TimedBeat[][]): TimedBeat[] =>
+  bars.flatMap((bar) =>
+    bar.length > 1 && bar.every((beat) => nearestOn(notes, beat) !== undefined) ? bar.slice(0, -1) : bar
+  );
+
+/**
  * The notes on a beat that refill the gap from `from` to `to`, in time order. Each note is at least `spacing` after
  * the note before it and at least `spacing` before `to`.
  */

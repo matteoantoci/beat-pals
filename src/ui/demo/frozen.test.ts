@@ -4,10 +4,7 @@ import { demoFacts } from './fixture';
 import { freeze } from './frozen';
 import type { SongProgress } from '../../model';
 
-const chartOf = (progress: SongProgress) => {
-  const { color, step } = playSetup(progress);
-  return childChart(demoFacts(), color, step);
-};
+const chartOf = (progress: SongProgress) => childChart(demoFacts(), playSetup(progress));
 
 const NONE: SongProgress = { color: 0, stars: 0, weakPlays: 0 };
 const GOLD: SongProgress = { color: 3, stars: 1, weakPlays: 0 };

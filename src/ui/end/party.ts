@@ -1,4 +1,4 @@
-// The joy of the end scene: the pals pop in and dance on a beat of 0.55 s, and at 70% or more confetti falls
+// The joy of the end scene: the pals pop in and dance on a beat of 0.55 s, and at a score of 80% or more confetti falls
 // (prototype play-style A, `dance` and `confetti`). Both stop before the scene ends, so the final state is still.
 
 import { randomFrom, type Lane } from '../../model';

@@ -17,7 +17,7 @@ import type { JSX } from '@solidjs/web';
 type Screen = 'title' | 'songs' | 'parent' | 'play' | 'end';
 
 /** The play that the end scene shows. */
-type Ended = { readonly choice: SongChoice; readonly ratio: number; readonly outcome: PlayOutcome };
+type Ended = { readonly choice: SongChoice; readonly score: number; readonly outcome: PlayOutcome };
 
 export const App = (): JSX.Element => {
   // After the setup, the new songs download at the start and at each return to the app (spec, "Delivery").
@@ -30,12 +30,12 @@ export const App = (): JSX.Element => {
     setChoice(chosen);
     setScreen('play');
   };
-  const end = (chosen: SongChoice, ratio: number | null): void => {
-    if (ratio === null) {
+  const end = (chosen: SongChoice, score: number | null): void => {
+    if (score === null) {
       setScreen('songs');
       return;
     }
-    setEnded({ choice: chosen, ratio, outcome: savePlay(chosen.song.id, ratio) });
+    setEnded({ choice: chosen, score, outcome: savePlay(chosen.song.id, score) });
     setScreen('end');
   };
   return (
@@ -50,7 +50,7 @@ export const App = (): JSX.Element => {
         <ParentArea onClose={() => setScreen('title')} />
       </Match>
       <Match when={screen() === 'play' && choice()} keyed>
-        {(chosen) => <PlayScreen choice={chosen} onEnd={(ratio) => end(chosen, ratio)} />}
+        {(chosen) => <PlayScreen choice={chosen} onEnd={(score) => end(chosen, score)} />}
       </Match>
       <Match when={screen() === 'end' && ended()} keyed>
         {(last) => <EndScene {...last} onDone={() => setScreen('songs')} />}

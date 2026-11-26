@@ -1,12 +1,17 @@
 // `prepare-song report`: the chart report on the Mac (spec, "The song pipeline"). It is a report, not a test.
-// For each song of the inbox, it gives the child note count for each record color and speed step, the notes
-// per minute, the longest gap, the share of each lane of the band, and each fill of a long rest (start, end, source part, and note count). It reads the charts from the .sng files, so it needs no ffmpeg.
+// For each song of the inbox, it gives the child note count for level 0 (its one play) and for each record color and
+// speed step. It also gives the notes per minute, the longest gap, and the share of each lane of the band. For each
+// fill of a long rest, it gives the start, the end, the source part, and the note count. It reads the charts from the
+// .sng files, so it needs no ffmpeg.
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
+  type ChartSetup,
   type ChildChart,
   childChart,
+  NEW_SONG,
+  playSetup,
   RECORD_COLORS,
   type RecordColor,
   type SongFacts,
@@ -68,9 +73,10 @@ const laneShares = (chart: ChildChart): { lane: number; share: number }[] =>
         : chart.notes.filter((note) => note.lanes.includes(lane)).length / chart.notes.length,
   }));
 
-/** The report row of one record color and speed step. */
-const rowOf = (facts: SongFacts, color: RecordColor, step: SpeedStep): string => {
-  const chart = childChart(facts, color, step);
+/** The report row of one record color and speed step. Level 0 also has its rests (playSetup). */
+const rowOf = (facts: SongFacts, setup: ChartSetup): string => {
+  const { color, step } = setup;
+  const chart = childChart(facts, setup);
   const times = chart.notes.map((note) => note.t);
   const shares = laneShares(chart).map(
     ({ lane, share }) => `${PAL_NAMES[lane] ?? '?'} ${String(Math.round(share * PERCENT))}%`
@@ -98,7 +104,7 @@ const fillLines = (facts: SongFacts): string[] =>
 /** The flag lines of a song: each silver or gold chart that gives a lane of the band less than 15% of the notes. */
 const flagLines = (facts: SongFacts): string[] =>
   FLAGGED_COLORS.flatMap((color) => STEPS.map((step) => ({ color, step }))).flatMap(({ color, step }) =>
-    laneShares(childChart(facts, color, step))
+    laneShares(childChart(facts, { color, step }))
       .filter(({ share }) => share < LOW_LANE_SHARE)
       .map(
         ({ lane, share }) =>
@@ -111,7 +117,10 @@ const songReport = (facts: SongFacts): string[] => {
   const length = lengthOf(facts);
   const beat = medianBeat(facts);
   const tempo = beat > 0 ? ` (${String(Math.round(SECONDS_PER_MINUTE / beat))} BPM)` : '';
-  const rows = RECORD_COLORS.flatMap((color) => STEPS.map((step) => rowOf(facts, color, step)));
+  const colorRows = RECORD_COLORS.filter((color) => color !== 'none').flatMap((color) =>
+    STEPS.map((step) => rowOf(facts, { color, step }))
+  );
+  const rows = [rowOf(facts, playSetup(NEW_SONG)), ...colorRows];
   return [
     `${facts.id}: ${facts.title} / ${facts.artist} | notes to ${clock(length)} | beat ${beat.toFixed(2)} s${tempo}`,
     '  color    step  notes  per min  longest gap       lanes',
