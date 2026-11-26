@@ -81,12 +81,12 @@ describe('apply: hits', () => {
 
   it('hits the nearest open note in the lane', () => {
     const extra = [
-      { t: 2.1875, lane: 1 },
+      { t: 2.125, lane: 1 },
       { t: 2.3125, lane: 1 },
     ] as const;
     const played = playOut(chartOf([2, 2.5]), { offset: () => null, extra });
-    // The first tap is nearer to the note at 2 s. The second tap is nearer to it too, but that note is hit.
-    expect(story(played.events)).toEqual(['hit 1 good at 2.1875', 'hit 1 good at 2.5']);
+    // The first tap hits the note at 2 s late. The second tap is inside the good window of the note at 2.5 s only.
+    expect(story(played.events)).toEqual(['hit 1 good at 2.125', 'hit 1 good at 2.5']);
     expect(result(played.end)).toBe(1);
   });
 
@@ -96,18 +96,34 @@ describe('apply: hits', () => {
     expect(result(played.end)).toBe(0);
   });
 
-  it('counts a second contact in a lane as no tap until the first contact is up', () => {
+  it('counts a contact that starts within 0.15 s of a tap in its lane as part of that tap, also after a lift', () => {
+    // A rolling slap: the first finger lifts before the second one lands.
     const actions: Action[] = [
-      { type: 'press', t: 2, lane: 1, pointerId: 1 },
-      { type: 'press', t: 2.9375, lane: 1, pointerId: 2 },
-      { type: 'release', t: 2.96875, pointerId: 1 },
-      { type: 'release', t: 2.96875, pointerId: 2 },
-      { type: 'press', t: 3.0625, lane: 1, pointerId: 3 },
+      { type: 'press', t: 2.1875, lane: 1, pointerId: 1 },
+      { type: 'release', t: 2.25, pointerId: 1 },
+      { type: 'press', t: 2.3125, lane: 1, pointerId: 2 },
+      { type: 'release', t: 2.34375, pointerId: 2 },
+      { type: 'press', t: 2.5, lane: 1, pointerId: 3 },
       { type: 'advance', t: 4 },
     ];
-    const played = playActions(startPlay(chartOf([2, 3])), actions);
-    // Without the rule, the second contact would hit the note at 3 s early, and the clap would be at 3.
-    expect(story(played.events)).toEqual(['hit 1 great at 2', 'hit 1 great at 3.0625']);
+    const played = playActions(startPlay(chartOf([2, 2.5])), actions);
+    // As a tap of its own, the second contact would hit the note at 2.5 s early, as a good hit.
+    expect(story(played.events)).toEqual(['hit 1 good at 2.1875', 'hit 1 great at 2.5']);
+  });
+
+  it('needs no release: a pointer that never comes up blocks no later tap in its lane', () => {
+    // iOS can drop both the pointerup and the pointercancel of a touch that a native gesture takes (WebKit 322561).
+    const actions: Action[] = [
+      { type: 'press', t: 2, lane: 1, pointerId: 1 },
+      ...[3, 4].flatMap((t, at): Action[] => [
+        { type: 'advance', t },
+        { type: 'press', t, lane: 1, pointerId: 2 + at },
+        { type: 'release', t: t + 0.0625, pointerId: 2 + at },
+      ]),
+      { type: 'advance', t: 5 },
+    ];
+    const played = playActions(startPlay(chartOf([2, 3, 4])), actions);
+    expect(story(played.events)).toEqual(['hit 1 great at 2', 'hit 1 great at 3', 'hit 1 great at 4']);
   });
 
   it('makes a waiting pal hop at a tap in its lane, and does not judge that tap', () => {

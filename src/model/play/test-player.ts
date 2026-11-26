@@ -31,7 +31,7 @@ type Tap = { readonly t: number; readonly lane: Lane; readonly up: number };
 
 type Input = Extract<Action, { type: 'press' | 'release' }>;
 
-/** At the same time, a release comes before a press, so the lane is free for the press. */
+/** At the same time, a release comes before a press, as on a screen: a finger lifts, then the next one lands. */
 const ORDER: Readonly<Record<Input['type'], number>> = { release: 0, press: 1 };
 
 /** The taps for the notes of the chart. */

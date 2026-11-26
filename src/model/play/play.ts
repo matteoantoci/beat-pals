@@ -2,13 +2,19 @@
 // the child chart and gives the events that the play screen shows and plays. Each `t` is the song time in seconds from
 // the guarded song clock. A double counts when either of its 2 lanes is tapped. A soft hold counts at its tap, as a
 // plain note; when the finger stays down to its half point, the hold is done. An early release is never a miss. The
-// last note of a phrase can give a star moment (./star-moments).
+// last note of a phrase can give a star moment (./star-moments). No rule waits for a release: iOS can drop both the
+// `pointerup` and the `pointercancel` of a touch (WebKit 322561), so a hold that misses its release still ends at its
+// half point.
 
 import { energyStep, hitEnergy, passEnergy, START_ENERGY, type Energy } from './energy';
 import { phraseEnds, starEvents } from './star-moments';
 import { goodWindows, GREAT_SEC } from './windows';
 import type { ChildChart } from '../child/child-chart';
 import type { Action, Lane, PlayEvent } from './play-events';
+
+/** A contact that starts this close to a tap in its lane is part of that tap: a hand with more than one contact point,
+ * or a bounce of the finger. A child taps again in the same lane after 0.26 s at the earliest. */
+const SAME_TAP_SEC = 0.15;
 
 /** One play. Only the model reads its fields. */
 export type PlayState = {
@@ -20,8 +26,8 @@ export type PlayState = {
   readonly hits: number;
   /** The notes before this index passed the end of their good window: a tap can no longer hit them. */
   readonly passed: number;
-  /** The lane of each pointer that is down. */
-  readonly down: ReadonlyMap<number, Lane>;
+  /** The song time of the last tap in each lane, or -Infinity before the first tap. */
+  readonly tapAt: readonly number[];
   /** The soft hold (its note index) of each pointer that hit a soft hold and is still down before its half point. */
   readonly holding: ReadonlyMap<number, number>;
   readonly energy: Energy;
@@ -39,7 +45,7 @@ export const startPlay = (chart: ChildChart): PlayState => ({
   hit: chart.notes.map(() => false),
   hits: 0,
   passed: 0,
-  down: new Map(),
+  tapAt: [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY],
   holding: new Map(),
   energy: START_ENERGY,
   phraseEnds: phraseEnds(chart),
@@ -65,24 +71,24 @@ const energyEvents = (before: Energy, after: Energy): PlayEvent[] =>
   before.step === after.step ? [] : [{ type: 'energy', step: energyStep(after) }];
 
 const press = (play: PlayState, { t, lane, pointerId }: Extract<Action, { type: 'press' }>): Outcome => {
-  const secondContact = [...play.down.values()].includes(lane);
-  const down = new Map(play.down).set(pointerId, lane);
-  if (secondContact) {
-    return { state: { ...play, down }, events: [] };
+  // The clock can step back after a resume, so the gap counts in both directions.
+  if (Math.abs(t - (play.tapAt[lane] ?? Number.NEGATIVE_INFINITY)) < SAME_TAP_SEC) {
+    return { state: play, events: [] };
   }
+  const tapAt = play.tapAt.with(lane, t);
   if (!play.chart.band.includes(lane)) {
-    return { state: { ...play, down }, events: [{ type: 'hop', lane }] };
+    return { state: { ...play, tapAt }, events: [{ type: 'hop', lane }] };
   }
   const at = nearestOpen(play, lane, t);
   const note = at === undefined ? undefined : play.chart.notes[at];
   if (at === undefined || note === undefined) {
-    return { state: { ...play, down }, events: [] };
+    return { state: { ...play, tapAt }, events: [] };
   }
   const energy = hitEnergy(play.energy, t);
   const grade = Math.abs(t - note.t) <= GREAT_SEC ? 'great' : 'good';
   const state = {
     ...play,
-    down,
+    tapAt,
     holding: note.holdSec > 0 ? new Map(play.holding).set(pointerId, at) : play.holding,
     hit: play.hit.with(at, true),
     hits: play.hits + 1,
@@ -117,15 +123,13 @@ const finishHolds = (play: PlayState, t: number): Outcome => {
 
 /** A release first finishes each soft hold that reached its half point by `t`, so a release between 2 frames counts. */
 const release = (play: PlayState, { t, pointerId }: Extract<Action, { type: 'release' }>): Outcome => {
-  if (!play.down.has(pointerId)) {
+  if (!play.holding.has(pointerId)) {
     return { state: play, events: [] };
   }
   const held = finishHolds(play, t);
-  const down = new Map(held.state.down);
-  down.delete(pointerId);
   const holding = new Map(held.state.holding);
   holding.delete(pointerId);
-  return { state: { ...held.state, down, holding }, events: held.events };
+  return { state: { ...held.state, holding }, events: held.events };
 };
 
 /** Each note whose good window ended before `t` passes: a note with no hit fades, and the energy can drop. */
