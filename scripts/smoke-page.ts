@@ -21,9 +21,14 @@ export const wait = (ms: number): Promise<void> => {
   return promise;
 };
 
-/** The centre of the element, or undefined when the element is not on the page. */
+/**
+ * The centre of the element, or undefined when the element is not on the page. An element out of the view (low in the
+ * parent area) scrolls into the view first; an element in the view does not move.
+ */
 const centre = async (page: Page, selector: string): Promise<Point | undefined> => {
-  const box = await (await page.$(selector))?.boundingBox();
+  const element = await page.$(selector);
+  await element?.evaluate((el) => el.scrollIntoView({ block: 'nearest' }));
+  const box = await element?.boundingBox();
   return box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : undefined;
 };
 

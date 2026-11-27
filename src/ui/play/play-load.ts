@@ -12,11 +12,17 @@ import type { SongEvents } from '../../sound';
 import type { SongChoice } from '../songs/SongList';
 import type { PlayElements } from './fit';
 
+/** The end of a play: the score at the end of the song, a load that failed, or Home on the pause screen. */
+export type PlayResult =
+  | { readonly kind: 'score'; readonly score: number }
+  | { readonly kind: 'failed' }
+  | { readonly kind: 'home' };
+
 export type PlayHooks = {
   /** The play paused itself (hidden page, stopped audio, still clock): show the pause screen. */
   readonly onPause: () => void;
-  /** The song ended (the score), or the play ended from the pause screen (null). */
-  readonly onEnd: (result: number | null) => void;
+  /** The song ended (a score), or the play ended from the pause screen (Home). */
+  readonly onEnd: (result: PlayResult) => void;
   /** The load moved on: the fill ring follows it. */
   readonly onLoad: (phase: LoadPhase) => void;
   /** The load is done. The play starts when the promise resolves, after the load scene closes. */
@@ -60,9 +66,10 @@ type AfterLoad = {
 
 /** What happens at the end of the load of play `id`: the play starts, or the failure shows. */
 const afterLoad = (id: number, elements: PlayElements, hooks: PlayHooks): AfterLoad => {
-  const end = (result: number | null): void => {
+  /** The play loop gives the score at the end of the song, or null for Home on the pause screen. */
+  const end = (score: number | null): void => {
     stopRunning();
-    hooks.onEnd(result);
+    hooks.onEnd(score === null ? { kind: 'home' } : { kind: 'score', score });
   };
   const fail = ({ problem }: LoadFailure): void => {
     if (id === current) {

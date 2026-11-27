@@ -4,6 +4,7 @@ import { writeSave } from './shell/save';
 import { checkForUpdate, watchUpdates } from './shell/update';
 import { installSound } from './sound';
 import { App } from './ui/App';
+import { createSession } from './ui/session/controller';
 
 const root = document.getElementById('app');
 if (!root) {
@@ -32,17 +33,23 @@ if (import.meta.env.DEMO && query.has('demo')) {
 } else {
   // Before the first touch: the audio session, the music preload, and the unlock on each touch.
   installSound();
-  render(() => <App />, root);
+  // The session state comes from storage before the first screen (play-sessions spec, "Storage").
+  const session = createSession();
+  render(() => <App session={session} />, root);
 
   // The service worker registers and checks for a new version. A new version waits for a safe point:
-  // the title screen before the first touch.
+  // the title screen before the first touch, or the night title.
   watchUpdates();
-  // iOS can end a hidden app with no other event, so the save is written at each hide, on every screen (spec,
-  // "Save").
+  // iOS can end a hidden app with no other event, so the save and the session state are written at each hide, on
+  // every screen (spec, "Save"). The session stops its count at a hide and applies the gap rule at a show.
   watchLifecycle({
     hidden: () => {
       writeSave();
+      session.hide();
     },
-    visible: checkForUpdate,
+    visible: () => {
+      checkForUpdate();
+      session.show();
+    },
   });
 }

@@ -13,6 +13,8 @@ import type { JSX } from '@solidjs/web';
 // slides out of the song sleeve, a new star flies to its place, a new record color slides out after a third star,
 // and at silver and gold the new pal jumps into the band (the join scene). The pals dance by the score. The
 // record, the star, and the join have their sounds (Sound effects switch). Then one button goes back to the song list.
+// After the last song of a session, the button has the label "Goodbye" and opens the goodbye scene (play-sessions
+// spec, "Session rules").
 // Taps: each `pointerdown` in the first 2 s does nothing, and a pointer that went down before the scene never
 // gives a `pointerdown` here. After that, one tap skips to the final state, and the sounds still to come do not
 // play: a skip never leaves a sound queued, and never plays one twice. The button reacts only to a pointer
@@ -27,6 +29,8 @@ type EndSceneProps = {
   /** The score of the play. */
   readonly score: number;
   readonly outcome: PlayOutcome;
+  /** The play of the last song of the session. */
+  readonly lastSong: boolean;
   readonly onDone: () => void;
 };
 
@@ -67,15 +71,15 @@ const watchScene = (plan: ScenePlan, skip: () => void, finish: () => void): (() 
   };
 };
 
-/** The button back to the song list: the 4 squares of the prototype. It reacts only to a pointer that went down
- * on it, or to a keyboard press (no pointer: `detail` 0). */
-const DoneButton = (props: { readonly onDone: () => void }): JSX.Element => {
+/** The button back to the song list, or to the goodbye scene after the last song: the 4 squares of the prototype.
+ * It reacts only to a pointer that went down on it, or to a keyboard press (no pointer: `detail` 0). */
+const DoneButton = (props: { readonly lastSong: boolean; readonly onDone: () => void }): JSX.Element => {
   let armed = false;
   return (
     <button
       type="button"
       class="end-done"
-      aria-label="Back to the songs"
+      aria-label={props.lastSong ? 'Goodbye' : 'Back to the songs'}
       onPointerDown={() => {
         armed = true;
       }}
@@ -135,7 +139,7 @@ export const EndScene = (props: EndSceneProps): JSX.Element => {
       <Band plan={plan} refs={refs} />
       <div class="end-foot">
         <Show when={done()}>
-          <DoneButton onDone={() => props.onDone()} />
+          <DoneButton lastSong={props.lastSong} onDone={() => props.onDone()} />
         </Show>
       </div>
     </main>
