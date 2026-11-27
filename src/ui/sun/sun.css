@@ -1,0 +1,61 @@
+/* The sun of the session scenes (src/ui/sun/Sun.tsx), as in the sunset prototype. The box is 16/9 of the disc, so
+   the rays and the glow fit inside it, and the box is centred on its left and top. */
+@property --sunc {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0.89 0.16 96);
+}
+
+.sun {
+  position: absolute;
+  width: calc(var(--sun-d) * 16 / 9);
+  height: calc(var(--sun-d) * 16 / 9);
+  margin: calc(var(--sun-d) * -8 / 9) 0 0 calc(var(--sun-d) * -8 / 9);
+  pointer-events: none;
+}
+
+.sun-y,
+.sun-s {
+  position: absolute;
+  inset: 0;
+}
+
+.sun-glow {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklch, var(--sunc) 60%, transparent),
+    color-mix(in oklch, var(--sunc) 22%, transparent) 52%,
+    transparent
+  );
+}
+
+.sun-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sun-disc {
+  fill: var(--sunc);
+  stroke: color-mix(in oklch, var(--sunc) 70%, var(--grape-950));
+  stroke-width: 2.5;
+}
+
+.sun-rays {
+  stroke: var(--sunc);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.sun-shine {
+  fill: none;
+  stroke: var(--white);
+  stroke-width: 4;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
