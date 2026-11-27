@@ -106,6 +106,12 @@
   top: var(--low-moon);
 }
 
+/* A second moon at the low place. It shows only with reduced motion on the night title (at the end of this file). */
+.night-moon-low {
+  top: var(--low-moon);
+  opacity: 0;
+}
+
 .night-moon svg {
   display: block;
   width: 100%;
@@ -392,8 +398,8 @@
   }
 }
 
-/* Reduced motion (and the `reduce` flag of the session demo): no loop. The stars and the "Zzz" keep still, the
-   first light only fades, and the moon does not move. */
+/* Reduced motion (and the `reduce` flag of the session demo): no loop. The stars and the "Zzz" keep still, and the
+   first light and the moon only fade. */
 .night-reduce .night-stars i,
 .night-reduce .night-play {
   animation: none;
@@ -414,4 +420,19 @@
 
 .night-reduce .night-moon {
   transition: none;
+}
+
+/* At first light on the night title, the moon fades out at the top of the sky, and the low moon fades in. */
+.night-title.night-reduce .night-moon {
+  transition: opacity 2s ease-in-out;
+}
+
+.night-title.night-reduce.night-first-light .night-moon {
+  top: var(--moon-top);
+  opacity: 0;
+}
+
+.night-title.night-reduce.night-first-light .night-moon-low {
+  top: var(--low-moon);
+  opacity: 1;
 }

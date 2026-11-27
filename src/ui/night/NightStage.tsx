@@ -92,7 +92,10 @@ const Sky = (props: { readonly mode: NightMode }): JSX.Element => (
       <div class="night-layer night-sky-sunset" data-part="sky-sunset" />
     </Show>
     <div class="night-moon" data-part="moon">
-      <Moon />
+      <Moon id="night-moon" />
+    </div>
+    <div class="night-moon night-moon-low">
+      <Moon id="night-moon-low" />
     </div>
     <Show when={props.mode === 'goodbye'}>
       <Sun class="night-sun" faces={GOODBYE_SUN_FACES} color={SUNSET_SUN} rays={{ opacity: 0, scale: 0.72 }} />

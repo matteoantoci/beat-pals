@@ -61,23 +61,23 @@ export const Stars = (): JSX.Element => (
   </div>
 );
 
-/** A crescent moon with a soft halo. */
-export const Moon = (): JSX.Element => (
+/** A crescent moon with a soft halo. `id` names its mask and its halo, so that 2 moons on a page do not share ids. */
+export const Moon = (props: { readonly id: string }): JSX.Element => (
   <svg viewBox="0 0 64 64" aria-hidden="true">
     <defs>
-      <mask id="night-moon-mask">
+      <mask id={`${props.id}-mask`}>
         <rect x="-20" y="-20" width="104" height="104" fill="#fff" />
         <circle cx="44" cy="22" r="21" fill="#000" />
       </mask>
-      <radialGradient id="night-moon-halo">
+      <radialGradient id={`${props.id}-halo`}>
         <stop offset="0.55" class="night-moon-halo" stop-opacity="0.22" />
         <stop offset="1" class="night-moon-halo" stop-opacity="0" />
       </radialGradient>
     </defs>
-    <circle cx="32" cy="32" r="44" fill="url(#night-moon-halo)" />
-    <circle class="night-moon-face" cx="32" cy="32" r="26" mask="url(#night-moon-mask)" />
-    <circle class="night-moon-spot" cx="18" cy="38" r="3" mask="url(#night-moon-mask)" />
-    <circle class="night-moon-spot" cx="26" cy="48" r="2" mask="url(#night-moon-mask)" />
+    <circle cx="32" cy="32" r="44" fill={`url(#${props.id}-halo)`} />
+    <circle class="night-moon-face" cx="32" cy="32" r="26" mask={`url(#${props.id}-mask)`} />
+    <circle class="night-moon-spot" cx="18" cy="38" r="3" mask={`url(#${props.id}-mask)`} />
+    <circle class="night-moon-spot" cx="26" cy="48" r="2" mask={`url(#${props.id}-mask)`} />
   </svg>
 );
 

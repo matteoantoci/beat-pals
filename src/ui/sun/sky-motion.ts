@@ -69,14 +69,14 @@ const playFaces = (sun: Element, step: SunStep): void => {
   }
 };
 
-/** The old sky fades out and its clouds drift, and the rim of the hill lights up at sunset. */
-const playSky = (strip: HTMLElement, step: SunStep): void => {
+/** The old sky fades out, its clouds drift (not with reduced motion), and the rim of the hill lights up at sunset. */
+const playSky = (strip: HTMLElement, step: SunStep, reduce: boolean): void => {
   const old = strip.querySelector('.sky-from');
   track(old, 'opacity', [
     [STEP_AT, 1, EASE_IN_OUT],
     [STEP_END - 0.2, 0],
   ]);
-  for (const cloud of old?.querySelectorAll('.sky-cloud') ?? []) {
+  for (const cloud of reduce ? [] : (old?.querySelectorAll('.sky-cloud') ?? [])) {
     track(cloud, 'translate', [
       [STEP_AT, '0px 0px', EASE_SINE],
       [STEP_END, '-36px 0px'],
@@ -122,7 +122,7 @@ const playSun = (strip: HTMLElement, sun: Element, step: SunStep): void => {
 };
 
 export const playStep = (strip: HTMLElement, step: SunStep, reduce: boolean): void => {
-  playSky(strip, step);
+  playSky(strip, step, reduce);
   if (reduce) {
     track(strip.querySelector('.sky-sun-old'), 'opacity', [
       [STEP_AT, 1],
