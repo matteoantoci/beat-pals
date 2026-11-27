@@ -1,6 +1,7 @@
 // The service worker of the app. vite-plugin-pwa runs in prompt mode: a new version installs and waits.
-// The app accepts the update, not the Child: the prompt is the title screen before the first touch, with no
-// text on the screen (as in Pile Pals). A waiting update must never reload the page in the middle of a song.
+// The app accepts the update, not the Child: the prompt is the title screen before the first touch, or the night
+// title, with no text on the screen (as in Pile Pals). A waiting update must never reload the page in the middle of a
+// song or of a session scene.
 
 import { registerSW } from 'virtual:pwa-register';
 
@@ -8,7 +9,7 @@ import { registerSW } from 'virtual:pwa-register';
 type Update = (reloadPage?: boolean) => Promise<void>;
 
 let waiting = false;
-/** True while the screen is at a safe point (the title screen before the first touch). */
+/** True while the screen is at a safe point (the title screen before the first touch, or the night title). */
 let safe = false;
 let registration: ServiceWorkerRegistration | undefined;
 let update: Update | undefined;
@@ -18,7 +19,7 @@ const ignored = (): void => undefined;
 
 /**
  * Applies a waiting update: the new service worker takes control and the page reloads.
- * Only the safe window of the title screen calls it.
+ * Only a safe window calls it.
  */
 const applyUpdateIfWaiting = (): void => {
   if (waiting && update) {
@@ -50,7 +51,8 @@ export const checkForUpdate = (): void => {
 
 /**
  * Starts a safe window: a waiting update applies now, and an update that becomes ready during the window
- * applies when it is ready. The title screen opens the window when it shows, and closes it at the first touch.
+ * applies when it is ready. The title screen and the night title open the window when they show, and close it at
+ * the first touch (src/ui/title/safe-point.ts).
  * Returns the function that closes the window.
  */
 export const openSafeWindow = (): (() => void) => {

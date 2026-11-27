@@ -16,7 +16,15 @@ export type { RestoreFailure, SaveData, SavedProgress } from './progress/save';
 export { readSaveCode, saveCode } from './progress/save-code';
 export { endStage, parentStatus, restOver, sessionAfter } from './session/session';
 export { DEFAULT_SESSION_SETTINGS, SONG_ALLOWANCE_MS, WAKING_DAY_MS } from './session/types';
-export type { SessionAnswer, SessionEvent, SessionSettings, SessionState, SunStage, SunStep } from './session/types';
+export type {
+  SessionAnswer,
+  SessionEvent,
+  SessionSettings,
+  SessionState,
+  SessionStatus,
+  SunStage,
+  SunStep,
+} from './session/types';
 export { restoreSession, restoreSessionSettings, storedSession } from './session/stored';
 export { chartAuthors, CREDIT_GROUPS, CREDITS } from './credits/credits';
 export type { CreditGroup } from './credits/credits';
