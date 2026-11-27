@@ -1,9 +1,12 @@
 // The fit of the play to the screen: the elements of the play screen, the geometry from their size and the safe
-// areas, and the new layout after a turn of the device.
+// areas, and the new layout after a turn of the device. The stage ports make the stage and the pals on these
+// elements for the play lifetime (play-load.ts).
 
+import { decodePals } from '../pals/pal-svg';
 import { layout, type Geometry } from './geometry';
-import type { Pals } from './pals';
-import type { Stage } from './stage';
+import { makePals, type Pals } from './pals';
+import { createStage, type Stage } from './stage';
+import type { StagePorts } from './load-parts';
 
 export type PlayElements = {
   readonly root: HTMLElement;
@@ -18,7 +21,7 @@ export type PlayElements = {
 const px = (value: string): number => Number.parseFloat(value) || 0;
 
 /** The safe-area insets come from the padding of the probe, which CSS sets to env(safe-area-inset-*). */
-export const measure = ({ root, probe }: Pick<PlayElements, 'root' | 'probe'>): Geometry => {
+const measure = ({ root, probe }: Pick<PlayElements, 'root' | 'probe'>): Geometry => {
   const style = getComputedStyle(probe);
   return layout(root.clientWidth, root.clientHeight, {
     top: px(style.paddingTop),
@@ -28,14 +31,11 @@ export const measure = ({ root, probe }: Pick<PlayElements, 'root' | 'probe'>): 
   });
 };
 
-/**
- * A turn of the device paints the stage again for the new size and places the pals again. `redraw` draws a frame
- * after that, for a screen with no frame loop (the demo route).
- */
-export const watchResize = (
+/** A turn of the device paints the stage again for the new size, places the pals again, and calls `redraw`. */
+const watchResize = (
   elements: Pick<PlayElements, 'root' | 'probe'>,
   { stage, pals }: { readonly stage: Stage; readonly pals: Pals },
-  redraw: () => void = () => undefined
+  redraw: () => void
 ): { geometry: () => Geometry; unresize: () => void } => {
   let geometry = measure(elements);
   pals.layout(geometry);
@@ -48,3 +48,14 @@ export const watchResize = (
   window.addEventListener('resize', onResize);
   return { geometry: () => geometry, unresize: () => window.removeEventListener('resize', onResize) };
 };
+
+/** The stage steps on the elements of the play screen. `redraw` draws a frame after a turn of the device, for a
+ * screen with no frame loop (the demo route). */
+export const stagePorts = (elements: PlayElements, redraw: () => void = () => undefined): StagePorts => ({
+  pictures: decodePals,
+  stage: (band) => createStage(elements.canvas, measure(elements), band),
+  arrange: (stage, band, beats) => {
+    const pals = makePals(elements.pals, band, beats);
+    return { pals, ...watchResize(elements, { stage, pals }, redraw) };
+  },
+});

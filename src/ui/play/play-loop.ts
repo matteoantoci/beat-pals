@@ -15,6 +15,7 @@ import type { Action, PlayEvent, PlayState } from '../../model';
 import type { Song } from '../../sound';
 import type { Geometry } from './geometry';
 import type { Pals } from './pals';
+import type { PlayCalls, StartedPlay } from './play-load';
 import type { Stage } from './stage';
 import type { LiveView } from './view';
 
@@ -22,7 +23,7 @@ import type { LiveView } from './view';
  * run): the play pauses, and the play button gives that tap. */
 const STALL_MS = 1000;
 /** What the play loop draws, plays, and calls. */
-export type PlayLoopParts = {
+export type PlayLoopParts = PlayCalls & {
   readonly root: HTMLElement;
   readonly beads: readonly HTMLElement[];
   readonly start: PlayState;
@@ -31,19 +32,6 @@ export type PlayLoopParts = {
   readonly pals: Pals;
   readonly view: LiveView;
   readonly geometry: () => Geometry;
-  /** The play paused itself: show the pause screen. */
-  readonly onPause: () => void;
-  /** The song ended (the score) or the play ended from the pause screen (null). */
-  readonly onEnd: (result: number | null) => void;
-};
-
-/** The controls of the running play loop. */
-export type PlayLoop = {
-  readonly pause: () => void;
-  readonly resume: () => void;
-  readonly quit: () => void;
-  /** Stops everything with no end call, for example when the screen closes. */
-  readonly stop: () => void;
 };
 
 const nothing = (): void => undefined;
@@ -183,8 +171,8 @@ const listen = (parts: PlayLoopParts): (() => void) => {
   };
 };
 
-/** Starts the song and the play. */
-export const startPlayLoop = (parts: PlayLoopParts): PlayLoop => {
+/** Starts the song and the play. `stop` stops everything with no end call, for example when the screen closes. */
+export const startPlayLoop = (parts: PlayLoopParts): StartedPlay => {
   play = parts.start;
   down.clear();
   beadsFull = -1;
