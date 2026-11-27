@@ -127,7 +127,7 @@ export const App = (props: { readonly session: SessionController }): JSX.Element
         <SongList sun={sun()} onHome={() => go('title')} onPlay={play} />
       </Match>
       <Match when={shown() === 'parent'}>
-        <ParentArea onClose={() => go('title')} />
+        <ParentArea session={session} onClose={() => go('title')} />
       </Match>
       <Match when={shown() === 'play' && playing()} keyed>
         {(current) => (

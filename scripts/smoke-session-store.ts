@@ -26,6 +26,22 @@ type SeedSession = {
   readonly starts: readonly number[];
 };
 
+/** The stored form of an asleep state (src/model/session/stored.ts). */
+type SeedAsleep = {
+  readonly version: number;
+  readonly kind: 'asleep';
+  readonly until: number;
+  readonly starts: readonly number[];
+};
+
+/** The stored state of pals that sleep for 1 h more. */
+export const asleepHour = (now: number): SeedAsleep => ({
+  version: 1,
+  kind: 'asleep',
+  until: now + 60 * MINUTE_MS,
+  starts: [now - 20 * MINUTE_MS],
+});
+
 /** The stored state of a session that opened 11 minutes ago and used its 10 minutes. */
 export const usedUp = (now: number): SeedSession => ({
   version: 1,
@@ -70,7 +86,7 @@ export const sessionOf = async (page: Page): Promise<Stored> => page.evaluate(st
  * Writes the session keys (null deletes them) from a static file of the same origin, where the app does not run,
  * and then starts the app again on its title screen.
  */
-export const seedSession = async (page: Page, url: string, state: SeedSession | null): Promise<void> => {
+export const seedSession = async (page: Page, url: string, state: SeedSession | SeedAsleep | null): Promise<void> => {
   await page.goto(`${url}icon.svg`);
   await page.evaluate(
     (keys, seed) => {

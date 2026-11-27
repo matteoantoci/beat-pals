@@ -39,3 +39,13 @@ export const loadSessionSettings = (): SessionSettings => {
   settings ??= restoreSessionSettings(readJson(SETTINGS_KEY));
   return settings;
 };
+
+/** Writes the session settings. They apply from the next session. A failed write keeps them for this run. */
+export const storeSessionSettings = (next: SessionSettings): void => {
+  settings = next;
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+  } catch {
+    // The settings stay for this run.
+  }
+};
