@@ -11,9 +11,10 @@ import type { JSX } from '@solidjs/web';
 import type { Accessor } from 'solid-js';
 
 // The play screen (spec, "Screens"): the PixiJS canvas, the 3 pals as HTML pictures above it, the pause button, and
-// the progress beads of the song. During the load, the load scene covers it and the title music plays on; the
-// music stops when the play starts. A failed load shows the oops moment and goes back to the song list. At each
-// hit, `data-last-hit` on this element gets the lane, the grade, and the song time (spec, "Testing Decisions").
+// the progress beads of the song. During the load, the load scene covers it and the title music plays on (the
+// last-song cue fades it out); the music stops when the play starts. A failed load shows the oops moment and goes
+// back to the song list. At each hit, `data-last-hit` on this element gets the lane, the grade, and the song time
+// (spec, "Testing Decisions").
 // The screen gives 3 different results: a score, a failed load, and Home on the pause screen (play-sessions spec,
 // "Session rules").
 
