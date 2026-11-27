@@ -1,7 +1,14 @@
-/* The song list (src/ui/songs/), style A of the prototype. The cards scroll; the home button stays in its corner. */
+/* The song list (src/ui/songs/), style A of the prototype. The cards scroll; the home button stays in its corner.
+   #app keeps its content inside the safe areas. The list goes out into the left and right safe areas, so that the
+   sky strip (src/ui/sun/sky.css) goes from edge to edge in landscape. The side padding keeps the cards inside the
+   safe areas. The session demo gives the safe areas in --inset-*; the app gets them from env(). */
 .song-list {
+  --list-inset-left: var(--inset-left, env(safe-area-inset-left, 0px));
+  --list-inset-right: var(--inset-right, env(safe-area-inset-right, 0px));
   position: relative;
   height: 100%;
+  margin: 0 calc(-1 * var(--list-inset-right)) 0 calc(-1 * var(--list-inset-left));
+  padding: 0 var(--list-inset-right) 0 var(--list-inset-left);
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
@@ -15,7 +22,7 @@
 .song-home {
   position: absolute;
   top: 16px;
-  left: 16px;
+  left: calc(var(--list-inset-left) + 16px);
   z-index: 1;
   width: 64px;
   height: 64px;
