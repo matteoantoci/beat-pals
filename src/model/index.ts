@@ -22,7 +22,9 @@ export {
   DAY_START_MINUTES,
   DEFAULT_SESSION_SETTINGS,
   MINUTE_MS,
+  REST_MINUTES,
   SESSION_MINUTES,
+  STOP_MINUTES,
   SONG_ALLOWANCE_MS,
 } from './session/types';
 export type {

@@ -4,7 +4,8 @@ import { PlaySessions } from '../../../parent/PlaySessions';
 import type { SessionScreenProps, SessionScreens } from '../registry';
 import type { JSX } from '@solidjs/web';
 
-// The `parent` screen of the session demo: the parent area with the "Play sessions" section while the pals sleep.
+// The `parent` screen of the session demo: the parent area with the "Play sessions" section while the pals sleep
+// until the next day start.
 // "Open a new session now" works on this screen, and the settings change only the screen. The screen has no
 // animation, so `t` and `reduce` change nothing.
 
@@ -17,10 +18,10 @@ const ParentScreen = (props: SessionScreenProps): JSX.Element => {
         <button type="button">Done</button>
       </header>
       <PlaySessions
-        status={{ kind: 'asleep', minutesLeft: 80, untilDayStart: false }}
+        status={{ kind: 'asleep', minutesLeft: 500, untilDayStart: true }}
         settings={DEFAULT_SESSION_SETTINGS}
         onSettings={() => undefined}
-        onOpenNow={() => ({ kind: 'awake', usedTodayMinutes: 20, dayMinutes: 45, byParent: true })}
+        onOpenNow={() => ({ kind: 'awake', usedTodayMinutes: 45, dayMinutes: 45, byParent: true })}
       />
       <section class="parent-section">
         <h2>Songs</h2>
