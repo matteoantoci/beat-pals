@@ -1,10 +1,12 @@
 import { For, Show } from 'solid-js';
 import { RECORD_COLORS } from '../../model';
-import { palPicture } from '../pals/pal-svg';
+import { palPicture, type PalState } from '../pals/pal-svg';
+import { SessionPal } from '../pals/SessionPal';
 import { Record, StarIcon } from '../songs/record';
 import { SongPicture } from '../songs/SongList';
+import { endFace } from './yawn';
 import type { Lane, PlayOutcome } from '../../model';
-import type { ScenePlan } from './motion';
+import type { ScenePlan } from './timeline';
 import type { JSX } from '@solidjs/web';
 
 // The parts of the end scene that the motion moves. Each part puts its elements into the refs of the scene.
@@ -80,9 +82,11 @@ export const StarRow = (props: { readonly outcome: PlayOutcome; readonly refs: R
 );
 
 /** The 3 pals on the floor, Pip, Dot, and Bo in their places, all at the same size, as on the play screen. The
- * dancers smile; a waiting pal that does not dance looks on. There is never a sad pal. */
+ * dancers smile; a waiting pal that does not dance looks on. There is never a sad pal. With the yawn, each pal is a
+ * session pal with its arms and the faces of the yawn: the start face, the yawn face, and the end face. */
 export const Band = (props: { readonly plan: ScenePlan; readonly refs: Refs }): JSX.Element => {
-  const dances = (lane: Lane): boolean => props.plan.dance !== 'band' || props.plan.band.includes(lane);
+  const face = (lane: Lane): PalState =>
+    props.plan.dance !== 'band' || props.plan.band.includes(lane) ? 'happy' : 'idle';
   return (
     <section class="end-stage">
       <For each={LANES}>
@@ -90,13 +94,24 @@ export const Band = (props: { readonly plan: ScenePlan; readonly refs: Refs }): 
           <span class={['end-spot', { waiting: !props.plan.band.includes(lane) }]}>
             <span class="end-shadow" />
             <span class="end-body" ref={(el) => props.refs.bodies.push(el)}>
-              <img
-                class="end-pal"
-                src={palPicture(lane, dances(lane) ? 'happy' : 'idle')}
-                alt=""
-                draggable="false"
-                ref={(el) => props.refs.pals.push(el)}
-              />
+              <Show
+                when={props.plan.yawn}
+                fallback={
+                  <img
+                    class="end-pal"
+                    src={palPicture(lane, face(lane))}
+                    alt=""
+                    draggable="false"
+                    ref={(el) => props.refs.pals.push(el)}
+                  />
+                }
+              >
+                {(yawn) => (
+                  <span class="end-pal" ref={(el) => props.refs.pals.push(el)}>
+                    <SessionPal index={lane} faces={[face(lane), 'yawn', endFace(yawn())]} />
+                  </span>
+                )}
+              </Show>
             </span>
             <Show when={lane === props.plan.joins}>
               <Sparks ref={(el) => Object.assign(props.refs, { landSparks: el })} />

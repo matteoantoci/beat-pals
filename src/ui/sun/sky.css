@@ -1,0 +1,91 @@
+/* The sky strip at the top of the song list (src/ui/sun/SkyStrip.tsx). It scrolls with the cards. The list
+   puts its home button and its cards on top of it, the cards below --sky-strip-h. */
+:root {
+  --sky-strip-h: 132px;
+  --sky-hill-h: 44px;
+}
+
+@media (orientation: landscape) {
+  :root {
+    --sky-strip-h: 108px;
+    --sky-hill-h: 34px;
+  }
+}
+
+.sky-strip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--sky-strip-h);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+}
+
+.sky-day {
+  background: linear-gradient(oklch(0.6 0.13 248), oklch(0.72 0.11 235) 45%, oklch(0.84 0.07 215));
+}
+
+.sky-afternoon {
+  background: linear-gradient(
+    oklch(0.56 0.12 268),
+    oklch(0.7 0.1 300) 38%,
+    oklch(0.8 0.11 55) 75%,
+    oklch(0.86 0.11 82)
+  );
+}
+
+.sky-sunset {
+  background: linear-gradient(
+    oklch(0.38 0.14 298),
+    oklch(0.52 0.17 345) 40%,
+    oklch(0.66 0.17 28) 72%,
+    oklch(0.78 0.15 60)
+  );
+}
+
+.sky-cloud {
+  position: absolute;
+  height: auto;
+  overflow: visible;
+}
+
+/* The place of the sun at its stage (SUN_PLACES in ./sun-step.ts), given on the element for both orientations. */
+.sky-sun {
+  --sun-d: var(--pd);
+  top: var(--py);
+  left: var(--px);
+}
+
+@media (orientation: landscape) {
+  .sky-sun {
+    --sun-d: var(--ld);
+    top: var(--ly);
+    left: var(--lx);
+  }
+}
+
+.sky-hills {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: var(--sky-hill-h);
+}
+
+.sky-front-hill {
+  fill: var(--stage);
+}
+
+/* The cards of a list with a strip start below the strip and paint above it. */
+.sky-strip ~ .song-cards {
+  position: relative;
+  padding-top: calc(var(--sky-strip-h) + 20px);
+}
