@@ -22,6 +22,7 @@ import { offlineChecks } from './smoke-offline.ts';
 import { check, checkLines, setVisibility, shot, tap, wait } from './smoke-page.ts';
 import { parentSections } from './smoke-parent.ts';
 import { playChecks } from './smoke-play.ts';
+import { sessionChecks } from './smoke-session.ts';
 import { autoDownload, installStep, songSetup } from './smoke-setup.ts';
 import type { AudioRecord } from './smoke-audio.ts';
 import type { ChildProcess } from 'node:child_process';
@@ -154,6 +155,8 @@ const runAll = async (browser: Browser, server: Server, keyCode: string): Promis
   await slowLoad(page, SHOTS);
   await loadFailure(page, SHOTS);
   await parentSections(page);
+  // The session steps run after the other online steps, and the offline part stays last: it stops the server.
+  await sessionChecks(page, audio, server.url);
   await offlineChecks(page, audio, async () => stopPreview(server));
 };
 

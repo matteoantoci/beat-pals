@@ -3,9 +3,9 @@
 // The sound module has its own listener for the audio context: do not touch the audio here.
 
 export type Lifecycle = {
-  /** The page is not visible: save the state. */
+  /** The page is not visible: save the state and stop the count of the session. */
   readonly hidden: () => void;
-  /** The page is visible again: ask the browser for a new version. */
+  /** The page is visible again: ask the browser for a new version, and apply the gap rule of the session. */
   readonly visible: () => void;
 };
 
