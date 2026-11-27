@@ -1,0 +1,195 @@
+/* The last-song cue (LastSongCue.tsx), as in the sunset prototype, screen "Last song: load scene cue": a sunset sky,
+   the record as the sun on the horizon with rays and a glow behind it, a hill, and the big pals on the hill.
+   Portrait: the sun in the middle and the pals below it. Landscape: the sun on the left and the pals on the right.
+   The sizes come from the size of the scene (container units), so the sun stays round in each orientation. */
+.last-song-cue {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  container: cue / size;
+}
+
+.cue-scene {
+  /* The horizon, the record size and its x, the size of Dot and of Pip and Bo, and the place of the band. */
+  --hz: 62cqh;
+  --rec: min(68cqw, 268px);
+  --rx: 50cqw;
+  --dot: min(44cqw, 176px);
+  --side: min(34cqw, 138px);
+  --band-x: 50cqw;
+  --band-b: calc(var(--inset-bottom) + 44px);
+  position: absolute;
+  inset: 0;
+}
+
+@container cue (orientation: landscape) {
+  .cue-scene {
+    --hz: 68cqh;
+    --rec: min(58cqh, 228px);
+    --rx: 30cqw;
+    --dot: min(40cqh, 156px);
+    --side: min(34cqh, 132px);
+    --band-x: 70cqw;
+    --band-b: calc(var(--inset-bottom) + 14px);
+  }
+}
+
+.cue-sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    oklch(0.36 0.14 298),
+    oklch(0.5 0.17 345) 30%,
+    oklch(0.64 0.17 25) calc(var(--hz) - 12cqh),
+    oklch(0.78 0.15 60) var(--hz)
+  );
+}
+
+.cue-glow {
+  position: absolute;
+  left: var(--rx);
+  top: calc(var(--hz) - var(--rec) / 2);
+  width: calc(var(--rec) * 3.2);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: radial-gradient(
+    closest-side,
+    oklch(0.9 0.12 85 / 0.9),
+    oklch(0.82 0.15 60 / 0.4) 36%,
+    oklch(0.75 0.16 40 / 0) 100%
+  );
+}
+
+/* The centre of the sun and of its rays is one half record above the horizon. A motion moves them with `translate`
+   and `scale`, so the layout stays in `margin`. */
+.cue-sun,
+.cue-rays {
+  position: absolute;
+  z-index: 1;
+  left: var(--rx);
+  top: calc(var(--hz) - var(--rec) / 2 - 4px);
+}
+
+.cue-sun {
+  width: var(--rec);
+  height: var(--rec);
+  margin: calc(var(--rec) / -2) 0 0 calc(var(--rec) / -2);
+}
+
+.cue-sun .load-disc {
+  position: absolute;
+  inset: 0;
+  width: auto;
+}
+
+.cue-rays {
+  width: calc(var(--rec) * 1.9);
+  height: calc(var(--rec) * 1.9);
+  margin: calc(var(--rec) * -0.95) 0 0 calc(var(--rec) * -0.95);
+  overflow: visible;
+}
+
+.cue-rays line {
+  stroke: oklch(0.9 0.13 85 / 0.9);
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.cue-ground {
+  position: absolute;
+  z-index: 2;
+  left: -12%;
+  right: -12%;
+  top: var(--hz);
+  bottom: 0;
+  border-radius: 50% 50% 0 0 / 44px 44px 0 0;
+  background: linear-gradient(oklch(0.32 0.13 292), oklch(0.26 0.12 288) 28%, oklch(0.22 0.1 287));
+}
+
+/* The light of the sun on the rim of the hill. */
+.cue-shine {
+  position: absolute;
+  z-index: 2;
+  left: var(--rx);
+  top: var(--hz);
+  width: calc(var(--rec) * 1.7);
+  height: 34px;
+  translate: -50% -38%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, oklch(0.86 0.13 70 / 0.7), oklch(0.7 0.16 40 / 0));
+}
+
+/* The band: Dot in the middle and in front, Pip and Bo half behind it. The band is a point on the hill at the
+   middle of Dot, with its shadow below. */
+.cue-band {
+  position: absolute;
+  z-index: 3;
+  left: var(--band-x);
+  bottom: var(--band-b);
+  width: 0;
+  height: var(--dot);
+}
+
+.cue-band::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -10px;
+  width: calc(var(--dot) + var(--side) * 1.6);
+  height: 34px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: oklch(0.15 0.07 285 / 0.55);
+}
+
+.cue-pal {
+  position: absolute;
+  bottom: 14px;
+  width: var(--side);
+  height: var(--side);
+}
+
+.cue-pal-pip {
+  left: calc(var(--dot) / -2 - var(--side) * 0.66);
+}
+
+.cue-pal-bo {
+  left: calc(var(--dot) / 2 - var(--side) * 0.34);
+}
+
+.cue-pal-dot {
+  left: calc(var(--dot) / -2);
+  bottom: 0;
+  z-index: 1;
+  width: var(--dot);
+  height: var(--dot);
+}
+
+.cue-pal .session-pal-arm {
+  width: 36%;
+  height: 72%;
+}
+
+/* Pip and Bo stand behind Dot: only their outer arms show. */
+.cue-pal-pip .session-pal-arm-right,
+.cue-pal-bo .session-pal-arm-left {
+  display: none;
+}
+
+/* Reduced motion: the record does not turn, and the arms stay raised. */
+.cue-reduce .load-record {
+  animation: none;
+}
+
+.cue-reduce .session-pal-arm {
+  opacity: 1;
+}
+
+.cue-reduce .session-pal-arm-left {
+  rotate: -45deg;
+}
+
+.cue-reduce .session-pal-arm-right {
+  rotate: 45deg;
+}

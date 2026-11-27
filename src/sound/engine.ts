@@ -1,7 +1,6 @@
 // One AudioContext for the whole app (spec, "Sound and the audio clock"). The unlock and the heal come from the
 // Pile Pals engine. Files are decoded one time in an offline context, so the buffers stay good after a replacement.
-import { soundStart } from '../model';
-import { outputOf } from './output';
+// The title loop is in ./loop.ts.
 
 declare global {
   // The Audio Session API of WebKit. lib.dom does not have it yet.
@@ -91,7 +90,7 @@ const download = async (file: string): Promise<AudioBuffer> => {
 };
 
 /** Loads and decodes a file one time. After a failure, the next call tries again. */
-const loadClip = (file: string): Promise<AudioBuffer> => {
+export const loadClip = (file: string): Promise<AudioBuffer> => {
   const known = loading.get(file);
   if (known) {
     return known;
@@ -111,58 +110,6 @@ export const readyClip = (file: string): AudioBuffer | undefined => {
   return buffer;
 };
 
-/** The loop that the app wants to hear. It stays set while the file loads and after a context replacement. */
-type Loop = { readonly file: string; readonly gainDb: number };
-let wanted: Loop | undefined;
-/** The loop that plays now, and the context that plays it. */
-type Playing = { readonly loop: Loop; readonly ctx: AudioContext; readonly source: AudioBufferSourceNode };
-let looping: Playing | undefined;
-
-/** Starts the wanted loop in the current context, if it does not play there yet. */
-const startLoop = (loop: Loop): void => {
-  const ctx = currentContext();
-  if (looping?.loop === loop && looping.ctx === ctx) {
-    return;
-  }
-  looping?.source.stop();
-  looping = undefined;
-  loadClip(loop.file)
-    .then((buffer) => {
-      if (wanted !== loop || ctx !== context || looping) {
-        return;
-      }
-      const offset = soundStart(buffer.getChannelData(0), buffer.sampleRate);
-      const source = new AudioBufferSourceNode(ctx, {
-        buffer,
-        loop: true,
-        loopStart: offset,
-        loopEnd: buffer.duration,
-      });
-      source.connect(new GainNode(ctx, { gain: 10 ** (loop.gainDb / 20) })).connect(outputOf(ctx));
-      source.start(0, offset);
-      looping = { loop, ctx, source };
-    })
-    .catch(ignore);
-};
-
-/** Stops the loop, if one plays. */
-export const stopLoop = (): void => {
-  wanted = undefined;
-  looping?.source.stop();
-  looping = undefined;
-};
-
-/**
- * Plays a file as a loop with its start silence trimmed. Call it from a tap. A loop of the same file continues.
- * After a context replacement, the loop starts again in the new context.
- */
-export const playLoop = (file: string, gainDb: number): void => {
-  if (wanted?.file !== file || wanted.gainDb !== gainDb) {
-    wanted = { file, gainDb };
-  }
-  startLoop(wanted);
-};
-
 const markStale = (): void => {
   if (context) {
     stale = true;
@@ -178,12 +125,6 @@ export const installAudio = (files: readonly string[]): void => {
   for (const file of files) {
     loadClip(file).catch(ignore);
   }
-  // A replacement closes the context of the loop, so the loop starts again in the new context.
-  onReplaced(() => {
-    if (wanted) {
-      startLoop(wanted);
-    }
-  });
   // For a mouse, pointerdown is a user gesture. For a touch, only pointerup is (HTML user activation).
   document.addEventListener('pointerdown', unlockAudio, { capture: true, passive: true });
   document.addEventListener('pointerup', unlockAudio, { capture: true, passive: true });
