@@ -38,7 +38,8 @@ const keyOf = (prop: string): string =>
 /**
  * Plays the keys of one property on an element as one Web Animation on the scene clock, and gives the animation.
  * Before the first key the first value holds, and after the last key the last value holds (fill both). Thus 2 curves
- * of one property never hide each other when they do not overlap. No element plays nothing.
+ * of one property never hide each other when they do not overlap. One key holds its value from its time on, for
+ * example a pose. No element plays nothing.
  */
 export const playKeys = (el: Element | null | undefined, prop: string, keys: readonly Key[]): Animation | undefined => {
   const start = keys[0]?.[0] ?? 0;
@@ -49,7 +50,11 @@ export const playKeys = (el: Element | null | undefined, prop: string, keys: rea
     [keyOf(prop)]: value,
     easing: easing ?? 'linear',
   }));
-  return el?.animate(frames, { delay: start * 1000, duration, fill: 'both' });
+  // A Web Animation with one keyframe goes to the value under the animation at its end, so one key gets a second
+  // keyframe with the same value.
+  const [only] = frames;
+  const held = frames.length === 1 && only ? [only, { ...only, offset: 1 }] : frames;
+  return el?.animate(held, { delay: start * 1000, duration, fill: 'both' });
 };
 
 /** The time of a face change in seconds (play-sessions spec): a 0.08 s cut, or a 0.25 s fade with reduced motion. */
