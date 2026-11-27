@@ -239,3 +239,30 @@
   font-weight: 400;
   text-decoration: underline;
 }
+
+/* The "Play sessions" section (./PlaySessions.tsx): the status, the choices of the 2 settings, and their notes. */
+.parent-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.parent-area .parent-choice button {
+  min-width: 52px;
+  padding: 8px 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.parent-area .parent-choice button[aria-pressed='true'] {
+  background: var(--parent-line);
+  color: var(--white);
+}
+
+.parent-status,
+.play-sessions-plan {
+  font-weight: 700;
+}
+
+.parent-hint {
+  opacity: 0.8;
+}

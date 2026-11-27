@@ -55,7 +55,7 @@ const EndYawnScreen = (props: SessionScreenProps & { readonly yawn: Yawn }): JSX
       <Band plan={plan} refs={refs} />
       <div class="end-foot">
         <Show when={props.t >= sceneLength(plan)}>
-          <DoneButton onDone={ignore} />
+          <DoneButton lastSong={false} onDone={ignore} />
         </Show>
       </div>
     </main>

@@ -5,7 +5,7 @@ import { loadFamilyKey, readCover, readSongStore, watchDownload } from '../../sh
 import { playTitleMusic } from '../../sound';
 import { palPicture } from '../pals/pal-svg';
 import { Record, Stars } from './record';
-import type { FamilyKey, IndexSong } from '../../model';
+import type { FamilyKey, IndexSong, SunStage, SunStep } from '../../model';
 import type { JSX } from '@solidjs/web';
 import type { Accessor } from 'solid-js';
 
@@ -14,11 +14,17 @@ import type { Accessor } from 'solid-js';
 // picture starts the song. A song shows when all its files are in the cache, so the list fills during a download.
 // The title screen opens the list only when a song is ready. The title music plays on, and a tap starts it again
 // when it does not play.
+// Play sessions (play-sessions spec, "Screens and motion"): each open of the list gets the sun stage of the session
+// and the step of the sun that plays, or none. The list gives the stage in `data-sun-stage`; the sun comes later
+// (ticket 04).
 
 type Card = { song: IndexSong; picture: string | undefined };
 
 /** What a tap on a card starts: the song and the key that opens its files. */
 export type SongChoice = { readonly song: IndexSong; readonly key: FamilyKey };
+
+/** The sun of the list: the stage to show, and the step that plays at this open of the list, or null. */
+export type SunView = { readonly stage: SunStage; readonly step: SunStep | null };
 
 type Cards = {
   readonly cards: Accessor<readonly Card[]>;
@@ -120,7 +126,11 @@ const SongCard = (props: { readonly card: Card; readonly onTap: () => void }): J
   );
 };
 
-type SongListProps = { readonly onHome: () => void; readonly onPlay: (choice: SongChoice) => void };
+type SongListProps = {
+  readonly sun: SunView;
+  readonly onHome: () => void;
+  readonly onPlay: (choice: SongChoice) => void;
+};
 
 export const SongList = (props: SongListProps): JSX.Element => {
   const { cards, key } = readyCards();
@@ -136,7 +146,7 @@ export const SongList = (props: SongListProps): JSX.Element => {
     }
   };
   return (
-    <main class="song-list">
+    <main class="song-list" data-sun-stage={props.sun.stage}>
       <button type="button" class="song-home" aria-label="Home" onClick={() => props.onHome()}>
         <HomeIcon />
       </button>

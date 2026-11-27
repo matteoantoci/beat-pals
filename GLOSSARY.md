@@ -177,3 +177,36 @@ _Avoid_: Settings, options, admin panel
 **Save code**:
 A text that holds all progress, so that the parent can copy it and restore it.
 _Avoid_: Backup, export, password
+
+## Sessions
+
+**Session**:
+The plays between a wake-up and the goodbye. It has a time limit in minutes.
+_Avoid_: Concert, round, game
+
+**Sun stage**:
+The stage of the sun in a session: day, late afternoon, or sunset.
+_Avoid_: Level, phase
+
+**Last song**:
+The song that starts when the song list shows the sunset, or after the time limit is used.
+_Avoid_: Final level
+
+**Last-song cue**:
+The full-screen sunset on the load scene of the last song, with its tune.
+
+**Goodbye scene**:
+The scene after the last song, from the wave to the sleep.
+
+**Night title**:
+The title screen while the pals sleep, with no play button.
+
+**Rest time**:
+The time from the goodbye to the next session. The game calculates it from the settings.
+_Avoid_: Rest, break, cooldown ("Rest" is already a gap in the notes.)
+
+**Session spacing**:
+The shortest time from the start of one session to the start of the next: 12 h divided by the sessions per day.
+
+**Wake-up scene**:
+The scene where the moon goes down, the sun comes up, and the pals wake.

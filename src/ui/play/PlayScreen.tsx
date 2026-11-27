@@ -4,7 +4,7 @@ import { BEADS } from './beads';
 import { HoldButton } from './HoldButton';
 import { LoadScene, loadSceneTiming, type LoadSceneTiming } from './LoadScene';
 import { PauseScreen } from './PauseScreen';
-import { loadPlay, type PlayHandle, type PlayHooks } from './play-load';
+import { loadPlay, type PlayHandle, type PlayHooks, type PlayResult } from './play-load';
 import type { LoadPhase } from '../../model';
 import type { SongChoice } from '../songs/SongList';
 import type { JSX } from '@solidjs/web';
@@ -14,11 +14,14 @@ import type { Accessor } from 'solid-js';
 // the progress beads of the song. During the load, the load scene covers it and the title music plays on; the
 // music stops when the play starts. A failed load shows the oops moment and goes back to the song list. At each
 // hit, `data-last-hit` on this element gets the lane, the grade, and the song time (spec, "Testing Decisions").
+// The screen gives 3 different results: a score, a failed load, and Home on the pause screen (play-sessions spec,
+// "Session rules").
 
 type PlayScreenProps = {
   readonly choice: SongChoice;
-  /** The score at the end of the song, or null for a play with no result. */
-  readonly onEnd: (result: number | null) => void;
+  /** The last song of the session: its load scene shows at once and stays longer. */
+  readonly lastSong: boolean;
+  readonly onEnd: (result: PlayResult) => void;
 };
 
 /** The pause button (a hold of 0.6 s) and the progress beads of the song, with no numbers. */
@@ -45,9 +48,9 @@ type LoadView = {
 
 /** The load scene of the play: the phase of the load, the scene timing, and the load hooks. After the oops moment
  * of a failed load, `onFailed` goes back, unless the screen closed. */
-const loadView = (onFailed: () => void): LoadView => {
+const loadView = (lastSong: boolean, onFailed: () => void): LoadView => {
   const [phase, setPhase] = createSignal<LoadPhase>({ step: 'read', bytes: 0, total: 1 });
-  const scene = loadSceneTiming();
+  const scene = loadSceneTiming(lastSong);
   let closed = false;
   onCleanup(() => {
     closed = true;
@@ -70,7 +73,7 @@ const loadView = (onFailed: () => void): LoadView => {
 
 export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
   const [paused, setPaused] = createSignal(false);
-  const { phase, scene, hooks } = loadView(() => props.onEnd(null));
+  const { phase, scene, hooks } = loadView(props.lastSong, () => props.onEnd({ kind: 'failed' }));
   let root: HTMLElement | undefined;
   const pals: HTMLImageElement[] = [];
   const beads: HTMLElement[] = [];
@@ -106,7 +109,7 @@ export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
       <div class="play-probe" />
       <Hud onPause={() => handle?.pause()} bead={(el) => beads.push(el)} />
       <Show when={sceneShows()}>
-        <LoadScene choice={props.choice} phase={phase} state={scene.state} />
+        <LoadScene choice={props.choice} phase={phase} state={scene.state} lastSong={props.lastSong} />
       </Show>
       <Show when={paused()}>
         <PauseScreen onPlay={resume} onHome={() => handle?.quit()} />
