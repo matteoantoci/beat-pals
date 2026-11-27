@@ -2,13 +2,11 @@
 // between a wake-up and the goodbye, with a time limit in minutes. The caller gives the wall time on every event, and
 // the model never reads a clock.
 
-import { DAY_MS, MINUTE_MS, SONG_ALLOWANCE_MS, WAKING_DAY_MS } from './types';
+import { DAY_MS, MINUTE_MS, SONG_ALLOWANCE_MS, SUN_STAGES, WAKING_DAY_MS } from './types';
 import type { Asleep, Open, SessionAnswer, SessionEvent, SessionState, SessionStatus, SunStage } from './types';
 
 /** One counted step over this time counts 0: the clock jumped forward. */
 const MAX_STEP_MS = MINUTE_MS;
-
-const STAGES: readonly SunStage[] = ['day', 'afternoon', 'sunset'];
 
 /** Adds the counted time from `countingSince` to `now`. A negative step and a step over 60 s count 0. */
 const counted = (open: Open, now: number): Open => {
@@ -35,7 +33,7 @@ const stageOf = (open: Open): SunStage => {
 /** The stage of the next list-open. The shown stage never goes back inside a session. */
 const nextStage = (open: Open): SunStage => {
   const stage = stageOf(open);
-  return STAGES.indexOf(stage) > STAGES.indexOf(open.shownStage) ? stage : open.shownStage;
+  return SUN_STAGES.indexOf(stage) > SUN_STAGES.indexOf(open.shownStage) ? stage : open.shownStage;
 };
 
 /**

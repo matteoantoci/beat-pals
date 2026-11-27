@@ -15,7 +15,14 @@ export { restore, snapshot, songProgress, withSong } from './progress/save';
 export type { RestoreFailure, SaveData, SavedProgress } from './progress/save';
 export { readSaveCode, saveCode } from './progress/save-code';
 export { endStage, parentStatus, restTimeOver, sessionAfter } from './session/session';
-export { DEFAULT_SESSION_SETTINGS, SONG_ALLOWANCE_MS, WAKING_DAY_MS } from './session/types';
+export {
+  DEFAULT_SESSION_SETTINGS,
+  MINUTE_MS,
+  SESSION_MINUTES,
+  SESSIONS_PER_DAY,
+  SONG_ALLOWANCE_MS,
+  WAKING_DAY_MS,
+} from './session/types';
 export type {
   SessionAnswer,
   SessionEvent,

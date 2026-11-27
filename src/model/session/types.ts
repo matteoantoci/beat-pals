@@ -1,17 +1,25 @@
 // The types and the constants of the session model (spec "Play sessions", section "Session model"). All states are
 // plain JSON, so localStorage can hold them. All times are wall times in ms since the epoch, from the caller.
 
+/** The choices of the time limit of a session in the parent area, in minutes. */
+export const SESSION_MINUTES = [5, 10, 15, 20, 25, 30] as const;
+/** The choices of the sessions per day in the parent area. */
+export const SESSIONS_PER_DAY = [1, 2, 3, 4, 5, 6] as const;
+
 /** The settings of the parent area: the time limit of a session, and the sessions per day. */
 export type SessionSettings = {
-  readonly minutes: 5 | 10 | 15 | 20 | 25 | 30;
-  readonly perDay: 1 | 2 | 3 | 4 | 5 | 6;
+  readonly minutes: (typeof SESSION_MINUTES)[number];
+  readonly perDay: (typeof SESSIONS_PER_DAY)[number];
 };
 
 /** The settings until the parent changes them. */
 export const DEFAULT_SESSION_SETTINGS: SessionSettings = { minutes: 10, perDay: 4 };
 
+/** The stages of the sun in a session, in their order. */
+export const SUN_STAGES = ['day', 'afternoon', 'sunset'] as const;
+
 /** The stage of the sun in a session. */
-export type SunStage = 'day' | 'afternoon' | 'sunset';
+export type SunStage = (typeof SUN_STAGES)[number];
 
 /** The step animation of the sun on the song list. */
 export type SunStep = { readonly from: SunStage; readonly to: SunStage };

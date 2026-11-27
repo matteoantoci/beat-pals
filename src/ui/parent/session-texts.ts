@@ -1,10 +1,8 @@
-import { WAKING_DAY_MS } from '../../model';
+import { MINUTE_MS, WAKING_DAY_MS } from '../../model';
 import type { SessionSettings, SessionStatus } from '../../model';
 
 // The texts of the "Play sessions" section of the parent area (play-sessions spec, "Parent"). They use time spans
 // only and never a clock time, because the game uses no clock time and no day boundary.
-
-const MINUTE_MS = 60_000;
 
 /** A time span in whole minutes, as "45 min", "1 h", or "1 h 20 min". */
 export const spanText = (minutes: number): string => {

@@ -1,4 +1,5 @@
 import { createSignal, For, Show } from 'solid-js';
+import { SESSION_MINUTES, SESSIONS_PER_DAY } from '../../model';
 import { planLine, statusLine } from './session-texts';
 import type { SessionSettings, SessionStatus } from '../../model';
 import type { JSX } from '@solidjs/web';
@@ -6,9 +7,6 @@ import type { JSX } from '@solidjs/web';
 // The "Play sessions" section of the parent area (play-sessions spec, "Parent"), in the plain P14 style. It shows the
 // state of the session with time spans only, the button "Open a new session now" while the pals sleep, the 2
 // settings, and the calculated line. A change of a setting applies from the next session.
-
-const MINUTES: readonly SessionSettings['minutes'][] = [5, 10, 15, 20, 25, 30];
-const PER_DAY: readonly SessionSettings['perDay'][] = [1, 2, 3, 4, 5, 6];
 
 export type PlaySessionsProps = {
   /** The facts of the status line when the parent area opens. */
@@ -51,7 +49,7 @@ const SettingsPart = (props: {
       <h3>Minutes per session</h3>
       <Choice
         label="Minutes per session"
-        items={MINUTES}
+        items={SESSION_MINUTES}
         value={settings().minutes}
         onPick={(minutes) => change({ ...settings(), minutes })}
       />
@@ -62,7 +60,7 @@ const SettingsPart = (props: {
       <h3>Sessions per day</h3>
       <Choice
         label="Sessions per day"
-        items={PER_DAY}
+        items={SESSIONS_PER_DAY}
         value={settings().perDay}
         onPick={(perDay) => change({ ...settings(), perDay })}
       />

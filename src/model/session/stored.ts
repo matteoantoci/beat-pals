@@ -3,7 +3,14 @@
 // The restore checks the shape and never throws.
 
 import { sessionAfter } from './session';
-import { DAY_MS, DEFAULT_SESSION_SETTINGS, SONG_ALLOWANCE_MS } from './types';
+import {
+  DAY_MS,
+  DEFAULT_SESSION_SETTINGS,
+  SESSION_MINUTES,
+  SESSIONS_PER_DAY,
+  SONG_ALLOWANCE_MS,
+  SUN_STAGES,
+} from './types';
 import type { SessionEvent, SessionSettings, SessionState, SunStage } from './types';
 
 /**
@@ -16,9 +23,9 @@ type StoredSession = SessionState & { readonly version: number };
 
 const AWAKE: SessionState = { kind: 'awake', starts: [], byParent: false };
 
-const MINUTES: ReadonlySet<unknown> = new Set([5, 10, 15, 20, 25, 30]);
-const PER_DAY: ReadonlySet<unknown> = new Set([1, 2, 3, 4, 5, 6]);
-const STAGES: ReadonlySet<unknown> = new Set(['day', 'afternoon', 'sunset']);
+const MINUTES: ReadonlySet<unknown> = new Set(SESSION_MINUTES);
+const PER_DAY: ReadonlySet<unknown> = new Set(SESSIONS_PER_DAY);
+const STAGES: ReadonlySet<unknown> = new Set(SUN_STAGES);
 
 const isMinutes = (value: unknown): value is SessionSettings['minutes'] => MINUTES.has(value);
 const isPerDay = (value: unknown): value is SessionSettings['perDay'] => PER_DAY.has(value);
