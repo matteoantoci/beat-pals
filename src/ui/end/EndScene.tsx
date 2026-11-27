@@ -4,15 +4,18 @@ import { loadSoundOn } from '../../shell/settings';
 import { playSceneSounds } from '../../sound';
 import { reducedMotion, watchReducedMotion } from '../play/reduced-motion';
 import { pictureOf, type SongChoice } from '../songs/SongList';
-import { playScene, sceneLength, sceneSounds, type ScenePlan, type SceneParts } from './motion';
+import { playScene, type SceneParts } from './motion';
 import { Band, Sleeve, StarRow, type Refs } from './parts';
-import type { PlayOutcome } from '../../model';
+import { sceneLength, sceneSounds, type ScenePlan } from './timeline';
+import { yawnOf } from './yawn';
+import type { PlayOutcome, SunStage } from '../../model';
 import type { JSX } from '@solidjs/web';
 
 // The end scene (spec, "Screens"): the result of the play in pictures, with no numbers. The record of the play
 // slides out of the song sleeve, a new star flies to its place, a new record color slides out after a third star,
 // and at silver and gold the new pal jumps into the band (the join scene). The pals dance by the score. The
-// record, the star, and the join have their sounds (Sound effects switch). Then one button goes back to the song list.
+// record, the star, and the join have their sounds (Sound effects switch). Late in a session, the pals sit down and
+// yawn after the dance (yawn.ts). Then one button goes back to the song list.
 // Taps: each `pointerdown` in the first 2 s does nothing, and a pointer that went down before the scene never
 // gives a `pointerdown` here. After that, one tap skips to the final state, and the sounds still to come do not
 // play: a skip never leaves a sound queued, and never plays one twice. The button reacts only to a pointer
@@ -27,6 +30,8 @@ type EndSceneProps = {
   /** The score of the play. */
   readonly score: number;
   readonly outcome: PlayOutcome;
+  /** The stage of the sun at the end of this song: from late afternoon on, the scene can end with the yawn. */
+  readonly stage?: SunStage;
   readonly onDone: () => void;
 };
 
@@ -69,7 +74,7 @@ const watchScene = (plan: ScenePlan, skip: () => void, finish: () => void): (() 
 
 /** The button back to the song list: the 4 squares of the prototype. It reacts only to a pointer that went down
  * on it, or to a keyboard press (no pointer: `detail` 0). */
-const DoneButton = (props: { readonly onDone: () => void }): JSX.Element => {
+export const DoneButton = (props: { readonly onDone: () => void }): JSX.Element => {
   let armed = false;
   return (
     <button
@@ -91,14 +96,20 @@ const DoneButton = (props: { readonly onDone: () => void }): JSX.Element => {
   );
 };
 
-export const EndScene = (props: EndSceneProps): JSX.Element => {
-  const plan: ScenePlan = {
-    star: props.outcome.star,
-    opened: props.outcome.opened !== null,
-    joins: props.outcome.joins,
-    dance: danceOf(props.score),
-    band: bandOf(RECORD_COLORS[props.outcome.before.color]),
+/** What the scene shows, from the play and the stage of the sun at its end. */
+const planOf = ({ outcome, score, stage }: EndSceneProps): ScenePlan => {
+  const reward = { opened: outcome.opened !== null, joins: outcome.joins };
+  return {
+    star: outcome.star,
+    ...reward,
+    dance: danceOf(score),
+    band: bandOf(RECORD_COLORS[outcome.before.color]),
+    yawn: yawnOf(stage ?? 'day', reward),
   };
+};
+
+export const EndScene = (props: EndSceneProps): JSX.Element => {
+  const plan = planOf(props);
   const refs: Refs = { stars: [], bodies: [], pals: [] };
   const [picture, setPicture] = createSignal<string>();
   const [done, setDone] = createSignal(false);

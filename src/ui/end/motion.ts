@@ -7,27 +7,28 @@
 // - 3.3 s: at silver and gold, the new pal jumps into the band and lands at 4.3 s.
 // The pals dance by the score, and confetti falls at 80% or more (party.ts). With reduced motion, each part
 // fades in place: no spin, no jump, no dance, no confetti (C16).
-// The sounds follow the same timeline (`sceneSounds`): the record at each slide-out, the star at its pop, and the
-// new pal at its landing. With reduced motion, the parts fade in at the same moments, so the sounds keep their times.
+// The moments, the length, and the sounds of the scene are in timeline.ts. With reduced motion, the parts fade in at
+// the same moments, so the sounds keep their times.
 // All animations keep their last frame, so `finish` on all of them gives the final state of the scene: the skip.
+// Late in a session, a scene with no new record color and no join ends with the happy yawn (yawn.ts): the dance
+// stops before the sit.
 
 import { animate } from './animate';
 import { confetti, dance, DANCE_FROM } from './party';
-import type { Dance, Lane } from '../../model';
-import type { SceneSound } from '../../sound';
-
-/** What the scene shows, from the outcome of the play. */
-export type ScenePlan = {
-  /** The star place that the play filled, or null. */
-  readonly star: number | null;
-  /** True when the third star opened the next record color. */
-  readonly opened: boolean;
-  /** The pal that joins the band, or null. */
-  readonly joins: Lane | null;
-  readonly dance: Dance;
-  /** The band of the play. */
-  readonly band: readonly Lane[];
-};
+import {
+  FLY_AT,
+  JUMP_AT,
+  JUMP_SEC,
+  LAND_AT,
+  NEW_RECORD_AT,
+  POP_AT,
+  RECORD_AT,
+  sceneLength,
+  SWAP_AT,
+  type ScenePlan,
+} from './timeline';
+import { playYawn, yawnTimes } from './yawn';
+import type { Lane } from '../../model';
 
 export type SceneParts = {
   readonly root: HTMLElement;
@@ -56,35 +57,11 @@ type Scene = {
   readonly behind: number;
 };
 
-const RECORD_AT = 0.2;
 const RECORD_SEC = 0.7;
-const FLY_AT = 1;
 const FLY_SEC = 0.8;
-const POP_AT = 1.8;
-const SWAP_AT = 2.2;
-const NEW_RECORD_AT = 2.6;
-const JUMP_AT = 3.3;
-const JUMP_SEC = 1;
-const LAND_AT = JUMP_AT + JUMP_SEC;
 const SQUASH_SEC = 0.4;
 const ARC_PX = 48;
 const DANCE_STAGGER_SEC = 0.18;
-
-/** The length of the scene in seconds: 3 s, 3.5 s with a new record color, and 5 s when a pal joins. */
-export const sceneLength = (plan: ScenePlan): number => {
-  if (plan.joins !== null) {
-    return 5;
-  }
-  return plan.opened ? 3.5 : 3;
-};
-
-/** The sounds of the scene: only the sounds of the moments that the plan shows. */
-export const sceneSounds = (plan: ScenePlan): SceneSound[] => [
-  { effect: 'record', at: RECORD_AT },
-  ...(plan.star === null ? [] : [{ effect: 'star', at: POP_AT } satisfies SceneSound]),
-  ...(plan.opened ? [{ effect: 'record', at: NEW_RECORD_AT } satisfies SceneSound] : []),
-  ...(plan.joins === null ? [] : [{ effect: 'join', at: LAND_AT } satisfies SceneSound]),
-];
 
 const centre = (el: Element): { x: number; y: number } => {
   const box = el.getBoundingClientRect();
@@ -200,7 +177,12 @@ export const playScene = (parts: SceneParts, plan: ScenePlan, reduced: boolean):
     join(scene, plan.joins);
   }
   if (!reduced) {
-    dance({ pals: parts.pals, starts: danceStarts(plan), length });
+    // With the yawn, each dancer stops in time for its sit: 2 rounds, as in the prototype.
+    const until = (lane: Lane): number => (plan.yawn === null ? length : yawnTimes(lane).sit);
+    dance({ pals: parts.pals, starts: danceStarts(plan), until });
+  }
+  if (plan.yawn !== null) {
+    playYawn(parts.pals, reduced);
   }
   if (!reduced && plan.dance === 'party') {
     confetti(parts.confetti, length);

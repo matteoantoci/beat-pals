@@ -1,16 +1,16 @@
 // The joy of the end scene: the pals pop in and dance on a beat of 0.55 s, and at a score of 80% or more confetti falls
-// (prototype play-style A, `dance` and `confetti`). Both stop before the scene ends, so the final state is still.
+// (prototype play-style A, `dance` and `confetti`). Both stop before the scene ends, so the final state is still. With
+// the yawn, each dancer stops before it sits down.
 
 import { randomFrom, type Lane } from '../../model';
 import { css, LANE_COLORS, TOKENS } from '../pals/color';
 import { animate } from './animate';
 
-/** Who dances: their pictures, and the time in seconds when each dancer starts. */
+/** Who dances: their pictures, the time in seconds when each dancer starts, and the time before which it stops. */
 export type Dancers = {
   readonly pals: readonly HTMLElement[];
   readonly starts: ReadonlyMap<Lane, number>;
-  /** The length of the scene in seconds. */
-  readonly length: number;
+  readonly until: (lane: Lane) => number;
 };
 
 const POP_IN_SEC = 0.4;
@@ -30,14 +30,14 @@ const DANCE: Keyframe[] = [
 /** The time when the pals finish their pop-in and can dance. */
 export const DANCE_FROM = POP_IN_SEC;
 
-/** The pals pop in, then each dancer dances in whole rounds until the scene ends. */
-export const dance = ({ pals, starts, length }: Dancers): void => {
+/** The pals pop in, then each dancer dances in whole rounds until its stop. */
+export const dance = ({ pals, starts, until }: Dancers): void => {
   for (const pal of pals) {
     animate(pal, [{ scale: '0' }, { scale: '1' }], { at: 0, sec: POP_IN_SEC, fill: 'backwards' });
   }
   const rounds = [...starts].flatMap(([lane, at]) => {
     const pal = pals[lane];
-    const iterations = Math.floor((length - at) / DANCE_SEC);
+    const iterations = Math.floor((until(lane) - at) / DANCE_SEC);
     return pal === undefined || iterations < 1 ? [] : [{ pal, at, iterations }];
   });
   for (const { pal, at, iterations } of rounds) {
