@@ -56,7 +56,8 @@ const endOf = (open: Open, endAt: number): Asleep => {
 
 /**
  * The gap rule at a show: the gap ends the session when `now` reaches the asleep-until of a goodbye at the hide.
- * Then a session with time used turns asleep, with the rest time over, and a session with 0 used turns awake.
+ * Then a session with time used turns asleep, with the rest time over, and a session with 0 used turns awake. A
+ * session with 0 used after "Open a new session now" keeps `byParent`, so the next session also stays out of the cap.
  */
 const afterGap = (open: Open, now: number): SessionState => {
   if (open.hiddenAt === null) {
@@ -66,7 +67,7 @@ const afterGap = (open: Open, now: number): SessionState => {
   if (now < end.until) {
     return { ...open, hiddenAt: null };
   }
-  return open.usedMs > 0 ? end : { kind: 'awake', starts: end.starts, byParent: false };
+  return open.usedMs > 0 ? end : { kind: 'awake', starts: end.starts, byParent: open.byParent };
 };
 
 /** The events of the count and of the page visibility. */

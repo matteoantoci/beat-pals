@@ -337,6 +337,18 @@ describe('the hidden gap', () => {
     expect(empty).toEqual({ kind: 'awake', starts: [], byParent: false });
   });
 
+  it('keeps a session after "Open a new session now" out of the cap after a gap that ends it with 0 used', () => {
+    const asleep = session(FIRST, 0);
+    const awake = sessionAfter(asleep, { type: 'open-now', now: H }).state;
+    const empty = run(awake, [
+      { type: 'list-open', now: H, settings: TEN },
+      { type: 'hide', now: H },
+      { type: 'show', now: 5 * H },
+    ]).state;
+
+    expect(empty).toEqual({ kind: 'awake', starts: [0], byParent: true });
+  });
+
   it('never ends a session for time on the visible title screen or in the parent area', () => {
     const idle = run(opened(0), [
       ...ticks(0, MIN),
