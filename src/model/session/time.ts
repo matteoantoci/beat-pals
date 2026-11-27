@@ -30,8 +30,15 @@ export const todayIn = (today: Today, day: PlayDay): Today =>
 export const budgetLeft = (today: Today, settings: SessionSettings): number =>
   settings.dayMinutes * MINUTE_MS - today.usedMs;
 
+/** The last start time is this many minutes before the stop time: a session that starts then can use all its minutes. */
+const beforeStop = (settings: SessionSettings): number => settings.minutes;
+
 /** The last time of the play day when a session can start: the stop time minus the minutes of the settings. */
-export const lastStartOf = (day: PlayDay, settings: SessionSettings): number => day.stop - settings.minutes * MINUTE_MS;
+export const lastStartOf = (day: PlayDay, settings: SessionSettings): number =>
+  day.stop - beforeStop(settings) * MINUTE_MS;
+
+/** The last start time as a clock time, in minutes after midnight, for the texts of the parent area. */
+export const lastStartMinutes = (settings: SessionSettings): number => settings.stopMinutes - beforeStop(settings);
 
 /**
  * The stage that the time used gives: sunset when the next song can reach the limit. For a session that the parent

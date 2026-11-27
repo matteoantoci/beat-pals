@@ -116,6 +116,16 @@ export type SessionAnswer = {
   readonly last: boolean;
 };
 
+/** The time of a fact of the model: the wall time, its play day, and the current settings of the parent area. */
+export type SessionTime = { readonly now: number; readonly day: PlayDay; readonly settings: SessionSettings };
+
+/**
+ * The next change of the session state by time alone: at the wall time `at`, the state is `state`. At the end of the
+ * rest time, `state` is the same asleep state, and the rest time is over. At the end of the last start time, `state` is
+ * the state that a title-show gives then.
+ */
+export type TimedChange = { readonly at: number; readonly state: SessionState };
+
 /**
  * The facts of the status line of the parent area, in whole minutes. `usedTodayMinutes` and `dayMinutes`: the day
  * budget. `byParent`: after "Open a new session now". Open: the time used and the limit of the session. Asleep:

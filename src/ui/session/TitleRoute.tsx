@@ -4,6 +4,7 @@ import { NightTitle } from '../title/NightTitle';
 import { TitleScreen } from '../title/TitleScreen';
 import { TitleToNight } from './TitleToNight';
 import { WakeScene } from './WakeScene';
+import type { SessionStatus } from '../../model';
 import type { SessionController } from './controller';
 import type { JSX } from '@solidjs/web';
 import type { Accessor } from 'solid-js';
@@ -21,15 +22,17 @@ type WakeRoutes = {
   readonly endWake: () => void;
   readonly wake: () => void;
   readonly openParent: () => void;
+  /** "Open a new session now" in the parent area. Gives the status after it. */
+  readonly openNow: () => SessionStatus;
   readonly closeParent: () => void;
 };
 
 /** The wake-up scene: a tap on the night title after the rest time, or "Open a new session now" in the parent area.
- * At its end, the normal title shows and the title music starts. */
+ * At its end, the normal title shows and the title music starts. The routes decide from the answers of `send`. */
 export const wakeRoutes = (session: SessionController, go: (next: 'parent' | 'title') => void): WakeRoutes => {
   const [waking, setWaking] = createSignal<Waking>();
-  /** The night before the parent area opened, while the pals slept. */
-  let nightBefore: Waking | undefined;
+  /** The wake-up scene after "Open a new session now", for the close of the parent area. */
+  let woken: Waking | undefined;
   return {
     waking,
     endWake: () => {
@@ -37,19 +40,24 @@ export const wakeRoutes = (session: SessionController, go: (next: 'parent' | 'ti
       playTitleMusic();
     },
     wake: () => {
-      const restTimeOver = session.restTimeOver();
-      // Use the answer: `session.state()` gives the old state until the next flush.
+      // A wake-tap wakes the pals only after the rest time.
       if (session.send('wake-tap').state.kind !== 'asleep') {
-        setWaking({ restTimeOver });
+        setWaking({ restTimeOver: true });
       }
     },
-    openParent: () => {
-      nightBefore = session.state().kind === 'asleep' ? { restTimeOver: session.restTimeOver() } : undefined;
-      go('parent');
+    openParent: () => go('parent'),
+    openNow: () => {
+      const restTimeOver = session.status().kind === 'rest-time-over';
+      // The parent area shows the button only while the pals sleep, so an awake answer is a wake-up.
+      if (session.send('open-now').state.kind !== 'asleep') {
+        woken = { restTimeOver };
+      }
+      return session.status();
     },
     closeParent: () => {
-      if (nightBefore && session.state().kind !== 'asleep') {
-        setWaking(nightBefore);
+      if (woken) {
+        setWaking(woken);
+        woken = undefined;
       }
       go('title');
     },

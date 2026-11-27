@@ -1,5 +1,6 @@
 import { render } from '@solidjs/web';
 import { watchLifecycle } from './shell/lifecycle';
+import { playDayOf } from './shell/play-day';
 import { createDeviceStorage, localStorageAdapter } from './shell/storage';
 import { checkForUpdate, watchUpdates } from './shell/update';
 import { installSound } from './sound';
@@ -49,8 +50,14 @@ if (import.meta.env.DEMO && query.has('demo')) {
 } else {
   // Before the first touch: the audio session, the music preload, and the unlock on each touch.
   installSound();
-  // The session state comes from storage before the first screen (play-sessions spec, "Storage").
-  const session = createSession(storage.session);
+  // The session state comes from storage before the first screen (play-sessions spec, "Storage"). The controller gets
+  // the clock, the timers, and the visibility of the page here.
+  const session = createSession({
+    clock: { now: Date.now, day: playDayOf },
+    timers: window,
+    visible: document.visibilityState === 'visible',
+    store: storage.session,
+  });
   render(
     withStorage(() => <App session={session} />),
     root

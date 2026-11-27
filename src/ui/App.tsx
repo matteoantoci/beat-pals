@@ -1,5 +1,4 @@
 import { createSignal, Match, onSettled, Switch } from 'solid-js';
-import { endStage } from '../model';
 import { keepSongsFresh } from '../shell/songs';
 import { EndScene } from './end/EndScene';
 import { ParentArea } from './parent/ParentArea';
@@ -49,7 +48,7 @@ type Ended = Playing & { readonly score: number; readonly outcome: PlayOutcome; 
 const endedOf = (played: Playing & { readonly score: number }, session: SessionController, save: SaveStore): Ended => ({
   ...played,
   outcome: save.savePlay(played.choice.song.id, played.score),
-  stage: endStage(session.state(), session.now(), session.day()),
+  stage: session.endStage(),
 });
 
 type Routes = {
@@ -134,7 +133,7 @@ export const App = (props: { readonly session: SessionController }): JSX.Element
         <SongList sun={sun()} onHome={() => go('title')} onPlay={play} />
       </Match>
       <Match when={shown() === 'parent'}>
-        <ParentArea session={session} onClose={wakes.closeParent} />
+        <ParentArea session={session} onOpenNow={wakes.openNow} onClose={wakes.closeParent} />
       </Match>
       <Match when={shown() === 'play' && playing()} keyed>
         {(current) => (

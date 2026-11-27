@@ -16,12 +16,12 @@ export type { RestoreFailure, SaveData, SavedProgress } from './progress/save';
 export { readSaveCode, saveCode } from './progress/save-code';
 export { endStage, restTimeOver, sessionAfter } from './session/session';
 export { parentStatus } from './session/status';
-export type { StatusTime } from './session/status';
+export { nextChange } from './session/timed';
+export { lastStartMinutes } from './session/time';
 export {
   DAY_MINUTES,
   DAY_START_MINUTES,
   DEFAULT_SESSION_SETTINGS,
-  MINUTE_MS,
   REST_MINUTES,
   SESSION_MINUTES,
   STOP_MINUTES,
@@ -34,6 +34,7 @@ export type {
   SessionSettings,
   SessionState,
   SessionStatus,
+  SessionTime,
   SunStage,
   SunStep,
   Today,

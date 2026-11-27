@@ -3,16 +3,13 @@
 
 import { counted, todayIn } from './time';
 import { MINUTE_MS } from './types';
-import type { PlayDay, SessionSettings, SessionState, SessionStatus } from './types';
-
-/** The time of the status line: the wall time, its play day, and the current settings. */
-export type StatusTime = { readonly now: number; readonly day: PlayDay; readonly settings: SessionSettings };
+import type { SessionState, SessionStatus, SessionTime } from './types';
 
 /**
  * The facts of the status line at `now`, in the play day `day`. The day budget comes from the settings of the open
  * session, or from the current `settings` while no session is open.
  */
-export const parentStatus = (state: SessionState, { now, day, settings }: StatusTime): SessionStatus => {
+export const parentStatus = (state: SessionState, { now, day, settings }: SessionTime): SessionStatus => {
   if (state.kind === 'asleep') {
     return now >= state.until
       ? { kind: 'rest-time-over' }

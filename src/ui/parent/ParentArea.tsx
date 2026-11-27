@@ -1,5 +1,4 @@
 import { onSettled } from 'solid-js';
-import { parentStatus } from '../../model';
 import { stopTitleMusic } from '../../sound';
 import { useStorage } from '../storage';
 import { Credits } from './Credits';
@@ -8,7 +7,7 @@ import { Reset } from './Reset';
 import { MakeCode, RestoreCode } from './SaveCode';
 import { SongsSection } from './SongsSection';
 import { SoundSwitch } from './SoundSwitch';
-import type { StatusTime } from '../../model';
+import type { SessionStatus } from '../../model';
 import type { SessionController } from '../session/controller';
 import type { JSX } from '@solidjs/web';
 
@@ -18,17 +17,13 @@ import type { JSX } from '@solidjs/web';
 
 export const ParentArea = (props: {
   readonly session: SessionController;
+  /** "Open a new session now": the title screen sends it, because it plays the wake-up scene at the close. */
+  readonly onOpenNow: () => SessionStatus;
   readonly onClose: () => void;
 }): JSX.Element => {
   onSettled(stopTitleMusic);
   // The session controller reads the settings from the same storage.
   const { session } = useStorage();
-  // The status line reads the current settings for the day budget while no session is open.
-  const statusTime = (): StatusTime => ({
-    now: props.session.now(),
-    day: props.session.day(),
-    settings: session.settings(),
-  });
   return (
     <main class="parent-area">
       <header class="parent-bar">
@@ -38,10 +33,10 @@ export const ParentArea = (props: {
         </button>
       </header>
       <PlaySessions
-        status={parentStatus(props.session.state(), statusTime())}
+        status={props.session.status()}
         settings={session.settings()}
         onSettings={session.storeSettings}
-        onOpenNow={() => parentStatus(props.session.send('open-now').state, statusTime())}
+        onOpenNow={props.onOpenNow}
       />
       <SongsSection />
       <SoundSwitch />

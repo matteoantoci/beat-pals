@@ -1,4 +1,4 @@
-import { DAY_START_MINUTES } from '../../model';
+import { DAY_START_MINUTES, lastStartMinutes } from '../../model';
 import type { SessionSettings, SessionStatus } from '../../model';
 
 // The texts of the "Play sessions" section of the parent area (session-schedule spec, "Parent area"). Clock times
@@ -40,4 +40,4 @@ export const statusLine = (status: SessionStatus): string => {
 export const planLine = (settings: SessionSettings): string =>
   `Up to ${String(settings.dayMinutes)} minutes a day, in sessions of up to ${String(settings.minutes)} minutes, ` +
   `with at least ${spanText(settings.restMinutes)} between sessions. ` +
-  `The last session starts at ${clockText(settings.stopMinutes - settings.minutes)}.`;
+  `The last session starts at ${clockText(lastStartMinutes(settings))}.`;
