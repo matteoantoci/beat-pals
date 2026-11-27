@@ -12,19 +12,33 @@ import type { playSceneSounds } from './scene';
 /** One change of an AudioParam, with its value and its context time. */
 type ParamEvent = { readonly kind: 'set' | 'ramp' | 'cancel'; readonly value: number; readonly at: number };
 
-class FakeContext {
-  state: AudioContextState = 'running';
+/** When true, a new context starts suspended, and it runs only at `run()`: on iOS, the resume of a tap ends later. */
+let runsLater = false;
+
+class FakeContext extends EventTarget {
+  state: AudioContextState = runsLater ? 'suspended' : 'running';
   currentTime = 0;
   readonly destination = {};
   readonly sources: FakeSource[] = [];
+  readonly #running = Promise.withResolvers<void>();
 
   constructor() {
+    super();
     contexts.push(this);
   }
 
   resume(): Promise<void> {
+    if (!runsLater) {
+      this.run();
+    }
+    return this.#running.promise;
+  }
+
+  /** The context runs. */
+  run(): void {
     this.state = 'running';
-    return Promise.resolve();
+    this.dispatchEvent(new Event('statechange'));
+    this.#running.resolve();
   }
 
   suspend(): Promise<void> {
@@ -34,6 +48,7 @@ class FakeContext {
 
   close(): Promise<void> {
     this.state = 'closed';
+    this.dispatchEvent(new Event('statechange'));
     return Promise.resolve();
   }
 }
@@ -84,13 +99,15 @@ class FakeGain extends FakeNode {
 
 class FakeSource extends FakeNode {
   stoppedAt: number | undefined;
+  startedAt: number | undefined;
 
   constructor(context: FakeContext) {
     super(context);
     context.sources.push(this);
   }
 
-  start(): void {
+  start(when = this.context.currentTime): void {
+    this.startedAt = when;
     this.stoppedAt = undefined;
   }
 
@@ -150,7 +167,9 @@ let sound: Modules;
 
 beforeEach(async () => {
   vi.resetModules();
+  vi.restoreAllMocks();
   contexts.length = 0;
+  runsLater = false;
   page = new FakeDocument();
   vi.stubGlobal('document', page);
   vi.stubGlobal('window', new EventTarget());
@@ -252,5 +271,39 @@ describe('the stop of the scene sounds', () => {
 
   it('cuts also the sound that plays', async () => {
     expect(await stopAtTwoSeconds('cut')).toEqual([2, 2]);
+  });
+});
+
+/** A scene with a sound at 0.2 s and one at 0.9 s, at the first tap of a context. The context runs 0.3 s later. */
+const firstTapScene = async (stopFirst: boolean): Promise<readonly (number | undefined)[]> => {
+  await settle();
+  runsLater = true;
+  const clock = vi.spyOn(performance, 'now').mockReturnValue(1000);
+  const stop = sound.playSceneSounds(
+    [
+      { effect: 'last-song', at: 0.2 },
+      { effect: 'record', at: 0.9 },
+    ],
+    true
+  );
+  const before = sourcesOf(0).length;
+  clock.mockReturnValue(1300);
+  if (stopFirst) {
+    stop();
+  }
+  contexts[0]?.run();
+  return [before, ...sourcesOf(0).map((source) => source.startedAt)];
+};
+
+describe('the scene sounds at the first tap of a context', () => {
+  it('wait until the context runs, and each sound moves back by the time that passed', async () => {
+    const [before, ...starts] = await firstTapScene(false);
+    expect(before).toBe(0);
+    expect(starts).toHaveLength(1);
+    expect(starts[0]).toBeCloseTo(0.6);
+  });
+
+  it('do not play after a stop that comes before the context runs', async () => {
+    expect(await firstTapScene(true)).toEqual([0]);
   });
 });
