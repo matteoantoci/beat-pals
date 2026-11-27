@@ -82,6 +82,7 @@ The parent did not approve these proposals yet.
 | `auto-charting.md` | Which tools make a chart from audio, and which run on the Mac? |
 | `child-rhythm-design.md` | What can a 4- to 5-year-old child do with timing, and how do kid rhythm games handle it? |
 | `ios-pwa-audio.md` | What limits does iOS Safari put on audio timing, memory, storage, and file import? |
+| `play-time-limits.md` | What are the gold standards for play-time limits and healthy sessions at age 4 to 5, and how should a Beat Pals session end? |
 
 ## Open questions to discuss
 
