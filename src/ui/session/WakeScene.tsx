@@ -1,9 +1,7 @@
-import { onCleanup } from 'solid-js';
-import { loadSoundOn } from '../../shell/settings';
-import { playSceneSounds } from '../../sound';
 import { NightStage } from '../night/NightStage';
 import { WAKE_SEC, WAKE_SOUNDS } from '../night/wake';
 import { reducedMotion } from '../play/reduced-motion';
+import { playTimedScene } from './timed-scene';
 import type { JSX } from '@solidjs/web';
 
 // The wake-up scene (play-sessions spec, "Night title and wake-up"): the moon sets, the sky turns to dawn, the sun
@@ -16,11 +14,6 @@ export const WakeScene = (props: {
   readonly restTimeOver: boolean;
   readonly onDone: () => void;
 }): JSX.Element => {
-  const cancelSounds = playSceneSounds(WAKE_SOUNDS, loadSoundOn());
-  const timer = setTimeout(() => props.onDone(), WAKE_SEC * 1000);
-  onCleanup(() => {
-    clearTimeout(timer);
-    cancelSounds();
-  });
+  playTimedScene(WAKE_SOUNDS, WAKE_SEC, () => props.onDone());
   return <NightStage mode="wake" reduce={reducedMotion()} restTimeOver={props.restTimeOver} />;
 };

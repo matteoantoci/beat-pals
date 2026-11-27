@@ -1,9 +1,7 @@
-import { onCleanup } from 'solid-js';
-import { loadSoundOn } from '../../shell/settings';
-import { playSceneSounds } from '../../sound';
 import { GOODBYE_SEC, GOODBYE_SOUNDS } from '../night/goodbye';
 import { NightStage } from '../night/NightStage';
 import { reducedMotion } from '../play/reduced-motion';
+import { playTimedScene } from './timed-scene';
 import type { JSX } from '@solidjs/web';
 
 // The goodbye scene (play-sessions spec, "Screens and motion"): the scene after the last song, from the wave to the
@@ -12,11 +10,6 @@ import type { JSX } from '@solidjs/web';
 // it gives the night title. The scene never opens the safe window of an app update.
 
 export const GoodbyeScene = (props: { readonly onDone: () => void }): JSX.Element => {
-  const cancelSounds = playSceneSounds(GOODBYE_SOUNDS, loadSoundOn());
-  const timer = setTimeout(() => props.onDone(), GOODBYE_SEC * 1000);
-  onCleanup(() => {
-    clearTimeout(timer);
-    cancelSounds();
-  });
+  playTimedScene(GOODBYE_SOUNDS, GOODBYE_SEC, () => props.onDone());
   return <NightStage mode="goodbye" reduce={reducedMotion()} />;
 };

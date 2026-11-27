@@ -1,4 +1,4 @@
-import { onCleanup } from 'solid-js';
+import { For, onCleanup } from 'solid-js';
 import type { JSX } from '@solidjs/web';
 
 // The logo of the game: a glossy record with a face. The disc turns slowly; the face and the shine stay still.
@@ -25,16 +25,34 @@ const holdOf = (onHold: () => void): Hold => {
   return { down, stop };
 };
 
+/** The paint of a part of the face: a class of the logo (title.css), or a fill colour. */
+type Paint = { readonly class: string } | { readonly fill: string };
+
+/** The places of the 2 eyes of the face. The faces of the sun use them too (src/ui/sun/Sun.tsx). */
+export const EYES_X = [52, 68] as const;
+
+/** The smile of the open face. The happy face of the sun has it too (src/ui/sun/Sun.tsx). */
+export const OPEN_SMILE = 'M53 67 Q60 74 67 67';
+
+/** The open eyes of the logo face: white eyes, dark pupils, and a white glint. The happy face of the sun has them too
+ * (src/ui/sun/Sun.tsx). */
+export const OpenEyes = (props: { readonly white: Paint; readonly dark: Paint }): JSX.Element => (
+  <For each={EYES_X}>
+    {(x) => (
+      <>
+        <ellipse cx={x} cy="57" rx="5.5" ry="6.5" {...props.white} />
+        <circle cx={x + 0.6} cy="57.8" r="3.3" {...props.dark} />
+        <circle cx={x + 1.8} cy="56.2" r="1.1" {...props.white} />
+      </>
+    )}
+  </For>
+);
+
 /** The open eyes and the smile. With `sleepy`, they wait at opacity 0, so the wake-up scene can open them. */
 const AwakeFace = (props: { readonly sleepy: boolean }): JSX.Element => (
   <g data-part="logo-awake" style={props.sleepy ? { opacity: 0 } : undefined}>
-    <ellipse class="logo-eye" cx="52" cy="57" rx="5.5" ry="6.5" />
-    <ellipse class="logo-eye" cx="68" cy="57" rx="5.5" ry="6.5" />
-    <circle class="logo-pupil" cx="52.6" cy="57.8" r="3.3" />
-    <circle class="logo-pupil" cx="68.6" cy="57.8" r="3.3" />
-    <circle class="logo-eye" cx="53.8" cy="56.2" r="1.1" />
-    <circle class="logo-eye" cx="69.8" cy="56.2" r="1.1" />
-    <path class="logo-smile" d="M53 67 Q60 74 67 67" />
+    <OpenEyes white={{ class: 'logo-eye' }} dark={{ class: 'logo-pupil' }} />
+    <path class="logo-smile" d={OPEN_SMILE} />
   </g>
 );
 

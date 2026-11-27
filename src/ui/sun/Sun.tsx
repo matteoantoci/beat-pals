@@ -1,5 +1,6 @@
 import { For } from 'solid-js';
 import { css, LANE_COLORS, TOKENS } from '../pals/color';
+import { EYES_X, OPEN_SMILE, OpenEyes } from '../title/logo';
 import type { JSX } from '@solidjs/web';
 
 // The sun of the session scenes (play-sessions spec, "Screens and motion"): the lemon label of the logo with the
@@ -21,7 +22,7 @@ const TONGUE = css(LANE_COLORS[0].dark);
 const CHEEK = css(TOKENS.berry, 0.6);
 
 const SMILES = {
-  happy: 'M53 67 Q60 74 67 67',
+  happy: OPEN_SMILE,
   droopy: 'M55 67.5 Q60 72 65 67.5',
   asleep: 'M56 68 Q60 70.5 64 68',
 } as const;
@@ -35,20 +36,10 @@ const Closed = (): JSX.Element => (
   <path d="M47 56.5 q5 5 10 0 M63 56.5 q5 5 10 0" fill="none" stroke={INK} stroke-width="3" stroke-linecap="round" />
 );
 
-const EYES_X = [52, 68] as const;
-
 const FACES: Readonly<Record<SunFace, () => JSX.Element>> = {
   happy: () => (
     <>
-      <For each={EYES_X}>
-        {(x) => (
-          <>
-            <ellipse cx={x} cy="57" rx="5.5" ry="6.5" fill={WHITE} />
-            <circle cx={x + 0.6} cy="57.8" r="3.3" fill={INK} />
-            <circle cx={x + 1.8} cy="56.2" r="1.1" fill={WHITE} />
-          </>
-        )}
-      </For>
+      <OpenEyes white={{ fill: WHITE }} dark={{ fill: INK }} />
       <Smile kind="happy" />
     </>
   ),
