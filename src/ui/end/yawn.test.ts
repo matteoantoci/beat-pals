@@ -13,8 +13,10 @@ describe('the yawn of the end scene', () => {
     expect(yawnOf('afternoon', { opened: true, joins: 2 })).toBeNull();
   });
 
-  it('sits each pal down at 2.95 s and yawns each pal 0.12 s after the one before it', () => {
+  it('sits every pal down at 2.95 s and yawns each pal 0.12 s after the one before it', () => {
     expect(yawnTimes(0)).toEqual({ sit: 2.95, yawn: 3.25, back: 4.5 });
+    expect(yawnTimes(1).sit).toBe(2.95);
+    expect(yawnTimes(2).sit).toBe(2.95);
     expect(yawnTimes(1).yawn).toBeCloseTo(3.37);
     expect(yawnTimes(2).yawn).toBeCloseTo(3.49);
     expect(yawnTimes(2).back).toBeCloseTo(4.74);

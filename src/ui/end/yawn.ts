@@ -1,6 +1,6 @@
 // The happy yawn of the end scene (play-sessions spec, "Screens and motion"; sunset prototype, screens "End scene ·
 // tired" and "End scene · sunset"). Late in a session, the end scene shows that the pals are tired after the dance:
-// - 2.95 s: the dance has stopped, and each pal sits down (1.05 × 0.94), 0.12 s after the pal before it.
+// - 2.95 s: the dance has stopped, and every pal sits down (1.05 × 0.94) at the same time.
 // - 3.25 s: the first pal gives one happy yawn: it stretches up (0.96 × 1.06) with its arms out and the yawn face.
 // - 4.5 s: the first pal sits again with its end face. The third pal ends at 4.74 s.
 // The yawn sound plays at 3.2 s, and the button shows at 4.75 s, so the scene stays under 5 s.
@@ -47,10 +47,11 @@ export const yawnOf = (
 /** The times of one pal in seconds of the scene. */
 type YawnTimes = { readonly sit: number; readonly yawn: number; readonly back: number };
 
-/** When a pal sits down, starts its yawn, and sits again with its end face, in seconds of the scene. */
+/** When a pal sits down, starts its yawn, and sits again with its end face, in seconds of the scene. All pals sit at
+ * the same time; only the yawn of each pal comes 0.12 s after the yawn of the pal before it. */
 export const yawnTimes = (lane: Lane): YawnTimes => {
   const delay = lane * STAGGER_SEC;
-  return { sit: SIT_AT + delay, yawn: YAWN_AT + delay, back: YAWN_AT + YAWN_SEC + delay };
+  return { sit: SIT_AT, yawn: YAWN_AT + delay, back: YAWN_AT + YAWN_SEC + delay };
 };
 
 /** The face of a pal after its yawn. */
