@@ -1,6 +1,5 @@
 import { createSignal, Match, onSettled, Switch } from 'solid-js';
 import { endStage } from '../model';
-import { savePlay } from '../shell/save';
 import { keepSongsFresh } from '../shell/songs';
 import { EndScene } from './end/EndScene';
 import { ParentArea } from './parent/ParentArea';
@@ -8,7 +7,9 @@ import { PlayScreen } from './play/PlayScreen';
 import { GoodbyeScene } from './session/GoodbyeScene';
 import { Title, wakeRoutes } from './session/TitleRoute';
 import { SongList, type SongChoice, type SunView } from './songs/SongList';
+import { useStorage } from './storage';
 import type { PlayOutcome, SunStage } from '../model';
+import type { SaveStore } from '../shell/save';
 import type { PlayResult } from './play/play-load';
 import type { SessionController } from './session/controller';
 import type { JSX } from '@solidjs/web';
@@ -45,10 +46,9 @@ type Playing = { readonly choice: SongChoice; readonly lastSong: boolean };
 type Ended = Playing & { readonly score: number; readonly outcome: PlayOutcome; readonly stage: SunStage };
 
 /** Saves the play, and gives what the end scene shows. */
-const endedOf = (current: Playing, score: number, session: SessionController): Ended => ({
-  ...current,
-  score,
-  outcome: savePlay(current.choice.song.id, score),
+const endedOf = (played: Playing & { readonly score: number }, session: SessionController, save: SaveStore): Ended => ({
+  ...played,
+  outcome: save.savePlay(played.choice.song.id, played.score),
   stage: endStage(session.state(), session.now(), session.day()),
 });
 
@@ -67,7 +67,7 @@ type Routes = {
 };
 
 /** The screen of the app and the moves between the screens, with the events of the session. */
-const appRoutes = (session: SessionController): Routes => {
+const appRoutes = (session: SessionController, save: SaveStore): Routes => {
   const [screen, setScreen] = createSignal<Screen>('title');
   const [sun, setSun] = createSignal<SunView>({ stage: 'day', step: null });
   const [playing, setPlaying] = createSignal<Playing>();
@@ -92,7 +92,7 @@ const appRoutes = (session: SessionController): Routes => {
   };
   const end = (current: Playing, result: PlayResult): void => {
     if (result.kind === 'score') {
-      setEnded(endedOf(current, result.score, session));
+      setEnded(endedOf({ ...current, score: result.score }, session, save));
       go('end');
       return;
     }
@@ -120,9 +120,10 @@ const appRoutes = (session: SessionController): Routes => {
 
 export const App = (props: { readonly session: SessionController }): JSX.Element => {
   const { session } = props;
+  const storage = useStorage();
   // After the setup, the new songs download at the start and at each return to the app (spec, "Delivery").
-  onSettled(keepSongsFresh);
-  const { shown, sun, playing, ended, go, openList, play, done, end } = appRoutes(session);
+  onSettled(() => keepSongsFresh(storage.setup));
+  const { shown, sun, playing, ended, go, openList, play, done, end } = appRoutes(session, storage.save);
   const wakes = wakeRoutes(session, go);
   return (
     <Switch>

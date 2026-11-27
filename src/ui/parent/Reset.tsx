@@ -1,17 +1,18 @@
 import { createSignal, Show } from 'solid-js';
-import { clearSave } from '../../shell/save';
+import { useStorage } from '../storage';
 import type { JSX } from '@solidjs/web';
 
 // The reset of the parent area: it deletes the progress after a confirmation. The Sound effects switch, the
 // downloaded songs, the family key, and the session settings and state are not progress, so they stay.
 
 export const Reset = (): JSX.Element => {
+  const { save } = useStorage();
   const [asking, setAsking] = createSignal(false);
   const [note, setNote] = createSignal('');
   const confirm = (): void => {
     setAsking(false);
     setNote(
-      clearSave()
+      save.clear()
         ? 'The progress is deleted. Each song starts again with no record.'
         : 'The progress could not be deleted.'
     );

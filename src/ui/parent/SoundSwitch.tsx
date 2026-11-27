@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import { loadSoundOn, storeSoundOn } from '../../shell/settings';
+import { useStorage } from '../storage';
 import type { JSX } from '@solidjs/web';
 
 // The Sound effects switch of the parent area (spec, "Save" and "Sound"). It turns off the claps, the level-up
@@ -7,10 +7,11 @@ import type { JSX } from '@solidjs/web';
 // The songs and the title music always play.
 
 export const SoundSwitch = (): JSX.Element => {
-  const [on, setOn] = createSignal(loadSoundOn());
+  const { sound } = useStorage();
+  const [on, setOn] = createSignal(sound.get());
   const flip = (): void => {
     const next = !on();
-    storeSoundOn(next);
+    sound.set(next);
     setOn(next);
   };
   return (

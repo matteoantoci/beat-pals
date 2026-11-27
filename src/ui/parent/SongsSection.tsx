@@ -1,6 +1,7 @@
 import { createMemo, createSignal, Match, onSettled, Show, Switch } from 'solid-js';
 import { setupStep } from '../../model';
-import { forgetSongs, isStandalone, loadFamilyKey, setupMark, watchDownload } from '../../shell/songs';
+import { forgetSongs, isStandalone, loadFamilyKey, watchDownload } from '../../shell/songs';
+import { useStorage } from '../storage';
 import { DownloadStep } from './DownloadStep';
 import { InstallStep } from './InstallStep';
 import { KeyStep } from './KeyStep';
@@ -17,10 +18,11 @@ import type { Accessor } from 'solid-js';
 const sameKey = (one: FamilyKey | undefined, two: FamilyKey | undefined): boolean => one?.id === two?.id;
 
 const ChangeKey = (props: { readonly onDone: () => void }): JSX.Element => {
+  const { setup } = useStorage();
   const [busy, setBusy] = createSignal(false);
   const change = (): void => {
     setBusy(true);
-    forgetSongs()
+    forgetSongs(setup)
       .catch(() => undefined)
       .finally(() => {
         setBusy(false);
@@ -43,21 +45,22 @@ type SetupFacts = {
 
 /** The facts of the setup step: the stored key and the stored mark, read again after a key, a download, or a reset. */
 const setupFacts = (): SetupFacts => {
+  const { setup } = useStorage();
   const [key, setKey] = createSignal<FamilyKey | undefined>(undefined, { equals: sameKey });
-  const [mark, setMark] = createSignal(setupMark());
+  const [mark, setMark] = createSignal(setup.get());
   const [loaded, setLoaded] = createSignal(false);
   const loadedKey = (stored: FamilyKey | undefined): void => {
     setKey(stored);
     setLoaded(true);
   };
   const refresh = (): void => {
-    setMark(setupMark());
+    setMark(setup.get());
     loadFamilyKey().then(loadedKey, () => loadedKey(undefined));
   };
   const step = createMemo(() => setupStep({ standalone: isStandalone(), hasKey: key() !== undefined, mark: mark() }));
   onSettled(() => {
     refresh();
-    return watchDownload((event) => event.type === 'end' && setMark(setupMark()));
+    return watchDownload((event) => event.type === 'end' && setMark(setup.get()));
   });
   return { key, step, loaded, refresh };
 };

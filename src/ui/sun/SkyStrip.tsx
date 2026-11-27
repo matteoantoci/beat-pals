@@ -1,6 +1,6 @@
 import { For, onSettled } from 'solid-js';
-import { loadSoundOn } from '../../shell/settings';
 import { playSceneSounds } from '../../sound';
+import { useStorage } from '../storage';
 import { playStep } from './sky-motion';
 import { Sun, type SunFace } from './Sun';
 import { RAYS, STAGE_FACE, STEP_SOUNDS, stepPlan, SUN_COLORS, SUN_PLACES, type SunPlace } from './sun-step';
@@ -105,13 +105,14 @@ export type SkyStripProps = {
 export const SkyStrip = (props: SkyStripProps): JSX.Element => {
   let strip: HTMLDivElement | undefined;
   const { stage, step, reduce } = props;
+  const { sound } = useStorage();
   onSettled(() => {
     if (!step || !strip) {
       return undefined;
     }
     playStep(strip, step, reduce);
     // A tap on a card during the step closes the list: the sound that did not start yet stops.
-    return playSceneSounds(STEP_SOUNDS, loadSoundOn());
+    return playSceneSounds(STEP_SOUNDS, sound.get());
   });
   return (
     <div

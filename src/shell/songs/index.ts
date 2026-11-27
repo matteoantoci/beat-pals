@@ -9,6 +9,6 @@ export { readSongStore } from './read-store';
 export type { SongStore, StoreProblem } from './read-store';
 export { forgetSongs } from './forget';
 export { keepSongsFresh } from './fresh';
-export { isStandalone, setupMark, storageKept } from './setup';
+export { isStandalone, storageKept } from './setup';
 export { readCover, readSongFiles } from './song-files';
 export type { SongFiles } from './song-files';

@@ -1,8 +1,8 @@
 import { createSignal } from 'solid-js';
 import { MINUTE_MS, restTimeOver, sessionAfter } from '../../model';
 import { playDayOf } from '../../shell/play-day';
-import { loadSessionSettings, readSession, writeSession } from '../../shell/session';
 import type { PlayDay, SessionAnswer, SessionEvent, SessionState } from '../../model';
+import type { SessionStore } from '../../shell/session';
 import type { Accessor } from 'solid-js';
 
 // The session controller: the seam between the screens and the session model (play-sessions spec, "Session rules",
@@ -47,8 +47,8 @@ export type SessionController = {
  * The play day of `now`. Its stop time comes from the settings of the open session, because a change of a setting
  * applies from the next session. With no open session, it comes from the current settings.
  */
-const dayOf = (state: SessionState, now: number): PlayDay =>
-  playDayOf(now, state.kind === 'open' ? state.settings.stopMinutes : loadSessionSettings().stopMinutes);
+const dayOf = (stored: SessionStore, state: SessionState, now: number): PlayDay =>
+  playDayOf(now, state.kind === 'open' ? state.settings.stopMinutes : stored.settings().stopMinutes);
 
 type Watch = {
   readonly over: Accessor<boolean>;
@@ -58,7 +58,7 @@ type Watch = {
 };
 
 /** The end of the rest time, and the end of the last start time of the evening, also while a screen shows. */
-const sessionWatch = (now: () => number, onLastStart: () => void): Watch => {
+const sessionWatch = (stored: SessionStore, now: () => number, onLastStart: () => void): Watch => {
   const [over, setOver] = createSignal(false);
   let timer: number | undefined;
   const watch = (state: SessionState): void => {
@@ -70,7 +70,7 @@ const sessionWatch = (now: () => number, onLastStart: () => void): Watch => {
     }
     if (state.kind === 'awake' && !state.byParent) {
       // The model allows a start up to the last start time and refuses one after it.
-      const lastStart = dayOf(state, now()).stop - loadSessionSettings().minutes * MINUTE_MS;
+      const lastStart = dayOf(stored, state, now()).stop - stored.settings().minutes * MINUTE_MS;
       timer = window.setTimeout(onLastStart, Math.max(0, lastStart + 1 - now()));
     }
   };
@@ -89,11 +89,11 @@ type Store = {
 };
 
 /** The session state of this run, read from storage. `onLastStart`: the end of the last start time. */
-const sessionStore = (now: () => number, onLastStart: () => void): Store => {
+const sessionStore = (stored: SessionStore, now: () => number, onLastStart: () => void): Store => {
   const start = now();
-  let current = readSession(start, playDayOf(start, loadSessionSettings().stopMinutes));
+  let current = stored.read(start, playDayOf(start, stored.settings().stopMinutes));
   const [state, setState] = createSignal<SessionState>(current);
-  const watch = sessionWatch(now, onLastStart);
+  const watch = sessionWatch(stored, now, onLastStart);
   watch.watch(current);
   return {
     state,
@@ -104,7 +104,7 @@ const sessionStore = (now: () => number, onLastStart: () => void): Store => {
       if (answer.state !== current) {
         current = answer.state;
         setState(current);
-        writeSession(current);
+        stored.write(current);
         watch.watch(current);
       }
       return answer;
@@ -114,13 +114,15 @@ const sessionStore = (now: () => number, onLastStart: () => void): Store => {
 };
 
 /** The event of a screen, with the wall time, the play day, and the current settings of a list-open. */
-const screenEvent = (type: ScreenEvent, state: SessionState, now: number): SessionEvent => {
-  if (type === 'load-failed') {
-    return { type, now };
-  }
-  const day = dayOf(state, now);
-  return type === 'list-open' ? { type, now, day, settings: loadSessionSettings() } : { type, now, day };
-};
+const screenEvent =
+  (stored: SessionStore) =>
+  (type: ScreenEvent, state: SessionState, now: number): SessionEvent => {
+    if (type === 'load-failed') {
+      return { type, now };
+    }
+    const day = dayOf(stored, state, now);
+    return type === 'list-open' ? { type, now, day, settings: stored.settings() } : { type, now, day };
+  };
 
 type Counter = {
   readonly count: (on: boolean) => void;
@@ -161,8 +163,8 @@ const counter = (now: () => number, apply: (event: SessionEvent) => SessionAnswe
   };
 };
 
-/** Makes the controller of this run from the stored state. `now` gives the wall time in ms. */
-export const createSession = (now: () => number = Date.now): SessionController => {
+/** Makes the controller of this run on the session store, which it reads at each event. `now`: the wall time in ms. */
+export const createSession = (stored: SessionStore, now: () => number = Date.now): SessionController => {
   let titleShown = false;
   const [toNight, setToNight] = createSignal(false);
   // The store calls it from the timer of the last start time, after this function returns.
@@ -172,20 +174,20 @@ export const createSession = (now: () => number = Date.now): SessionController =
     }
     const at = now();
     const before = current();
-    const after = apply({ type: 'title-show', now: at, day: dayOf(before, at), settings: loadSessionSettings() });
+    const after = apply({ type: 'title-show', now: at, day: dayOf(stored, before, at), settings: stored.settings() });
     if (after.state !== before) {
       setToNight(true);
     }
   };
-  const { state, restTimeOver: overAccessor, current, apply, watchAgain } = sessionStore(now, titleShow);
+  const { state, restTimeOver: overAccessor, current, apply, watchAgain } = sessionStore(stored, now, titleShow);
   const count = counter(now, apply);
   return {
     state,
     restTimeOver: overAccessor,
     toNight,
     now,
-    day: () => dayOf(current(), now()),
-    send: (type) => apply(screenEvent(type, current(), now())),
+    day: () => dayOf(stored, current(), now()),
+    send: (type) => apply(screenEvent(stored)(type, current(), now())),
     count: (on) => {
       setToNight(false);
       count.count(on);
@@ -198,11 +200,11 @@ export const createSession = (now: () => number = Date.now): SessionController =
       count.hide();
       apply({ type: 'hide', now: now() });
       // iOS can end a hidden app with no other event, so the state is written also when the hide changed nothing.
-      writeSession(current());
+      stored.write(current());
     },
     show: () => {
       const at = now();
-      apply({ type: 'show', now: at, day: dayOf(current(), at) });
+      apply({ type: 'show', now: at, day: dayOf(stored, current(), at) });
       count.show();
       watchAgain();
       titleShow();

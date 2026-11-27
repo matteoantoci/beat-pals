@@ -1,10 +1,10 @@
 import { createSignal, For, onSettled, Show } from 'solid-js';
 import { RECORD_COLORS } from '../../model';
-import { progressOf } from '../../shell/save';
 import { loadFamilyKey, readCover, readSongStore, watchDownload } from '../../shell/songs';
 import { playTitleMusic } from '../../sound';
 import { palPicture } from '../pals/pal-svg';
 import { reducedMotion } from '../play/reduced-motion';
+import { useStorage } from '../storage';
 import { SkyStrip } from '../sun/SkyStrip';
 import { Record, Stars } from './record';
 import type { FamilyKey, IndexSong, SunStage, SunStep } from '../../model';
@@ -113,7 +113,7 @@ export const SongPicture = (props: { readonly picture: string | undefined }): JS
 );
 
 const SongCard = (props: { readonly card: Card; readonly onTap: () => void }): JSX.Element => {
-  const progress = progressOf(props.card.song.id);
+  const progress = useStorage().save.progressOf(props.card.song.id);
   return (
     <li class="song-card">
       <button type="button" class="song-cover" aria-label={props.card.song.title} onClick={() => props.onTap()}>

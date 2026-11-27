@@ -1,5 +1,6 @@
 import { createSignal, onSettled, Show } from 'solid-js';
 import { downloading, lastProgress, readSongStore, startDownload, watchDownload } from '../../shell/songs';
+import { useStorage } from '../storage';
 import { megabytes, problemText, Progress, songs } from './song-texts';
 import type { DownloadPlan, FamilyKey } from '../../model';
 import type { SongStore } from '../../shell/songs';
@@ -74,6 +75,7 @@ const DownloadView = (props: ViewProps): JSX.Element => {
 type DownloadStepProps = { readonly songKey: FamilyKey; readonly stopped: boolean };
 
 export const DownloadStep = (props: DownloadStepProps): JSX.Element => {
+  const { setup } = useStorage();
   const progress = lastProgress();
   const [state, setState] = createSignal<DownloadState>(
     downloading() && progress !== undefined ? { kind: 'running', plan: progress } : { kind: 'reading' }
@@ -87,7 +89,7 @@ export const DownloadStep = (props: DownloadStepProps): JSX.Element => {
   };
   const start = (): void => {
     // The events of the download set the state.
-    startDownload(props.songKey).catch(failed);
+    startDownload(props.songKey, setup).catch(failed);
   };
   onSettled(() => {
     const unwatch = watchDownload((event) =>

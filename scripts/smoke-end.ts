@@ -2,8 +2,28 @@
 // its first 2 s does nothing, one tap after 2 s skips to the final state with no press of the button, and the
 // button goes back to the song list. The song list then shows the saved record and stars.
 
+import { STORAGE_KEYS } from '../src/shell/storage/keys.ts';
 import { check, shot, shows, tap, wait } from './smoke-page.ts';
 import type { Page } from 'puppeteer-core';
+
+/** The JSON of a stored text, or null when the text is missing or damaged. */
+const jsonOf = (text: string | null): unknown => {
+  try {
+    return text === null ? null : JSON.parse(text);
+  } catch {
+    return null;
+  }
+};
+
+/** True when the save, read as the app reads it, holds one song with one weak play and no record. */
+const oneWeakPlay = async (text: string | null): Promise<boolean> => {
+  // smoke.ts imports this file before it sets the resolve hook for the game model, so the model loads here, in the run.
+  const { restore } = await import('../src/model/index.ts');
+  const read = restore(jsonOf(text));
+  const songs = read.ok ? Object.values(read.progress) : [];
+  const [song] = songs;
+  return songs.length === 1 && song?.color === 0 && song.stars === 0 && song.weakPlays === 1;
+};
 
 /** The end scene ignores taps for this long. */
 const DEAF_MS = 2000;
@@ -38,12 +58,8 @@ export const endScene = async (page: Page, ms: number, shots: string | undefined
   await tap(page, '.end-done');
   check('end scene: the button goes back to the song list', await shows(page, '.song-list', 2000));
   // The smoke play hits no note, so the save holds one weak play of the test song.
-  const save = await page.evaluate(() => localStorage.getItem('beat-pals:save') ?? '');
-  check(
-    'end of the song: the save holds one weak play',
-    /^\{"version":1,"progress":\{"[a-z0-9-]+":\{"color":0,"stars":0,"weakPlays":1\}\}\}$/u.test(save),
-    save
-  );
+  const save = await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.save);
+  check('end of the song: the save holds one weak play', await oneWeakPlay(save), save ?? 'no save');
   // A weak play keeps level 0, so the card shows the empty shelf again: the empty record and 3 empty stars.
   check(
     'song list: the empty shelf of level 0 after a weak play',

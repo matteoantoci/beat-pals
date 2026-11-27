@@ -1,5 +1,6 @@
 import { createSignal, For, onCleanup, onSettled, Show } from 'solid-js';
 import { stopTitleMusic } from '../../sound';
+import { useStorage } from '../storage';
 import { BEADS } from './beads';
 import { HoldButton } from './HoldButton';
 import { loadSceneTiming, type LoadSceneTiming } from './load-timing';
@@ -74,6 +75,7 @@ const loadView = (lastSong: boolean, onFailed: () => void): LoadView => {
 };
 
 export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
+  const storage = useStorage();
   const [paused, setPaused] = createSignal(false);
   const { phase, scene, hooks } = loadView(props.lastSong, () => props.onEnd({ kind: 'failed' }));
   let root: HTMLElement | undefined;
@@ -84,11 +86,8 @@ export const PlayScreen = (props: PlayScreenProps): JSX.Element => {
     const canvas = root?.querySelector('canvas');
     const probe = root?.querySelector<HTMLElement>('.play-probe');
     if (root !== undefined && canvas && probe) {
-      handle = loadPlay({ root, canvas, probe, pals, beads }, props.choice, {
-        onPause: () => setPaused(true),
-        onEnd: (result) => props.onEnd(result),
-        ...hooks,
-      });
+      const request = { elements: { root, canvas, probe, pals, beads }, choice: props.choice, storage };
+      handle = loadPlay(request, { onPause: () => setPaused(true), onEnd: (result) => props.onEnd(result), ...hooks });
     }
     return () => handle?.stop();
   });

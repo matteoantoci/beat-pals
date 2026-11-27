@@ -1,11 +1,11 @@
 import { createSignal, Show } from 'solid-js';
 import { readSaveCode, saveCode } from '../../model';
-import { currentSave, replaceProgress } from '../../shell/save';
+import { useStorage } from '../storage';
 import type { RestoreFailure } from '../../model';
 import type { JSX } from '@solidjs/web';
 
-// How to make and restore the save code (spec, "Save"; user story 46). The code holds the progress of
-// localStorage, in the save format of this build (`snapshot`, `restore`). It is not encrypted.
+// How to make and restore the save code (spec, "Save"; user story 46). The code holds the progress of the device
+// storage, in the save format of this build (`snapshot`, `restore`). It is not encrypted.
 
 const REFUSED: Readonly<Record<RestoreFailure, string>> = {
   version: 'This save code is from a different version of Beat Pals. It cannot be read.',
@@ -16,10 +16,11 @@ const songs = (count: number): string => `${String(count)} ${count === 1 ? 'song
 
 /** Makes the code of the progress and shows it, with a copy button. */
 export const MakeCode = (): JSX.Element => {
+  const storage = useStorage();
   const [code, setCode] = createSignal('');
   const [note, setNote] = createSignal('');
   const make = async (): Promise<void> => {
-    const save = currentSave();
+    const save = storage.save.current();
     if (Object.keys(save.progress).length === 0) {
       setNote('No song has a play yet, so there is no progress to save.');
       return;
@@ -65,6 +66,7 @@ export const MakeCode = (): JSX.Element => {
 
 /** Reads a pasted save code and replaces the progress of this device with the progress of the code. */
 export const RestoreCode = (): JSX.Element => {
+  const { save } = useStorage();
   const [text, setText] = createSignal('');
   const [note, setNote] = createSignal('');
   const run = async (): Promise<void> => {
@@ -73,7 +75,7 @@ export const RestoreCode = (): JSX.Element => {
       setNote(REFUSED[result.reason]);
       return;
     }
-    if (!replaceProgress(result.progress)) {
+    if (!save.replace(result.progress)) {
       setNote('The progress is restored until the app closes. It could not be saved on this device.');
       return;
     }

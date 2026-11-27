@@ -1,9 +1,9 @@
 import { createSignal, onSettled, Show } from 'solid-js';
 import { bandOf, danceOf, RECORD_COLORS } from '../../model';
-import { loadSoundOn } from '../../shell/settings';
 import { playSceneSounds } from '../../sound';
 import { reducedMotion, watchReducedMotion } from '../play/reduced-motion';
 import { pictureOf, type SongChoice } from '../songs/SongList';
+import { useStorage } from '../storage';
 import { playScene, type SceneParts } from './motion';
 import { Band, Sleeve, StarRow, type Refs } from './parts';
 import { sceneLength, sceneSounds, type ScenePlan } from './timeline';
@@ -52,13 +52,13 @@ const sceneParts = (refs: Refs): SceneParts | undefined => {
 
 /** Starts the motion and the sounds of the scene. Gives the skip: each part in its final state, and no sound still
  * to come. */
-const startScene = (refs: Refs, plan: ScenePlan): (() => void) => {
+const startScene = (refs: Refs, plan: ScenePlan, soundOn: boolean): (() => void) => {
   const parts = sceneParts(refs);
   if (parts === undefined) {
     return ignore;
   }
   const finishMotion = playScene(parts, plan, reducedMotion());
-  const cancelSounds = playSceneSounds(sceneSounds(plan), loadSoundOn());
+  const cancelSounds = playSceneSounds(sceneSounds(plan), soundOn);
   return () => {
     finishMotion();
     cancelSounds();
@@ -114,6 +114,7 @@ const planOf = ({ outcome, score, stage }: EndSceneProps): ScenePlan => {
 
 export const EndScene = (props: EndSceneProps): JSX.Element => {
   const plan = planOf(props);
+  const { sound } = useStorage();
   const refs: Refs = { stars: [], bodies: [], pals: [] };
   const [picture, setPicture] = createSignal<string>();
   const [done, setDone] = createSignal(false);
@@ -127,7 +128,7 @@ export const EndScene = (props: EndSceneProps): JSX.Element => {
   };
   onSettled(() => {
     pictureOf(props.choice.key, props.choice.song).then(setPicture, ignore);
-    skip = startScene(refs, plan);
+    skip = startScene(refs, plan, sound.get());
     const stopWatches = watchScene(plan, skip, finish);
     return () => {
       stopWatches();

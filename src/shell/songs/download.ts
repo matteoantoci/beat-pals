@@ -10,16 +10,17 @@ import { downloadPlan } from '../../model';
 import { keepScreenOn } from '../wake-lock';
 import { keepLastStore } from './last-store';
 import { readSiteStore } from './read-store';
-import { keepStorage, markSetup, setupMark } from './setup';
+import { keepStorage } from './setup';
 import { cachedNames, downloadFile } from './store';
 import type { DownloadPlan, FamilyKey } from '../../model';
 import type { SongStore } from './read-store';
+import type { SetupSlot } from './setup';
 import type { Read } from './store';
 
 /** Each change of a running download: the plan after each file, and the end with its result. */
 export type DownloadEvent = { type: 'progress'; plan: DownloadPlan } | { type: 'end'; result: SongStore };
 
-type Run = { readonly key: FamilyKey; readonly signal: AbortSignal };
+type Run = { readonly key: FamilyKey; readonly setup: SetupSlot; readonly signal: AbortSignal };
 type Store = Extract<SongStore, { ok: true }>;
 
 const listeners = new Set<(event: DownloadEvent) => void>();
@@ -66,7 +67,7 @@ const download = async (run: Run): Promise<SongStore> => {
     return fetched;
   }
   await keepLastStore(store.manifest, fetched.value.remove);
-  markSetup('done');
+  run.setup.set('done');
   return { ...store, plan: { ...fetched.value, remove: [] } };
 };
 
@@ -78,20 +79,20 @@ const failure = (error: unknown): SongStore => {
 /**
  * Starts the download, or gives the download that runs. The result is the store after the download, or the
  * problem that stopped it. Start it again to continue after a stop. An error of the browser, for example a full
- * storage, is a `broken` result. A download before the end of the setup marks the setup as started.
+ * storage, is a `broken` result. A download before the end of the setup marks the setup as started in `setup`.
  */
-export const startDownload = (key: FamilyKey): Promise<SongStore> => {
+export const startDownload = (key: FamilyKey, setup: SetupSlot): Promise<SongStore> => {
   if (running !== undefined) {
     return running;
   }
-  if (setupMark() !== 'done') {
-    markSetup('started');
+  if (setup.get() !== 'done') {
+    setup.set('started');
   }
   keepStorage().catch(() => undefined);
   const letSleep = keepScreenOn();
   const controller = new AbortController();
   stopper = controller;
-  const run = download({ key, signal: controller.signal })
+  const run = download({ key, setup, signal: controller.signal })
     .catch(failure)
     .then((result) => {
       letSleep();

@@ -1,10 +1,9 @@
 // The device side of the guided song setup (spec, "Guided song setup" and "Delivery", storage): the stored mark of
-// the setup (`beat-pals:setup`), the display mode of the app, and the persistent storage of the songs.
+// the setup in the device storage, the display mode of the app, and the persistent storage of the songs.
 
 import { readSetupMark } from '../../model';
 import type { SetupMark } from '../../model';
-
-const SETUP_KEY = 'beat-pals:setup';
+import type { Codec, Slot } from '../storage/slot';
 
 declare global {
   interface Navigator {
@@ -13,31 +12,14 @@ declare global {
   }
 }
 
-/** The stored mark of the setup, or undefined when the setup did not start or the storage cannot be read. */
-export const setupMark = (): SetupMark | undefined => {
-  try {
-    return readSetupMark(localStorage.getItem(SETUP_KEY));
-  } catch {
-    return undefined;
-  }
-};
+/** The stored mark of the setup in the device storage. */
+export type SetupSlot = Slot<SetupMark | undefined>;
 
-/** Stores the mark of the setup. A storage that refuses it changes nothing: the step shows from the key again. */
-export const markSetup = (mark: SetupMark): void => {
-  try {
-    localStorage.setItem(SETUP_KEY, mark);
-  } catch {
-    // The storage is full or blocked.
-  }
-};
-
-/** Removes the mark, so the setup starts again. */
-export const clearSetup = (): void => {
-  try {
-    localStorage.removeItem(SETUP_KEY);
-  } catch {
-    // The storage is blocked.
-  }
+/** The mark of the setup, or undefined when the setup did not start. A failed write keeps the mark for this run. */
+export const setupCodec: Codec<SetupMark | undefined> = {
+  absent: undefined,
+  decode: readSetupMark,
+  encode: (mark) => mark ?? '',
 };
 
 /** True when the app runs from the Home Screen, false in a Safari tab. */

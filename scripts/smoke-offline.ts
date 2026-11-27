@@ -3,6 +3,7 @@
 // the service worker). Then the app starts from the service worker, the song list comes from the last manifest, and
 // the song plays from Cache Storage. Last, "Change key" clears the songs and the key, also offline.
 
+import { STORAGE_KEYS } from '../src/shell/storage/keys.ts';
 import { check, shows, tap, wait } from './smoke-page.ts';
 import { openParentArea } from './smoke-parent.ts';
 import type { AudioRecord } from './smoke-audio.ts';
@@ -47,7 +48,7 @@ const offlineParent = async (page: Page): Promise<void> => {
   check('Change key: the songs are deleted', (await page.evaluate(cachedCount, CACHE)) === 0);
   check(
     'Change key: the setup starts again',
-    (await page.evaluate(() => localStorage.getItem('beat-pals:setup'))) === null
+    (await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.setup)) === null
   );
 };
 

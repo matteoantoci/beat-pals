@@ -5,20 +5,20 @@
 import { watchLifecycle } from '../lifecycle';
 import { downloading, startDownload } from './download';
 import { loadFamilyKey } from './key-store';
-import { setupMark } from './setup';
+import type { SetupSlot } from './setup';
 
 /** A failed start, for example with no network, waits for the next start or return. */
-const refresh = (): void => {
-  if (setupMark() !== 'done' || downloading()) {
+const refresh = (setup: SetupSlot): void => {
+  if (setup.get() !== 'done' || downloading()) {
     return;
   }
   loadFamilyKey()
-    .then(async (key) => (key === undefined ? undefined : startDownload(key)))
+    .then(async (key) => (key === undefined ? undefined : startDownload(key, setup)))
     .catch(() => undefined);
 };
 
 /** Downloads the new songs now and at each return to visible. Returns the function that stops the watch. */
-export const keepSongsFresh = (): (() => void) => {
-  refresh();
-  return watchLifecycle({ hidden: () => undefined, visible: refresh });
+export const keepSongsFresh = (setup: SetupSlot): (() => void) => {
+  refresh(setup);
+  return watchLifecycle({ hidden: () => undefined, visible: () => refresh(setup) });
 };

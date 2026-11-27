@@ -1,5 +1,6 @@
 import { Show } from 'solid-js';
-import { loadLastProblem, type LoadProblemKind } from '../../shell/load-notes';
+import { useStorage } from '../storage';
+import type { LoadProblemKind } from '../../shell/load-notes';
 import type { JSX } from '@solidjs/web';
 
 // The last song that did not load, for the parent (spec, "Screens", load scene): what went wrong, when, and what
@@ -17,10 +18,13 @@ const TEXTS: Readonly<Record<LoadProblemKind, string>> = {
 const timeText = (at: number): string =>
   new Date(at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-export const LoadProblemNote = (): JSX.Element => (
-  <Show when={loadLastProblem()}>
-    {(problem) => (
-      <p class="song-note song-load-problem">{`Last song problem (${timeText(problem().at)}): ${TEXTS[problem().kind]}`}</p>
-    )}
-  </Show>
-);
+export const LoadProblemNote = (): JSX.Element => {
+  const { loadProblem } = useStorage();
+  return (
+    <Show when={loadProblem.get()}>
+      {(problem) => (
+        <p class="song-note song-load-problem">{`Last song problem (${timeText(problem().at)}): ${TEXTS[problem().kind]}`}</p>
+      )}
+    </Show>
+  );
+};

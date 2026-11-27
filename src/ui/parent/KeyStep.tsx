@@ -1,5 +1,6 @@
 import { createSignal } from 'solid-js';
 import { checkKeyCode } from '../../shell/songs';
+import { useStorage } from '../storage';
 import type { FamilyKey } from '../../model';
 import type { KeyCheck } from '../../shell/songs';
 import type { JSX } from '@solidjs/web';
@@ -14,6 +15,7 @@ const KEY_TEXTS: Readonly<Record<string, string>> = {
 };
 
 export const KeyStep = (props: { readonly onKey: (key: FamilyKey) => void }): JSX.Element => {
+  const { setup } = useStorage();
   const [code, setCode] = createSignal('');
   const [note, setNote] = createSignal('');
   const [checking, setChecking] = createSignal(false);
@@ -29,7 +31,7 @@ export const KeyStep = (props: { readonly onKey: (key: FamilyKey) => void }): JS
   const check = (): void => {
     setNote('');
     setChecking(true);
-    checkKeyCode(code()).then(checked, (error: unknown) => {
+    checkKeyCode(code(), setup).then(checked, (error: unknown) => {
       setChecking(false);
       setNote(`The check failed: ${error instanceof Error ? error.message : String(error)}.`);
     });

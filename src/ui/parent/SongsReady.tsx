@@ -1,5 +1,6 @@
 import { createMemo, createSignal, Loading, onSettled, Show } from 'solid-js';
 import { downloading, lastProgress, readSongStore, startDownload, storageKept, watchDownload } from '../../shell/songs';
+import { useStorage } from '../storage';
 import { LoadProblemNote } from './LoadProblemNote';
 import { megabytes, problemText, Progress, songs } from './song-texts';
 import type { DownloadPlan, FamilyKey } from '../../model';
@@ -78,6 +79,7 @@ const StateView = (props: { readonly state: ReadyState; readonly onStart: () => 
 const errorText = (error: unknown): string => `Error: ${error instanceof Error ? error.message : String(error)}.`;
 
 export const SongsReady = (props: { readonly songKey: FamilyKey }): JSX.Element => {
+  const { setup } = useStorage();
   const progress = lastProgress();
   const [state, setState] = createSignal<ReadyState>(
     downloading() && progress !== undefined ? { kind: 'running', plan: progress } : { kind: 'reading' }
@@ -96,7 +98,9 @@ export const SongsReady = (props: { readonly songKey: FamilyKey }): JSX.Element 
     );
   };
   const start = (): void => {
-    startDownload(props.songKey).catch((error: unknown) => setState({ kind: 'problem', text: errorText(error) }));
+    startDownload(props.songKey, setup).catch((error: unknown) =>
+      setState({ kind: 'problem', text: errorText(error) })
+    );
   };
   onSettled(() => {
     const unwatch = watchDownload((event) =>

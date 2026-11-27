@@ -1,7 +1,7 @@
 import { onSettled } from 'solid-js';
 import { parentStatus } from '../../model';
-import { loadSessionSettings, storeSessionSettings } from '../../shell/session';
 import { stopTitleMusic } from '../../sound';
+import { useStorage } from '../storage';
 import { Credits } from './Credits';
 import { PlaySessions } from './PlaySessions';
 import { Reset } from './Reset';
@@ -21,11 +21,13 @@ export const ParentArea = (props: {
   readonly onClose: () => void;
 }): JSX.Element => {
   onSettled(stopTitleMusic);
+  // The session controller reads the settings from the same storage.
+  const { session } = useStorage();
   // The status line reads the current settings for the day budget while no session is open.
   const statusTime = (): StatusTime => ({
     now: props.session.now(),
     day: props.session.day(),
-    settings: loadSessionSettings(),
+    settings: session.settings(),
   });
   return (
     <main class="parent-area">
@@ -37,8 +39,8 @@ export const ParentArea = (props: {
       </header>
       <PlaySessions
         status={parentStatus(props.session.state(), statusTime())}
-        settings={loadSessionSettings()}
-        onSettings={storeSessionSettings}
+        settings={session.settings()}
+        onSettings={session.storeSettings}
         onOpenNow={() => parentStatus(props.session.send('open-now').state, statusTime())}
       />
       <SongsSection />

@@ -1,6 +1,7 @@
 // The parent area in the smoke run (scripts/smoke.ts): the parent check from the logo hold, and Done. The song setup
 // in its "Songs" section is in scripts/smoke-setup.ts.
 
+import { STORAGE_KEYS } from '../src/shell/storage/keys.ts';
 import { check, tap, wait } from './smoke-page.ts';
 import type { Page } from 'puppeteer-core';
 
@@ -50,8 +51,6 @@ export const closeParentArea = async (page: Page, name: string): Promise<void> =
   check(`${name}: Done shows the title screen`, (await page.$('.title .logo')) !== null);
 };
 
-const SAVE = 'beat-pals:save';
-const SOUND = 'beat-pals:sound';
 /** The chart author of the test song (scripts/smoke-store.ts). */
 const TEST_CHARTER = 'Smoke Run';
 
@@ -62,8 +61,9 @@ const tapIn = async (page: Page, selector: string): Promise<boolean> => {
   return tap(page, selector);
 };
 
-const stored = async (page: Page, key: string): Promise<string | null> =>
-  page.evaluate((name) => localStorage.getItem(name), key);
+/** The stored text of a value of the device storage. */
+const stored = async (page: Page, value: keyof typeof STORAGE_KEYS): Promise<string | null> =>
+  page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS[value]);
 
 const textOf = async (page: Page, selector: string): Promise<string> =>
   page.$eval(selector, (el) => el.textContent).catch(() => '');
@@ -84,15 +84,18 @@ const hasFamilyKey = async (): Promise<boolean> => {
   return count === 1;
 };
 
-/** The Sound effects switch turns off and on, and keeps its setting in `beat-pals:sound`. */
+/** The Sound effects switch turns off and on, and keeps its setting in the storage. */
 const soundSwitch = async (page: Page): Promise<void> => {
   const state = async (): Promise<string> =>
     page.$eval('.parent-switch', (el) => el.getAttribute('aria-checked') ?? '');
   check('parent area: Sound effects is on by default', (await state()) === 'true');
   await tapIn(page, '.parent-switch');
-  check('Sound effects: a tap turns it off', (await state()) === 'false' && (await stored(page, SOUND)) === 'off');
+  check('Sound effects: a tap turns it off', (await state()) === 'false' && (await stored(page, 'sound')) === 'off');
   await tapIn(page, '.parent-switch');
-  check('Sound effects: a second tap turns it on', (await state()) === 'true' && (await stored(page, SOUND)) === 'on');
+  check(
+    'Sound effects: a second tap turns it on',
+    (await state()) === 'true' && (await stored(page, 'sound')) === 'on'
+  );
 };
 
 /** The credits name the title music and the chart author of the ready test song. */
@@ -125,12 +128,12 @@ const reset = async (page: Page): Promise<void> => {
   await tapIn(page, '.reset-ask');
   check(
     'reset: the first tap only asks',
-    (await stored(page, SAVE)) !== null && (await page.$('.reset-confirm')) !== null
+    (await stored(page, 'save')) !== null && (await page.$('.reset-confirm')) !== null
   );
   await tapIn(page, '.reset-confirm');
   await wait(200);
-  check('reset: the progress is deleted', (await stored(page, SAVE)) === null);
-  check('reset: the Sound effects setting stays', (await stored(page, SOUND)) === 'on');
+  check('reset: the progress is deleted', (await stored(page, 'save')) === null);
+  check('reset: the Sound effects setting stays', (await stored(page, 'sound')) === 'on');
   const songs = await page.evaluate(async () => (await (await caches.open('beat-pals-songs')).keys()).length);
   check('reset: the songs stay', songs > 0, `${String(songs)} cached files`);
   check('reset: the family key stays', await page.evaluate(hasFamilyKey));
@@ -153,7 +156,7 @@ const restoreCode = async (page: Page, code: string, before: string | null): Pro
   await page.type('.save-restore textarea', code);
   await tapIn(page, '.save-restore-button');
   await wait(500);
-  const after = await stored(page, SAVE);
+  const after = await stored(page, 'save');
   check('restore: the save code gives the progress back', after !== null && after === before, after ?? 'no save');
 };
 
@@ -169,7 +172,7 @@ export const parentSections = async (page: Page): Promise<void> => {
     'parent area: the last load problem shows',
     (await textOf(page, '.song-load-problem')).includes('a song file was missing')
   );
-  const before = await stored(page, SAVE);
+  const before = await stored(page, 'save');
   await soundSwitch(page);
   await credits(page);
   const code = await makeCode(page);

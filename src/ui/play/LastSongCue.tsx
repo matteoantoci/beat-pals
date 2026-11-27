@@ -1,10 +1,10 @@
 import { createEffect, For, onCleanup, onSettled } from 'solid-js';
-import { loadSoundOn } from '../../shell/settings';
 import { fadeOutTitleMusic, playSceneSounds, type StopSounds } from '../../sound';
 import { deg, keysIn, playKeys, px, type Key } from '../motion/keys';
 import { decodeSessionPals } from '../pals/pal-svg';
 import { ARM_SIDES } from '../pals/session-pal-motion';
 import { SessionPal } from '../pals/SessionPal';
+import { useStorage } from '../storage';
 import {
   armShowKeys,
   CUE_PALS,
@@ -119,13 +119,14 @@ const Band = (): JSX.Element => (
 const noSounds: StopSounds = () => undefined;
 
 export const LastSongCue = (props: LastSongCueProps): JSX.Element => {
+  const { sound } = useStorage();
   let root: HTMLElement | undefined;
   let stopTune = noSounds;
   // The reduced-motion choice holds for the whole scene, as the end scene reads it at its start.
   const reduce = props.reduce;
   onSettled(() => {
     fadeOutTitleMusic(MUSIC_FADE_SEC);
-    stopTune = playSceneSounds(CUE_SOUNDS, loadSoundOn());
+    stopTune = playSceneSounds(CUE_SOUNDS, sound.get());
     decodeSessionPals().catch(() => undefined);
     if (root) {
       playCue(root, reduce);

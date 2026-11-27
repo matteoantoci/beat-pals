@@ -4,10 +4,10 @@
 // the running play is the state of this module. The play handle guards each call: a handle of a replaced play
 // changes nothing.
 
-import { clearLoadProblem, storeLoadProblem } from '../../shell/load-notes';
 import { free, isFailure, loadParts, type Loaded, type LoadFailure } from './load-parts';
 import { startPlayLoop, type PlayLoop } from './play-loop';
 import type { LoadPhase } from '../../model';
+import type { DeviceStorage } from '../../shell/storage';
 import type { SongEvents } from '../../sound';
 import type { SongChoice } from '../songs/SongList';
 import type { PlayElements } from './fit';
@@ -17,6 +17,14 @@ export type PlayResult =
   | { readonly kind: 'score'; readonly score: number }
   | { readonly kind: 'failed' }
   | { readonly kind: 'home' };
+
+/** What a play needs: the elements of the play screen, the song, and the device storage (the progress of the song,
+ * the Sound effects switch, the decode rate, and the last load problem). */
+export type PlayRequest = {
+  readonly elements: PlayElements;
+  readonly choice: SongChoice;
+  readonly storage: DeviceStorage;
+};
 
 export type PlayHooks = {
   /** The play paused itself (hidden page, stopped audio, still clock): show the pause screen. */
@@ -65,7 +73,7 @@ type AfterLoad = {
 };
 
 /** What happens at the end of the load of play `id`: the play starts, or the failure shows. */
-const afterLoad = (id: number, elements: PlayElements, hooks: PlayHooks): AfterLoad => {
+const afterLoad = (id: number, { elements, storage }: PlayRequest, hooks: PlayHooks): AfterLoad => {
   /** The play loop gives the score at the end of the song, or null for Home on the pause screen. */
   const end = (score: number | null): void => {
     stopRunning();
@@ -73,7 +81,7 @@ const afterLoad = (id: number, elements: PlayElements, hooks: PlayHooks): AfterL
   };
   const fail = ({ problem }: LoadFailure): void => {
     if (id === current) {
-      storeLoadProblem(problem);
+      storage.loadProblem.set({ kind: problem, at: Date.now() });
       hooks.onFail();
     }
   };
@@ -98,13 +106,13 @@ const afterLoad = (id: number, elements: PlayElements, hooks: PlayHooks): AfterL
       throw error;
     }
     // A song that plays ends the last problem: a missing file that downloaded again is no fault anymore.
-    clearLoadProblem();
+    storage.loadProblem.clear();
   };
   return { start, fail };
 };
 
 /** Loads the song of the choice and starts its play at the record color and speed step of its progress. */
-export const loadPlay = (elements: PlayElements, choice: SongChoice, hooks: PlayHooks): PlayHandle => {
+export const loadPlay = (request: PlayRequest, hooks: PlayHooks): PlayHandle => {
   stopRunning();
   current += 1;
   const id = current;
@@ -114,8 +122,8 @@ export const loadPlay = (elements: PlayElements, choice: SongChoice, hooks: Play
       hooks.onLoad(phase);
     }
   };
-  const { start, fail } = afterLoad(id, elements, hooks);
-  loadParts({ elements, choice, live, onLoad, songEvents: SONG_EVENTS })
+  const { start, fail } = afterLoad(id, request, hooks);
+  loadParts({ ...request, live, onLoad, songEvents: SONG_EVENTS })
     .then(start)
     .catch(() => fail({ problem: 'other' }));
   const mine = (action: () => void) => (): void => {

@@ -4,9 +4,6 @@
 // made and gives undefined.
 
 import { childChart, decodeTime, nextDecodeRate, playSetup, readFacts, startPlay } from '../../model';
-import { loadDecodeRate, storeDecodeRate, type LoadProblemKind } from '../../shell/load-notes';
-import { progressOf } from '../../shell/save';
-import { loadSoundOn } from '../../shell/settings';
 import { readSongFiles } from '../../shell/songs';
 import { loadSong } from '../../sound';
 import { decodePals } from '../pals/pal-svg';
@@ -15,7 +12,9 @@ import { makePals } from './pals';
 import { createStage, type Stage } from './stage';
 import { makeView } from './view';
 import type { Lane, LoadPhase } from '../../model';
+import type { LoadProblemKind } from '../../shell/load-notes';
 import type { SongFiles } from '../../shell/songs';
+import type { DeviceStorage } from '../../shell/storage';
 import type { Song, SongEvents } from '../../sound';
 import type { SongChoice } from '../songs/SongList';
 import type { PlayLoopParts } from './play-loop';
@@ -32,6 +31,8 @@ export type LoadRequest = {
   readonly live: () => boolean;
   readonly onLoad: (phase: LoadPhase) => void;
   readonly songEvents: SongEvents;
+  /** The progress of the song, the Sound effects switch, and the decode rate of the device. */
+  readonly storage: DeviceStorage;
 };
 
 const STAGE_STEPS = 2;
@@ -61,14 +62,15 @@ const readFiles = async ({ choice, onLoad }: LoadRequest): Promise<SongFiles | L
 };
 
 /** Decodes the audio while the ring moves at the predicted speed, and learns the decode rate of the device. */
-const decodeSong = async ({ onLoad, songEvents }: LoadRequest, audio: ArrayBuffer): Promise<Song | LoadFailure> => {
+const decodeSong = async (request: LoadRequest, audio: ArrayBuffer): Promise<Song | LoadFailure> => {
+  const { onLoad, songEvents, storage } = request;
   const bytes = audio.byteLength;
-  const rate = loadDecodeRate();
+  const rate = storage.decodeRate.get();
   const startedAt = performance.now();
   onLoad({ step: 'decode', startedAt, predictedMs: decodeTime(bytes, rate) });
   try {
-    const song = await loadSong(audio, songEvents, loadSoundOn());
-    storeDecodeRate(nextDecodeRate(rate, bytes, performance.now() - startedAt));
+    const song = await loadSong(audio, songEvents, storage.sound.get());
+    storage.decodeRate.set(nextDecodeRate(rate, bytes, performance.now() - startedAt));
     return song;
   } catch {
     return failure('audio');
@@ -118,7 +120,7 @@ export const loadParts = async (request: LoadRequest): Promise<Loaded | LoadFail
   if (!request.live()) {
     return undefined;
   }
-  const setup = playSetup(progressOf(request.choice.song.id));
+  const setup = playSetup(request.storage.save.progressOf(request.choice.song.id));
   const chart = childChart(facts, setup);
   const song = await decodeSong(request, files.audio);
   if (isFailure(song)) {
