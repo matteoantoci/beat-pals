@@ -1,6 +1,9 @@
 // The 18 still pictures of the pals (spec, "Screens"): 3 pals with 6 states each, drawn as SVG by the prototype
 // function `palSVG` of play-style A, with its colours, and the oops state of the loading prototype. Animated WebP
 // files come later, as a separate art task.
+// The session scenes (play-sessions spec, "Screens and motion") also use a yawn face, a sleep face, and an arm for
+// each pal, as drawn in the sunset prototype. These parts are not play pictures: the play still decodes 18
+// pictures before a song, and the session scenes decode their parts with `decodeSessionPals`.
 
 import { css, LANE_COLORS, TOKENS, type Oklch } from './color';
 
@@ -9,6 +12,17 @@ import { css, LANE_COLORS, TOKENS, type Oklch } from './color';
 const PAL_STATES = ['idle', 'ready', 'happy', 'held', 'joy', 'oops'] as const;
 
 export type PalState = (typeof PAL_STATES)[number];
+
+/** The faces of the session scenes only: yawn (squeezed happy eyes, a tall open mouth) and sleep (closed eyes that
+ * curve down, a small calm mouth). */
+const SESSION_FACES = ['yawn', 'sleep'] as const;
+
+type SessionFace = (typeof SESSION_FACES)[number];
+
+/** A face of a pal in the session scenes: a play state, the yawn, or the sleep. */
+export type PalFace = PalState | SessionFace;
+
+const isSessionFace = (face: PalFace): face is SessionFace => face === 'yawn' || face === 'sleep';
 
 /** 0 Pip, 1 Dot, 2 Bo. */
 export type PalIndex = 0 | 1 | 2;
@@ -64,11 +78,17 @@ const PALS: readonly [PalDrawing, PalDrawing, PalDrawing] = [
   },
 ];
 
-const isGlad = (state: PalState): boolean => state === 'happy' || state === 'held' || state === 'joy';
+const isGlad = (face: PalFace): boolean => face === 'happy' || face === 'held' || face === 'joy';
 
-const eye = (x: number, y: number, state: PalState): string => {
+const eye = (x: number, y: number, state: PalFace): string => {
   if (isGlad(state)) {
     return `<path d="M${String(x - 9)} ${String(y + 2)} q9 -12 18 0" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>`;
+  }
+  // yawn: a flatter happy arc, as the eyes squeeze; sleep: a closed eye that curves down.
+  if (isSessionFace(state)) {
+    const arc =
+      state === 'yawn' ? `M${String(x - 9)} ${String(y + 2)} q9 -9 18 0` : `M${String(x - 9)} ${String(y)} q9 9 18 0`;
+    return `<path d="${arc}" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>`;
   }
   // oops: the pupils look up and to the side, under a raised round brow.
   const oops = state === 'oops';
@@ -89,8 +109,8 @@ const TONGUE = css(PIP.dark);
 const SMILE = (my: number): string =>
   `<path d="M50 ${String(my - 2)} q10 10 20 0" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>`;
 
-/** The mouth of each state, at the mouth height `my`. */
-const MOUTHS: Readonly<Record<PalState, (my: number) => string>> = {
+/** The mouth of each face, at the mouth height `my`. */
+const MOUTHS: Readonly<Record<PalFace, (my: number) => string>> = {
   ready: (my) =>
     `<ellipse cx="60" cy="${String(my + 2)}" rx="11" ry="13" fill="${INK}"/><ellipse cx="60" cy="${String(my + 10)}" rx="7" ry="4" fill="${TONGUE}"/>`,
   happy: (my) =>
@@ -100,23 +120,28 @@ const MOUTHS: Readonly<Record<PalState, (my: number) => string>> = {
   joy: SMILE,
   // a small round "o" to one side
   oops: (my) => `<ellipse cx="65" cy="${String(my + 1)}" rx="5" ry="5.5" fill="${INK}"/>`,
+  // a tall open mouth with the tongue at the bottom
+  yawn: (my) =>
+    `<ellipse cx="60" cy="${String(my + 3)}" rx="10" ry="15" fill="${INK}"/><ellipse cx="60" cy="${String(my + 12)}" rx="6" ry="4" fill="${TONGUE}"/>`,
+  sleep: (my) =>
+    `<path d="M54 ${String(my)} q6 4 12 0" fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>`,
 };
 
-const face = (pal: PalDrawing, state: PalState): string => {
+const face = (pal: PalDrawing, state: PalFace): string => {
   const my = pal.faceY + 22;
   const [rx, ry] = state === 'held' ? ['11', '8'] : ['8', '5'];
   const cheek = (x: number): string =>
     `<ellipse cx="${String(x)}" cy="${String(my - 4)}" rx="${rx}" ry="${ry}" fill="${pal.cheek}"/>`;
   return (
-    `<g opacity="${isGlad(state) ? '1' : '0.55'}">${cheek(31)}${cheek(89)}</g>` +
+    `<g opacity="${isGlad(state) || isSessionFace(state) ? '1' : '0.55'}">${cheek(31)}${cheek(89)}</g>` +
     eye(44, pal.faceY, state) +
     eye(76, pal.faceY, state) +
     MOUTHS[state](my)
   );
 };
 
-/** The picture of one pal in one state, as a data URI for an `<img>`. */
-const palSvg = (index: PalIndex, state: PalState): string => {
+/** The picture of one pal with one face, as a data URI for an `<img>`. */
+const palSvg = (index: PalIndex, state: PalFace): string => {
   const pal = PALS[index];
   const colors = LANE_COLORS[index];
   const [hx, hy] = pal.hi;
@@ -128,25 +153,61 @@ const palSvg = (index: PalIndex, state: PalState): string => {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
+/** An arm that comes out from behind a pal, with a round mitten in the colour of the pal and a highlight. Its
+ * shoulder is at the bottom (x 20, y 76 of 80). */
+const armSvg = (index: PalIndex): string => {
+  const color = css(LANE_COLORS[index].base);
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 80">` +
+    `<path d="M20 76 V30" stroke="${INK}" stroke-width="15" stroke-linecap="round"/>` +
+    `<path d="M20 76 V30" stroke="${color}" stroke-width="10" stroke-linecap="round"/>` +
+    `<circle cx="20" cy="26" r="10" fill="${color}" stroke="${INK}" stroke-width="2.5"/>` +
+    `<ellipse cx="16.5" cy="22.5" rx="3" ry="2" fill="${WHITE}" opacity=".55"/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
 const PAL_INDEXES: readonly PalIndex[] = [0, 1, 2];
 const PICTURES: readonly (readonly string[])[] = PAL_INDEXES.map((index) =>
   PAL_STATES.map((state) => palSvg(index, state))
 );
+const SESSION_PICTURES: readonly (readonly string[])[] = PAL_INDEXES.map((index) =>
+  SESSION_FACES.map((sessionFace) => palSvg(index, sessionFace))
+);
+const ARMS: readonly string[] = PAL_INDEXES.map(armSvg);
 
 /** The data URI of a pal picture. */
 export const palPicture = (index: PalIndex, state: PalState): string =>
   PICTURES[index]?.[PAL_STATES.indexOf(state)] ?? '';
 
-let decoded: Promise<void> | undefined;
+/** The data URI of a pal with a face of the session scenes. A play state gives the play picture. */
+export const palFacePicture = (index: PalIndex, state: PalFace): string =>
+  isSessionFace(state) ? (SESSION_PICTURES[index]?.[SESSION_FACES.indexOf(state)] ?? '') : palPicture(index, state);
 
-/** Decodes all 18 pictures one time, so no state change of a pal waits for a decode during a song (C21). */
-export const decodePals = (): Promise<void> => {
-  decoded ??= Promise.all(
-    PICTURES.flat().map(async (src) => {
+/** The data URI of the arm of a pal. The same picture is the left arm and the right arm. */
+export const armPicture = (index: PalIndex): string => ARMS[index] ?? '';
+
+const decodeAll = async (pictures: readonly string[]): Promise<void> => {
+  await Promise.all(
+    pictures.map(async (src) => {
       const image = new Image();
       image.src = src;
       await image.decode();
     })
-  ).then(() => undefined);
+  );
+};
+
+let decoded: Promise<void> | undefined;
+let sessionDecoded: Promise<void> | undefined;
+
+/** Decodes all 18 pictures one time, so no state change of a pal waits for a decode during a song (C21). */
+export const decodePals = (): Promise<void> => {
+  decoded ??= decodeAll(PICTURES.flat());
   return decoded;
+};
+
+/** Decodes the yawn and sleep faces and the arms one time, so no face change of a session scene waits for a decode.
+ * The play states of the session scenes come from `decodePals`. */
+export const decodeSessionPals = (): Promise<void> => {
+  sessionDecoded ??= decodeAll([...SESSION_PICTURES.flat(), ...ARMS]);
+  return sessionDecoded;
 };

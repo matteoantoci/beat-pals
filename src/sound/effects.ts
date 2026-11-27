@@ -1,7 +1,8 @@
-// The sound effects (spec, "Sound effects"): 8 recorded CC0 files in public/sounds/, mono WAV, 16-bit, 44.1 kHz,
+// The sound effects (spec, "Sound effects"): 13 recorded CC0 files in public/sounds/, mono WAV, 16-bit, 44.1 kHz,
 // with the silence trimmed and the peak at -1 dBFS (credits in src/model/credits/credits.ts). The clap of a hit, the
 // level-up sounds, and the star moment play on the song clock (./song.ts); the record, the star, and the join play in
-// the end scene.
+// the end scene. The 5 sounds of the sun and the sleep play in the session scenes (play-sessions spec, "Sound
+// effects"): the last-song tune, the sun step, the yawn, the goodbye tune, and the wake-up celesta.
 // The play gain follows the Pile Pals level rule (Pile Pals scripts/audio/prep.py): a file below 0.4 s gets a true
 // peak of -6 dBTP, a longer file -18 LUFS with its true peak at -1 dBTP or lower; then no file has a higher maximum
 // momentary loudness than the great clap (-21.6 LUFS), as the snap in Pile Pals. Over a song, the effects get a boost
@@ -14,7 +15,8 @@ import type { EnergyStep } from '../model';
 export type LevelUpStep = Exclude<EnergyStep, 0>;
 
 /** The play gain in dB of each effect. Its file is `sounds/<effect>.wav`. The claps are 3 dB below the level rule:
- * the parent heard them too loud over the songs, in quiet and in loud parts. */
+ * the parent heard them too loud over the songs, in quiet and in loud parts. The session sounds have the gains of the
+ * play-sessions spec. */
 const GAIN_DB = {
   clap: -8,
   'clap-great': -8,
@@ -24,6 +26,11 @@ const GAIN_DB = {
   star: -8.5,
   join: -5,
   'star-moment': -10.1,
+  'last-song': -8.9,
+  'sun-step': -8.9,
+  yawn: -13.6,
+  goodbye: -7.8,
+  'wake-up': -13.8,
 } as const;
 
 type Effect = keyof typeof GAIN_DB;

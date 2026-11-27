@@ -1,15 +1,20 @@
-// The sounds of the end scene (spec, "Screens", end scene): the record, the star, and the join, on the audio clock
-// at the moments of the scene timeline (src/ui/end/motion.ts).
+// The sounds of a scene on the audio clock, at the moments of the scene timeline: the record, the star, and the join
+// of the end scene (spec, "Screens", end scene; src/ui/end/motion.ts), and the 5 sounds of the session scenes
+// (play-sessions spec, "Sound effects").
 import { startEffect } from './effects';
 import { currentContext } from './engine';
 
-/** One sound of the end scene, and its time in seconds after the start of the scene. */
-export type SceneSound = { readonly effect: 'record' | 'star' | 'join'; readonly at: number };
+/** The sounds of the session scenes: the last-song cue, the sun step on the song list, the yawn of the end scene
+ * and the wake-up scene, the goodbye scene, and the sunrise of the wake-up scene. */
+type SessionSound = 'last-song' | 'sun-step' | 'yawn' | 'goodbye' | 'wake-up';
+
+/** One sound of a scene, and its time in seconds after the start of the scene. */
+export type SceneSound = { readonly effect: 'record' | 'star' | 'join' | SessionSound; readonly at: number };
 
 const nothing = (): void => undefined;
 
 /**
- * Queues the sounds of the end scene from now. Gives the cancel: it stops each sound that did not start yet, so a
+ * Queues the sounds of a scene from now. Gives the cancel: it stops each sound that did not start yet, so a
  * skip of the scene leaves no queued sound, and a sound that plays already rings out. With the Sound effects switch
  * off, or a context that does not run (its sounds would come late, after the next tap), no sound plays.
  */

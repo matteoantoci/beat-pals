@@ -15,11 +15,18 @@ for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
   document.addEventListener(type, (event) => event.preventDefault(), { passive: false });
 }
 
-// The demo route (`?demo=...`) of the dev server and the smoke build. The `deploy` build sets DEMO to false, so the
-// bundler drops this branch, and the demo code and its fixture are not in the site.
-if (import.meta.env.DEMO && new URLSearchParams(location.search).has('demo')) {
+// The demo routes (`?demo=...` for the play screen, `?session=...` for the session scenes) of the dev server and the
+// smoke build. The `deploy` build sets DEMO to false, so the bundler drops these branches, and the demo code and its
+// fixture are not in the site.
+const query = new URLSearchParams(location.search);
+if (import.meta.env.DEMO && query.has('demo')) {
   import('./ui/demo/DemoScreen').then(
     ({ DemoScreen }) => render(() => <DemoScreen search={location.search} />, root),
+    reportError
+  );
+} else if (import.meta.env.DEMO && query.has('session')) {
+  import('./ui/demo/session/SessionDemo').then(
+    ({ SessionDemo }) => render(() => <SessionDemo search={location.search} />, root),
     reportError
   );
 } else {

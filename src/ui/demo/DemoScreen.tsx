@@ -9,6 +9,7 @@ import { Hud } from '../play/PlayScreen';
 import { createStage } from '../play/stage';
 import { clickTrack } from './click';
 import demoCss from './demo.css?inline';
+import { Device } from './Device';
 import { demoFacts } from './fixture';
 import { freeze } from './frozen';
 import { DEMO_MARKER } from './marker';
@@ -88,14 +89,6 @@ const mount = (root: HTMLElement | undefined, { pals, beads, demo, fail }: Mount
     free();
   };
 };
-
-/** The iPhone 12 of `sim`: the notch, the home indicator, and the round screen corners. */
-const Device = (): JSX.Element => (
-  <div class="demo-device" aria-hidden="true">
-    <i class="demo-notch" />
-    <i class="demo-home" />
-  </div>
-);
 
 export const DemoScreen = (props: { readonly search: string }): JSX.Element => {
   const read = readDemo(props.search);

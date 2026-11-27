@@ -1,0 +1,45 @@
+/* The `pals` screen of the session demo (./pals.tsx): a grid of 3 columns, a name row and one row for each pal. */
+.demo-pals {
+  --spot: min(96px, 20vmin);
+  display: grid;
+  grid-template-columns: repeat(3, var(--spot));
+  justify-content: center;
+  align-content: center;
+  justify-items: center;
+  gap: calc(var(--spot) * 0.2) 40px;
+  height: 100%;
+  margin: 0;
+  color: var(--grape-300);
+  font:
+    600 15px/1.2 system-ui,
+    sans-serif;
+}
+
+/* Room above each pal for the raised mittens. */
+.demo-pals-spot {
+  position: relative;
+  width: var(--spot);
+  height: var(--spot);
+  margin-top: calc(var(--spot) * 0.12);
+}
+
+.demo-pals-up .session-pal-arm,
+.demo-pals-stretch .session-pal-arm {
+  opacity: 1;
+}
+
+.demo-pals-up .session-pal-arm-left {
+  rotate: -45deg;
+}
+
+.demo-pals-up .session-pal-arm-right {
+  rotate: 45deg;
+}
+
+.demo-pals-stretch .session-pal-arm-left {
+  rotate: -16deg;
+}
+
+.demo-pals-stretch .session-pal-arm-right {
+  rotate: 16deg;
+}

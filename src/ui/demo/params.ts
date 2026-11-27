@@ -48,11 +48,12 @@ const readEnergy = (text: string | null): Read<EnergyStep | undefined> => {
     : { ok: true, value: energy };
 };
 
-const readTime = (text: string | null): Read<number> => {
+/** The time `t` where the screen freezes, in seconds (default 0). The session demo also reads it. */
+export const readTime = (text: string | null): Read<number> => {
   const t = Number(text ?? '0');
   return Number.isFinite(t) && t >= 0
     ? { ok: true, value: t }
-    : { ok: false, reason: 't must be a song time in seconds, 0 or more.' };
+    : { ok: false, reason: 't must be a time in seconds, 0 or more.' };
 };
 
 /** The demo of the query string, or the reason why the query is wrong. */

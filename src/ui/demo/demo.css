@@ -1,8 +1,25 @@
-/* The demo route (src/ui/demo/). With `sim`, the screen is an iPhone 12: 390 x 844 in portrait, 844 x 390 in
+/* The demo routes (src/ui/demo/). With `sim`, the screen is an iPhone 12: 390 x 844 in portrait, 844 x 390 in
    landscape. The notch, the home indicator, and the round corners cover the screen, and the safe areas of that
    phone replace env(safe-area-inset-*), which a desktop browser gives as 0: the play screen reads them from its
-   --inset-* properties (src/ui/play/play.css). */
-.play.demo-sim {
+   --inset-* properties (src/ui/play/play.css).
+   The root of the session demo (src/ui/demo/session/) holds its screen inside the safe areas, as #app does
+   (src/ui/styles.css), so the song list and the title screens get them too. A play screen inside it gets them
+   through its --inset-* properties. */
+.session-demo {
+  --inset-top: env(safe-area-inset-top, 0px);
+  --inset-right: env(safe-area-inset-right, 0px);
+  --inset-bottom: env(safe-area-inset-bottom, 0px);
+  --inset-left: env(safe-area-inset-left, 0px);
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  box-sizing: border-box;
+  padding: var(--inset-top) var(--inset-right) var(--inset-bottom) var(--inset-left);
+}
+
+.play.demo-sim,
+.session-demo.demo-sim,
+.session-demo.demo-sim .play {
   --inset-top: 47px;
   --inset-right: 0px;
   --inset-bottom: 34px;
@@ -53,7 +70,9 @@
 }
 
 @media (orientation: landscape) {
-  .play.demo-sim {
+  .play.demo-sim,
+  .session-demo.demo-sim,
+  .session-demo.demo-sim .play {
     --inset-top: 0px;
     --inset-right: 47px;
     --inset-bottom: 21px;

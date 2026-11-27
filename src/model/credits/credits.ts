@@ -1,11 +1,14 @@
 // The credits of the parent area (spec, "Screens", parent area): each shipped file of the app, and the chart author
 // of each ready song. credits.test.ts checks the list against each shipped file in public/ and src/. The list is
-// TypeScript, not JSON, so the Mac scripts can load the model with Node.
+// TypeScript, not JSON, so the Mac scripts can load the model with Node. The sounds of the session scenes have their
+// entries in ./session-sounds.ts.
+
+import { SESSION_SOUND_CREDITS } from './session-sounds';
 
 type Licence = { readonly name: string; readonly url: string; readonly creditRequired: boolean };
 
 /** One work of the app. `files`: paths below the project root, or all files of one folder ("public/setup/*"). */
-type CreditEntry = {
+export type CreditEntry = {
   readonly kind: string;
   readonly title: string;
   readonly author: string;
@@ -137,6 +140,7 @@ const ENTRIES: readonly CreditEntry[] = [
       'start and the end removed and the peak at -1 dBFS. Mixed into the star moment sound after "Sliding Trailer ' +
       'Woosh", at 0.6 and 0.4 s later.',
   },
+  ...SESSION_SOUND_CREDITS,
   {
     kind: 'picture',
     title: 'App icon',

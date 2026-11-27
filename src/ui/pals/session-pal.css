@@ -1,0 +1,42 @@
+/* A pal of the session scenes (src/ui/pals/SessionPal.tsx), as in the sunset prototype: the body fills its box and
+   moves from its feet, the arms come out from behind the body, and the faces lie in a stack. */
+.session-pal {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+}
+
+.session-pal-stack {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transform-origin: 50% 100%;
+}
+
+.session-pal-face {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.session-pal-face + .session-pal-face {
+  opacity: 0;
+}
+
+/* The shoulder is near the bottom of the arm picture, so a rotation turns the arm around the shoulder. */
+.session-pal-arm {
+  position: absolute;
+  z-index: 0;
+  top: -6%;
+  left: 66%;
+  width: 34%;
+  height: 68%;
+  transform-origin: 50% 92%;
+  opacity: 0;
+}
+
+.session-pal-arm-left {
+  left: 0;
+}

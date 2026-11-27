@@ -6,8 +6,20 @@ const shipped = new Set(Object.keys(import.meta.glob('/public/sounds/*')).map((p
 
 describe('the sound effects', () => {
   it('each have a file in public/sounds/', () => {
-    expect(EFFECT_FILES).toHaveLength(8);
+    expect(EFFECT_FILES).toHaveLength(13);
     expect(EFFECT_FILES.filter((file) => !shipped.has(file))).toEqual([]);
+  });
+
+  it('preload the sounds of the session scenes', () => {
+    expect(EFFECT_FILES).toEqual(
+      expect.arrayContaining([
+        'sounds/last-song.wav',
+        'sounds/sun-step.wav',
+        'sounds/yawn.wav',
+        'sounds/goodbye.wav',
+        'sounds/wake-up.wav',
+      ])
+    );
   });
 
   it('play the level-up chime one whole tone higher for each step, and the bells at gold', () => {
