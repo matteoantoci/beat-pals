@@ -13,7 +13,9 @@
   --sun-x: 50%;
   --sun-lift: 84px;
   --moon-top: calc(var(--sat) + 8px);
-  --low-moon: calc(100% - var(--hill-h) - 64px);
+  /* The low moon after the rest time. In portrait, the "Zzz" floats up to about 130px above the hill on the right.
+     The moon stays above it, so that the "Zzz" and the head of the right pal do not cover it. */
+  --low-moon: calc(100% - var(--hill-h) - 196px);
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -343,6 +345,7 @@
     --big: 108px;
     --sun-x: 76%;
     --sun-lift: 52px;
+    --low-moon: calc(100% - var(--hill-h) - 64px);
   }
 
   .night-moon {
