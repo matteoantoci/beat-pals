@@ -103,6 +103,8 @@
 
 .parent-bar {
   position: sticky;
+  /* The hints have an opacity, so they paint above an element with no z-index. The bar stays above them. */
+  z-index: 1;
   top: 0;
   display: flex;
   align-items: center;
@@ -240,7 +242,7 @@
   text-decoration: underline;
 }
 
-/* The "Play sessions" section (./PlaySessions.tsx): the status, the choices of the 2 settings, and their notes. */
+/* The "Play sessions" section (./PlaySessions.tsx): the status, the choices of the 4 settings, and their notes. */
 .parent-choice {
   display: flex;
   flex-wrap: wrap;
