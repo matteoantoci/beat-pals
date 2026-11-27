@@ -42,6 +42,14 @@ export const asleepHour = (now: number): SeedAsleep => ({
   starts: [now - 20 * MINUTE_MS],
 });
 
+/** The stored state of pals whose rest time ended 1 minute ago. */
+export const asleepOver = (now: number): SeedAsleep => ({
+  version: 1,
+  kind: 'asleep',
+  until: now - MINUTE_MS,
+  starts: [now - 20 * MINUTE_MS],
+});
+
 /** The stored state of a session that opened 11 minutes ago and used its 10 minutes. */
 export const usedUp = (now: number): SeedSession => ({
   version: 1,

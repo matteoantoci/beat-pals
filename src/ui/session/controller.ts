@@ -17,7 +17,8 @@ const TICK_MS = 15_000;
 type ScreenEvent = 'list-open' | 'song-start' | 'load-failed' | 'goodbye' | 'open-now' | 'wake-tap';
 
 export type SessionController = {
-  /** The session state of this run. */
+  /** The session state of this run. It is a signal: a read right after `send` gives the old state until the next
+   * flush (the smoke run shows this), so a screen that must know the new state uses the answer of `send`. */
   readonly state: Accessor<SessionState>;
   /** The pals sleep and the rest time is over. It turns true at the end of the rest time, also while a screen shows. */
   readonly restOver: Accessor<boolean>;
@@ -57,7 +58,7 @@ const restWatch = (now: () => number): RestWatch => {
 type Store = {
   readonly state: Accessor<SessionState>;
   readonly restOver: Accessor<boolean>;
-  /** The state now. A signal gives a new value only at the next flush, so the store keeps it here too. */
+  /** The state now. A read of the signal gives the new value only after the next flush, so the store keeps it here. */
   readonly current: () => SessionState;
   /** Gives the event to the model, and keeps and writes the state when it changed. */
   readonly apply: (event: SessionEvent) => SessionAnswer;

@@ -9,11 +9,11 @@
 //   open session and its time used stay.
 // - (d) An open session with its time used, and the load of the last song fails: the song list comes back, and the
 //   session stays open with no record of the last song.
-// - (b) Pals that sleep for 1 h more, and the wake-up scene (./smoke-session-wake.ts).
+// - (b) Pals that sleep for 1 h more, and the wake-up scene; a tap after the rest time (./smoke-session-wake.ts).
 
 import { check, setVisibility, shows, tap, wait } from './smoke-page.ts';
 import { seedSession, sessionOf, usedUp } from './smoke-session-store.ts';
-import { parentWake } from './smoke-session-wake.ts';
+import { parentWake, tapWake } from './smoke-session-wake.ts';
 import { cachedAgain, dropAudio } from './smoke-setup.ts';
 import type { AudioRecord } from './smoke-audio.ts';
 import type { Page } from 'puppeteer-core';
@@ -155,6 +155,7 @@ export const sessionChecks = async (page: Page, audio: AudioRecord, url: string)
   await writeOnHide(page, url);
   await lastSongLoadFailure(page, url);
   await parentWake(page, url);
+  await tapWake(page, url);
   await seedSession(page, url, null);
   check('session steps: the session state is deleted', (await sessionOf(page)).kind === undefined);
 };

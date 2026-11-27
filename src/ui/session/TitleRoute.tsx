@@ -35,8 +35,8 @@ export const wakeRoutes = (session: SessionController, go: (next: 'parent' | 'ti
     },
     wake: () => {
       const firstLight = session.restOver();
-      session.send('wake-tap');
-      if (session.state().kind !== 'asleep') {
+      // Use the answer: `session.state()` gives the old state until the next flush.
+      if (session.send('wake-tap').state.kind !== 'asleep') {
         setWaking({ firstLight });
       }
     },
