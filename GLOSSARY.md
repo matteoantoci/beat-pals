@@ -202,11 +202,20 @@ The scene after the last song, from the wave to the sleep.
 The title screen while the pals sleep, with no play button.
 
 **Rest time**:
-The time from the goodbye to the next session. The game calculates it from the settings.
+The time from the goodbye to the next session start. It is at least the rest time of the settings. It ends at the next day start when the day budget of the play day is used.
 _Avoid_: Rest, break, cooldown ("Rest" is already a gap in the notes.)
 
-**Session spacing**:
-The shortest time from the start of one session to the start of the next: 12 h divided by the sessions per day.
+**Play day**:
+The time from one day start to the next. The day start is 5:00 local time.
+_Avoid_: Day (alone), date
+
+**Day budget**:
+The minutes that she can play in a play day. The parent sets it.
+_Avoid_: Quota, allowance (the song allowance L is a different thing)
+
+**Stop time**:
+The local time of the evening after which no new session starts.
+_Avoid_: Bedtime, curfew
 
 **Wake-up scene**:
 The scene where the moon goes down, the sun comes up, and the pals wake.

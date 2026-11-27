@@ -1,4 +1,5 @@
 import { onSettled } from 'solid-js';
+import { DEFAULT_SESSION_SETTINGS } from '../../../../model';
 import { PlaySessions } from '../../../parent/PlaySessions';
 import type { SessionScreenProps, SessionScreens } from '../registry';
 import type { JSX } from '@solidjs/web';
@@ -16,10 +17,10 @@ const ParentScreen = (props: SessionScreenProps): JSX.Element => {
         <button type="button">Done</button>
       </header>
       <PlaySessions
-        status={{ kind: 'asleep', minutesLeft: 80 }}
-        settings={{ minutes: 10, perDay: 4 }}
+        status={{ kind: 'asleep', minutesLeft: 80, untilDayStart: false }}
+        settings={DEFAULT_SESSION_SETTINGS}
         onSettings={() => undefined}
-        onOpenNow={() => ({ kind: 'awake' })}
+        onOpenNow={() => ({ kind: 'awake', usedTodayMinutes: 20, dayMinutes: 45, byParent: true })}
       />
       <section class="parent-section">
         <h2>Songs</h2>

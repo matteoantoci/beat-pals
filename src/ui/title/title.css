@@ -238,3 +238,31 @@
     animation: none;
   }
 }
+
+/* The cross-fade from the title to the night title (src/ui/session/TitleToNight.tsx). The picture of the title stays
+   in the flow, inside the safe areas. The night layer is not in the flow: it fills the box of #app, as the night
+   stage does (src/ui/night/night-stage.css), and it fades in over the picture in 2 s. Reduced motion gives the same
+   fade, so this rule is not in the block above. */
+.title-to-night {
+  height: 100%;
+}
+
+.title-to-night-title {
+  height: 100%;
+  pointer-events: none;
+}
+
+.title-to-night-night {
+  position: absolute;
+  inset: 0;
+  animation: title-to-night 2s ease-in-out both;
+}
+
+@keyframes title-to-night {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

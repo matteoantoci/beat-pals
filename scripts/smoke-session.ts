@@ -1,6 +1,7 @@
-// The play sessions in the smoke run (scripts/smoke.ts; play-sessions spec, "Testing Decisions", Seam 2). These steps
-// run after the other online steps. They delete the session state before and after, so the other steps never meet a
-// night title or a last song. Each step writes the state it needs (scripts/smoke-session-store.ts).
+// The play sessions in the smoke run (scripts/smoke.ts; play-sessions spec, "Testing Decisions", Seam 2;
+// session-schedule spec, Seam 4). These steps run after the other online steps. They delete the session state before
+// and after, so the other steps never meet a night title or a last song. Each step writes the state it needs
+// (scripts/smoke-session-store.ts). The clock of the page starts at 10:00, so the stop time never stops a step.
 // - (a) An open session with its time used. The song list shows the sunset. The load scene of the next song has the
 //   `data-last-song` mark and shows for at least 3.2 s. The end scene button "Goodbye" opens the goodbye scene with
 //   the sun and the moon. Then the night title shows the pals asleep under the blanket, with no play button and no
@@ -10,9 +11,10 @@
 // - (d) An open session with its time used, and the load of the last song fails: the song list comes back, and the
 //   session stays open with no record of the last song.
 // - (b) Pals that sleep for 1 h more, and the wake-up scene; a tap after the rest time (./smoke-session-wake.ts).
+// - (e) Awake pals with the day budget used: the title fades to the night title, with no play button.
 
 import { check, setVisibility, shows, tap, wait } from './smoke-page.ts';
-import { seedSession, sessionOf, usedUp } from './smoke-session-store.ts';
+import { budgetUsed, seedSession, sessionOf, usedUp } from './smoke-session-store.ts';
 import { parentWake, tapWake } from './smoke-session-wake.ts';
 import { cachedAgain, dropAudio } from './smoke-setup.ts';
 import type { AudioRecord } from './smoke-audio.ts';
@@ -28,6 +30,8 @@ const SKIP_AT_MS = 2200;
 const GOODBYE_MS = 7600;
 /** The oops moment of a failed load lasts 1.5 s. */
 const BACK_MS = 4000;
+/** The cross-fade from the title to the night title lasts 2 s. */
+const FADE_MS = 2000;
 const CACHE = 'beat-pals-songs';
 const DOWNLOAD_MS = 20_000;
 
@@ -89,7 +93,7 @@ const goodbyeToNight = async (page: Page, audio: AudioRecord): Promise<void> => 
 
 /** (a) The last song, the goodbye scene, and the night title. */
 const lastSong = async (page: Page, audio: AudioRecord, url: string): Promise<void> => {
-  await seedSession(page, url, usedUp(Date.now()));
+  await seedSession(page, url, usedUp);
   if (!(await openList(page, 'sunset', 'used time'))) {
     return;
   }
@@ -121,14 +125,14 @@ const writeOnHide = async (page: Page, url: string): Promise<void> => {
   const after = await sessionOf(page);
   check(
     'reload after a hide: the open session and its time used stay',
-    after.kind === 'open' && after.startedAt === hidden.startedAt && Number(after.usedMs) >= Number(hidden.usedMs),
+    after.kind === 'open' && Number(after.usedMs) >= Number(hidden.usedMs),
     JSON.stringify(after)
   );
 };
 
 /** (d) A failed load of the last song goes back to the song list, and the session stays open. */
 const lastSongLoadFailure = async (page: Page, url: string): Promise<void> => {
-  await seedSession(page, url, usedUp(Date.now()));
+  await seedSession(page, url, usedUp);
   if (!(await openList(page, 'sunset', 'failed last song'))) {
     return;
   }
@@ -149,6 +153,16 @@ const lastSongLoadFailure = async (page: Page, url: string): Promise<void> => {
   check('failed last song: a return downloads the file again', await cachedAgain(page, path, DOWNLOAD_MS));
 };
 
+/** (e) With the day budget used, the title fades to the night title, and then no play button shows. */
+const budgetNight = async (page: Page, url: string): Promise<void> => {
+  await seedSession(page, url, budgetUsed);
+  check('budget used: the title fades to the night title', await shows(page, '.title-to-night .night-title', 1000));
+  await wait(FADE_MS + 500);
+  check('budget used: the night title shows', (await page.$('.night-title')) !== null);
+  check('budget used: no play button after the fade', (await page.$('.title-play')) === null);
+  check('budget used: the state is asleep', (await sessionOf(page)).kind === 'asleep');
+};
+
 /** The session steps, with no session state before and after them. */
 export const sessionChecks = async (page: Page, audio: AudioRecord, url: string): Promise<void> => {
   await lastSong(page, audio, url);
@@ -156,6 +170,7 @@ export const sessionChecks = async (page: Page, audio: AudioRecord, url: string)
   await lastSongLoadFailure(page, url);
   await parentWake(page, url);
   await tapWake(page, url);
+  await budgetNight(page, url);
   await seedSession(page, url, null);
   check('session steps: the session state is deleted', (await sessionOf(page)).kind === undefined);
 };

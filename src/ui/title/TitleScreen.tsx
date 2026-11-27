@@ -13,7 +13,8 @@ import type { JSX } from '@solidjs/web';
 // START_MS. The music plays on in the song list. With no ready song, the play button does not show, and a tap only
 // starts the music, so the child never sees an empty song list.
 // Before the first touch, the screen is a safe point for an app update (./safe-point.ts).
-// While the pals sleep, App shows the night title (./NightTitle.tsx) instead of this screen.
+// While the pals sleep, App shows the night title (./NightTitle.tsx) instead of this screen. The cross-fade to the
+// night title (src/ui/session/TitleRoute.tsx) shows the picture of this screen (`TitleFace`) with no taps.
 // A 3-second hold on the logo shows the parent check, and its release does not start the game.
 
 /** The time of the hop before the song list opens. */
@@ -37,6 +38,40 @@ const PlaySign = (): JSX.Element => (
   </span>
 );
 
+/**
+ * The picture of the title screen: the logo, the wordmark, the play button when `ready`, and the 3 pals, which hop
+ * when `going`. The children show on top.
+ */
+export const TitleFace = (props: {
+  readonly going: boolean;
+  readonly ready: boolean;
+  readonly onLogoHold?: () => void;
+  readonly onPointerUp?: () => void;
+  readonly children?: JSX.Element;
+}): JSX.Element => (
+  <main class={['title stage-backdrop', { 'title-go': props.going }]} onPointerUp={() => props.onPointerUp?.()}>
+    <div class="title-brand">
+      <Logo onHold={props.onLogoHold} />
+      <h1 class="title-word">
+        Beat <span>Pals</span>
+      </h1>
+    </div>
+    <Show when={props.ready}>
+      <PlaySign />
+    </Show>
+    <div class="pal-band title-band" aria-hidden="true">
+      <For each={PALS}>
+        {(index) => (
+          <span class="band-pal">
+            <img src={palPicture(index, props.going ? 'happy' : 'idle')} alt="" draggable="false" />
+          </span>
+        )}
+      </For>
+    </div>
+    {props.children}
+  </main>
+);
+
 export const TitleScreen = (props: TitleProps): JSX.Element => {
   const [checking, setChecking] = createSignal(false);
   const [going, setGoing] = createSignal(false);
@@ -56,28 +91,10 @@ export const TitleScreen = (props: TitleProps): JSX.Element => {
     }
   };
   return (
-    <main class={['title stage-backdrop', { 'title-go': going() }]} onPointerUp={start}>
-      <div class="title-brand">
-        <Logo onHold={() => setChecking(true)} />
-        <h1 class="title-word">
-          Beat <span>Pals</span>
-        </h1>
-      </div>
-      <Show when={ready()}>
-        <PlaySign />
-      </Show>
-      <div class="pal-band title-band" aria-hidden="true">
-        <For each={PALS}>
-          {(index) => (
-            <span class="band-pal">
-              <img src={palPicture(index, going() ? 'happy' : 'idle')} alt="" draggable="false" />
-            </span>
-          )}
-        </For>
-      </div>
+    <TitleFace going={going()} ready={ready()} onLogoHold={() => setChecking(true)} onPointerUp={start}>
       <Show when={checking()}>
         <ParentCheck onPass={() => props.onParent()} onClose={() => setChecking(false)} />
       </Show>
-    </main>
+    </TitleFace>
   );
 };

@@ -1,5 +1,5 @@
 import { createSignal, For, Show } from 'solid-js';
-import { SESSION_MINUTES, SESSIONS_PER_DAY } from '../../model';
+import { DAY_MINUTES, SESSION_MINUTES } from '../../model';
 import { planLine, statusLine } from './session-texts';
 import type { SessionSettings, SessionStatus } from '../../model';
 import type { JSX } from '@solidjs/web';
@@ -57,16 +57,14 @@ const SettingsPart = (props: {
         Time counts only while the game is on the screen. A song never stops in the middle, so a session can end a few
         minutes late.
       </p>
-      <h3>Sessions per day</h3>
+      <h3>Minutes per day</h3>
       <Choice
-        label="Sessions per day"
-        items={SESSIONS_PER_DAY}
-        value={settings().perDay}
-        onPick={(perDay) => change({ ...settings(), perDay })}
+        label="Minutes per day"
+        items={DAY_MINUTES}
+        value={settings().dayMinutes}
+        onPick={(dayMinutes) => change({ ...settings(), dayMinutes })}
       />
-      <p class="parent-hint">
-        The game spaces the sessions evenly. In any 24 hours, at most this number of sessions starts.
-      </p>
+      <p class="parent-hint">The play time of all sessions in a day. A new day starts at 5:00.</p>
       <p class="play-sessions-plan">{planLine(settings())}</p>
       <p class="parent-hint">A change applies from the next session. A session that is open keeps its minutes.</p>
     </>
@@ -89,7 +87,7 @@ export const PlaySessions = (props: PlaySessionsProps): JSX.Element => {
             Open a new session now
           </button>
           <p class="parent-hint">
-            The pals wake up on the title screen. This session does not count in the sessions per day.
+            The pals wake up on the title screen. This session does not use the minutes per day.
           </p>
         </>
       </Show>

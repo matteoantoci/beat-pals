@@ -9,6 +9,7 @@
 
 import { check, setVisibility, shot, shows, tap, wait } from './smoke-page.ts';
 import { closeParentArea, openParentArea } from './smoke-parent.ts';
+import { daytimeClock } from './smoke-session-store.ts';
 import type { Browser, HTTPRequest, Page } from 'puppeteer-core';
 
 /** The download of the one short test song ends well within this time. */
@@ -54,6 +55,7 @@ export const installStep = async (browser: Browser, url: string): Promise<void> 
   try {
     const page = await context.newPage();
     await page.setViewport({ width: 390, height: 763, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+    await page.evaluateOnNewDocument(daytimeClock);
     await page.goto(url, { waitUntil: 'networkidle2' });
     await ((await openParentArea(page)) ? installChecks(page) : undefined);
   } finally {

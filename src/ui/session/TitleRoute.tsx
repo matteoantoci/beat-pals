@@ -1,14 +1,17 @@
-import { createSignal, Show } from 'solid-js';
+import { createSignal, onSettled, Show } from 'solid-js';
 import { playTitleMusic } from '../../sound';
 import { NightTitle } from '../title/NightTitle';
 import { TitleScreen } from '../title/TitleScreen';
+import { TitleToNight } from './TitleToNight';
 import { WakeScene } from './WakeScene';
 import type { SessionController } from './controller';
 import type { JSX } from '@solidjs/web';
 import type { Accessor } from 'solid-js';
 
 // The title screen of the app (src/ui/App.tsx) in the play sessions (play-sessions spec, "Night title and
-// wake-up"): the night title while the pals sleep, the wake-up scene, or the normal title.
+// wake-up"): the night title while the pals sleep, the wake-up scene, or the normal title. While the normal title
+// shows, the session applies the start conditions (session-schedule spec, "Can a session start"). When they put the
+// pals to sleep, the title fades to the night title (./TitleToNight.tsx).
 
 /** The wake-up scene that plays on the title screen: `restTimeOver` tells if the rest time was over before it. */
 type Waking = { readonly restTimeOver: boolean };
@@ -53,28 +56,48 @@ export const wakeRoutes = (session: SessionController, go: (next: 'parent' | 'ti
   };
 };
 
+/** The normal title. While it shows, the session knows it, so the start conditions apply also while it shows. */
+const AwakeTitle = (props: {
+  readonly session: SessionController;
+  readonly onStart: () => void;
+  readonly onParent: () => void;
+}): JSX.Element => {
+  onSettled(() => {
+    props.session.title(true);
+    return () => props.session.title(false);
+  });
+  return <TitleScreen onStart={props.onStart} onParent={props.onParent} />;
+};
+
 /** The title screen: the wake-up scene, the night title while the pals sleep, or the normal title. */
 export const Title = (props: {
   readonly session: SessionController;
   readonly routes: WakeRoutes;
   readonly onStart: () => void;
-}): JSX.Element => (
-  <Show
-    when={props.routes.waking()}
-    keyed
-    fallback={
-      <Show
-        when={props.session.state().kind === 'asleep'}
-        fallback={<TitleScreen onStart={props.onStart} onParent={props.routes.openParent} />}
-      >
-        <NightTitle
-          restTimeOver={props.session.restTimeOver()}
-          onWake={props.routes.wake}
-          onParent={props.routes.openParent}
-        />
-      </Show>
-    }
-  >
-    {(scene) => <WakeScene restTimeOver={scene.restTimeOver} onDone={props.routes.endWake} />}
-  </Show>
-);
+}): JSX.Element => {
+  const night = (): JSX.Element => (
+    <NightTitle
+      restTimeOver={props.session.restTimeOver()}
+      onWake={props.routes.wake}
+      onParent={props.routes.openParent}
+    />
+  );
+  return (
+    <Show
+      when={props.routes.waking()}
+      keyed
+      fallback={
+        <Show
+          when={props.session.state().kind === 'asleep'}
+          fallback={<AwakeTitle session={props.session} onStart={props.onStart} onParent={props.routes.openParent} />}
+        >
+          <Show when={props.session.toNight()} fallback={night()}>
+            <TitleToNight>{night()}</TitleToNight>
+          </Show>
+        </Show>
+      }
+    >
+      {(scene) => <WakeScene restTimeOver={scene.restTimeOver} onDone={props.routes.endWake} />}
+    </Show>
+  );
+};

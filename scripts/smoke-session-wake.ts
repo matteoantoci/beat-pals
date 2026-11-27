@@ -46,7 +46,7 @@ const wakeScene = async (page: Page, from: string): Promise<void> => {
 
 /** After the rest time, a tap on the night title plays the wake-up scene. */
 export const tapWake = async (page: Page, url: string): Promise<void> => {
-  await seedSession(page, url, asleepOver(Date.now()));
+  await seedSession(page, url, asleepOver);
   check('rest time over: the night title shows', await shows(page, '.night-title.night-rest-time-over'));
   await tap(page, '.night-title');
   check('wake tap: the state is awake', (await sessionOf(page)).kind === 'awake');
@@ -55,7 +55,7 @@ export const tapWake = async (page: Page, url: string): Promise<void> => {
 
 /** (b) The night stays over a reload and a Reset, and "Open a new session now" wakes the pals. */
 export const parentWake = async (page: Page, url: string): Promise<void> => {
-  await seedSession(page, url, asleepHour(Date.now()));
+  await seedSession(page, url, asleepHour);
   await page.reload({ waitUntil: 'networkidle2' });
   check('asleep: a reload shows the night title', await shows(page, '.night-title'));
   if (!(await openParentArea(page))) {

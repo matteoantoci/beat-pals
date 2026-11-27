@@ -1,10 +1,10 @@
-// The session state and the session settings in localStorage (play-sessions spec, "Storage"). They have their own
-// keys, not the save, so the save code and the reset of the parent area keep them. The state is written at each
-// change and on `visibilitychange` to hidden, as the save is. A failed write keeps the state for this run. A read
-// never throws: damaged data gives the awake state and the default settings.
+// The session state and the session settings in localStorage (play-sessions spec, "Storage"; session-schedule spec,
+// "Settings"). They have their own keys, not the save, so the save code and the reset of the parent area keep them.
+// The state is written at each change and on `visibilitychange` to hidden, as the save is. A failed write keeps the
+// state for this run. A read never throws: damaged data gives the awake state and the default settings.
 
-import { restoreSession, restoreSessionSettings, storedSession } from '../model';
-import type { SessionSettings, SessionState } from '../model';
+import { restoreSession, restoreSessionSettings, storedSession, storedSessionSettings } from '../model';
+import type { PlayDay, SessionSettings, SessionState } from '../model';
 
 const SESSION_KEY = 'beat-pals:session';
 const SETTINGS_KEY = 'beat-pals:session-settings';
@@ -19,8 +19,8 @@ const readJson = (key: string): unknown => {
   }
 };
 
-/** The stored session state at `now`, with the gap rule applied. */
-export const readSession = (now: number): SessionState => restoreSession(readJson(SESSION_KEY), now);
+/** The stored session state at `now` in the play day `day`, with the gap rule applied. */
+export const readSession = (now: number, day: PlayDay): SessionState => restoreSession(readJson(SESSION_KEY), now, day);
 
 /** Writes the session state. A failed write (full storage, a blocked origin) must not stop the game. */
 export const writeSession = (state: SessionState): void => {
@@ -34,7 +34,7 @@ export const writeSession = (state: SessionState): void => {
 /** The settings of this run, read once. */
 let settings: SessionSettings | undefined;
 
-/** The session settings of the parent area: 10 minutes and 4 sessions per day when there is no setting. */
+/** The session settings of the parent area: the defaults of the model when there is no setting. */
 export const loadSessionSettings = (): SessionSettings => {
   settings ??= restoreSessionSettings(readJson(SETTINGS_KEY));
   return settings;
@@ -44,7 +44,7 @@ export const loadSessionSettings = (): SessionSettings => {
 export const storeSessionSettings = (next: SessionSettings): void => {
   settings = next;
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(storedSessionSettings(next)));
   } catch {
     // The settings stay for this run.
   }

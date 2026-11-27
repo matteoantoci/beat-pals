@@ -14,16 +14,19 @@ export type { Dance, PlayOutcome, SongProgress } from './progress/progress';
 export { restore, snapshot, songProgress, withSong } from './progress/save';
 export type { RestoreFailure, SaveData, SavedProgress } from './progress/save';
 export { readSaveCode, saveCode } from './progress/save-code';
-export { endStage, parentStatus, restTimeOver, sessionAfter } from './session/session';
+export { endStage, restTimeOver, sessionAfter } from './session/session';
+export { parentStatus } from './session/status';
+export type { StatusTime } from './session/status';
 export {
+  DAY_MINUTES,
+  DAY_START_MINUTES,
   DEFAULT_SESSION_SETTINGS,
   MINUTE_MS,
   SESSION_MINUTES,
-  SESSIONS_PER_DAY,
   SONG_ALLOWANCE_MS,
-  WAKING_DAY_MS,
 } from './session/types';
 export type {
+  PlayDay,
   SessionAnswer,
   SessionEvent,
   SessionSettings,
@@ -31,8 +34,9 @@ export type {
   SessionStatus,
   SunStage,
   SunStep,
+  Today,
 } from './session/types';
-export { restoreSession, restoreSessionSettings, storedSession } from './session/stored';
+export { restoreSession, restoreSessionSettings, storedSession, storedSessionSettings } from './session/stored';
 export { chartAuthors, CREDIT_GROUPS, CREDITS } from './credits/credits';
 export type { CreditGroup } from './credits/credits';
 export { isParentAnswer, parentProblem } from './parent';

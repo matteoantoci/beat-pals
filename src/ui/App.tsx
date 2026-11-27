@@ -49,7 +49,7 @@ const endedOf = (current: Playing, score: number, session: SessionController): E
   ...current,
   score,
   outcome: savePlay(current.choice.song.id, score),
-  stage: endStage(session.state(), session.now()),
+  stage: endStage(session.state(), session.now(), session.day()),
 });
 
 type Routes = {

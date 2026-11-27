@@ -22,6 +22,7 @@ import { offlineChecks } from './smoke-offline.ts';
 import { check, checkLines, setVisibility, shot, tap, wait } from './smoke-page.ts';
 import { parentSections } from './smoke-parent.ts';
 import { playChecks } from './smoke-play.ts';
+import { daytimeClock } from './smoke-session-store.ts';
 import { sessionChecks } from './smoke-session.ts';
 import { autoDownload, installStep, songSetup } from './smoke-setup.ts';
 import type { AudioRecord } from './smoke-audio.ts';
@@ -145,6 +146,7 @@ const runAll = async (browser: Browser, server: Server, keyCode: string): Promis
   await page.setViewport({ width: 390, height: 763, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   await page.evaluateOnNewDocument(standalone);
   await page.evaluateOnNewDocument(countWakeLocks);
+  await page.evaluateOnNewDocument(daytimeClock);
   const audio = await recordAudio(await page.createCDPSession());
   await page.goto(server.url, { waitUntil: 'networkidle2' });
   await titleTap(page, audio);

@@ -8,6 +8,7 @@ import { Reset } from './Reset';
 import { MakeCode, RestoreCode } from './SaveCode';
 import { SongsSection } from './SongsSection';
 import { SoundSwitch } from './SoundSwitch';
+import type { StatusTime } from '../../model';
 import type { SessionController } from '../session/controller';
 import type { JSX } from '@solidjs/web';
 
@@ -20,6 +21,12 @@ export const ParentArea = (props: {
   readonly onClose: () => void;
 }): JSX.Element => {
   onSettled(stopTitleMusic);
+  // The status line reads the current settings for the day budget while no session is open.
+  const statusTime = (): StatusTime => ({
+    now: props.session.now(),
+    day: props.session.day(),
+    settings: loadSessionSettings(),
+  });
   return (
     <main class="parent-area">
       <header class="parent-bar">
@@ -29,10 +36,10 @@ export const ParentArea = (props: {
         </button>
       </header>
       <PlaySessions
-        status={parentStatus(props.session.state(), props.session.now())}
+        status={parentStatus(props.session.state(), statusTime())}
         settings={loadSessionSettings()}
         onSettings={storeSessionSettings}
-        onOpenNow={() => parentStatus(props.session.send('open-now').state, props.session.now())}
+        onOpenNow={() => parentStatus(props.session.send('open-now').state, statusTime())}
       />
       <SongsSection />
       <SoundSwitch />

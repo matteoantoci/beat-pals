@@ -179,3 +179,13 @@ The songs last about 3 minutes, so 3 songs take about 10 minutes with the song c
 ### Recommendation
 
 Build option 1, the concert of N songs with a goodbye ritual. Let the parent choose N (default 3, about 10 minutes) and an optional bedtime (option 3). Use a Guided Access Time Limit (option 4) only as a backstop that is longer than the concert. Keep the current rules that avoid compulsion: no autoplay, no streaks, no random rewards, stars never lost. Add one rule: a pal never asks her to stay and never looks sad when the concert ends.
+
+## 7. Breaks between screen sessions
+
+No guideline gives a minimum time between screen sessions for ages 3 to 5. The sources below are the nearest text, and the rest time of Beat Pals is a design choice.
+
+- WHO 2019 ([guideline page](https://www.who.int/publications/i/item/9789241550536)): "Not be restrained for more than 1 hour at a time … or sit for extended periods of time" for ages 3 to 4, and screen time "no more than 1 hour; less is better". So a break from the chair comes before a break from the screen.
+- UK Department for Education, early years providers, 2026 ([guidance](https://beststartinlife.gov.uk/screen-time-under-5s)): providers "only use screens with children for short periods at a time", and "avoid using screens … within an hour of a sleep period".
+- AAP tip sheet: stop after an episode, give an offline activity next, and use a predictable time of day.
+
+**The rest time of Beat Pals.** 1 h, long enough for one real activity with no screen. It is the parent's choice from 30 min to 2 h (P16). The next session starts with the wake-up tap, so she decides when the break ends, within the rules of the play day.
