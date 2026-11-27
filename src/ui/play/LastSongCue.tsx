@@ -18,6 +18,7 @@ import {
   waveKeys,
   type Key,
 } from './cue-motion';
+import { stopCue } from './cue-stop';
 import { LoadDisc } from './LoadDisc';
 import type { JSX } from '@solidjs/web';
 
@@ -110,31 +111,6 @@ const playCue = (root: HTMLElement, reduce: boolean): void => {
   for (const { selector, motion } of motions) {
     root.querySelectorAll(selector).forEach((el) => track(el, motion));
   }
-};
-
-/** Ends the motions of an element where they are, and moves it from there to `keyframe` in `ms`. */
-const settle = (el: Element, keyframe: Keyframe, ms: number): void => {
-  for (const animation of el.getAnimations()) {
-    animation.commitStyles();
-    animation.cancel();
-  }
-  el.animate([keyframe], { duration: ms, fill: 'forwards', easing: 'ease-out' });
-};
-
-/** The time of a face change: a quick cut, or a fade with reduced motion. */
-const faceChangeMs = (reduce: boolean): number => (reduce ? 250 : 80);
-
-/** The oops moment of a failed load: each motion stops where it is, the pals land, their arms fade out, and the oops
- * face shows. The CSS animations of the disc stop through the class of the failed load scene (play.css). */
-const stopCue = (root: HTMLElement, reduce: boolean): void => {
-  for (const animation of root.getAnimations({ subtree: true }).filter((a) => !(a instanceof CSSAnimation))) {
-    animation.pause();
-  }
-  root.querySelectorAll('.session-pal').forEach((body) => settle(body, { translate: '0px 0px' }, 150));
-  root.querySelectorAll('.session-pal-arm').forEach((arm) => settle(arm, { opacity: 0 }, 200));
-  root.querySelectorAll('.session-pal-face[data-face="oops"]').forEach((face) => {
-    face.animate([{ opacity: 0 }, { opacity: 1 }], { duration: faceChangeMs(reduce), fill: 'forwards' });
-  });
 };
 
 /** The sky behind the sun: the sunset colours, the glow, and the rays. */
