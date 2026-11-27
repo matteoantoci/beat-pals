@@ -16,8 +16,8 @@ import type { JSX } from '@solidjs/web';
 // sunset prototype: the skies (sunset, night with stars, first light, dawn), the moon, the big sun, the hill, the
 // logo and the wordmark, and the pals with the blanket and the "Zzz". One stage shows 3 scenes:
 // - `goodbye`: the scene after the last song, from the wave to the sleep (./goodbye.ts).
-// - `night`: the night title. The pals sleep and breathe slowly. With `firstLight`, the rest time is over: first
-//   light shows behind the hill and the moon is low. The change fades in while the night title shows.
+// - `night`: the night title. The pals sleep and breathe slowly. With `restTimeOver`, the first light shows behind
+//   the hill and the moon is low. The change fades in while the night title shows.
 // - `wake`: the wake-up scene (./wake.ts). The stage measures the logo to put the sun behind it.
 // The stage plays the motion of its scene when it shows, and then calls `onShown`. The sounds, the length, and the
 // taps belong to the scene components (src/ui/session/GoodbyeScene.tsx, src/ui/title/NightTitle.tsx,
@@ -29,7 +29,7 @@ type NightStageProps = {
   readonly mode: NightMode;
   readonly reduce: boolean;
   /** The rest time is over (night title and wake-up scene). */
-  readonly firstLight?: boolean;
+  readonly restTimeOver?: boolean;
   /** A 3-second hold on the logo (night title only). */
   readonly onLogoHold?: (() => void) | undefined;
   readonly onPointerUp?: () => void;
@@ -59,7 +59,7 @@ const placeIn = (root: Element, el: Element): { x: number; y: number; width: num
 };
 
 /** The wake-up scene: puts the sun behind the logo, and gives the tracks with the measured distances. */
-const wakeTracks = (root: HTMLElement, reduce: boolean, firstLight: boolean): Track[] => {
+const wakeTracks = (root: HTMLElement, reduce: boolean, restTimeOver: boolean): Track[] => {
   const logo = root.querySelector('.logo');
   const sun = root.querySelector<HTMLElement>('.sun');
   const hill = root.querySelector<HTMLElement>('.night-hill');
@@ -76,7 +76,7 @@ const wakeTracks = (root: HTMLElement, reduce: boolean, firstLight: boolean): Tr
   sun.style.top = `${String(place.y)}px`;
   sun.style.setProperty('--sun-d', `${String(Math.round(place.width * 0.52))}px`);
   const hillTop = root.offsetHeight - hill.offsetHeight;
-  return wakePlan({ reduce, firstLight, rise: hillTop + place.width * 0.6 - place.y, brandShift });
+  return wakePlan({ reduce, restTimeOver, rise: hillTop + place.width * 0.6 - place.y, brandShift });
 };
 
 /** The skies, the moon, the sun, and the hill: everything behind the logo and the pals. */
@@ -142,7 +142,7 @@ export const NightStage = (props: NightStageProps): JSX.Element => {
     const plans: Readonly<Record<NightMode, (stage: HTMLElement) => Track[]>> = {
       goodbye: () => goodbyePlan(props.reduce),
       night: () => nightPlan(props.reduce),
-      wake: (stage) => wakeTracks(stage, props.reduce, props.firstLight ?? false),
+      wake: (stage) => wakeTracks(stage, props.reduce, props.restTimeOver ?? false),
     };
     playTracks(root, plans[props.mode](root));
     props.onShown?.();
@@ -156,7 +156,7 @@ export const NightStage = (props: NightStageProps): JSX.Element => {
         'night-stage',
         `night-${props.mode}`,
         MODE_CLASS[props.mode],
-        { 'night-first-light': props.firstLight ?? false, 'night-reduce': props.reduce },
+        { 'night-rest-time-over': props.restTimeOver ?? false, 'night-reduce': props.reduce },
       ]}
       onPointerUp={() => props.onPointerUp?.()}
     >

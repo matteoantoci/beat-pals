@@ -12,8 +12,8 @@ import type { JSX } from '@solidjs/web';
 // normal title shows, and the caller starts the title music. The scene never opens the safe window of an app update.
 
 export const WakeScene = (props: {
-  /** The first light showed on the night title before the scene. */
-  readonly firstLight: boolean;
+  /** The rest time was over on the night title before the scene: the first light showed. */
+  readonly restTimeOver: boolean;
   readonly onDone: () => void;
 }): JSX.Element => {
   const cancelSounds = playSceneSounds(WAKE_SOUNDS, loadSoundOn());
@@ -22,5 +22,5 @@ export const WakeScene = (props: {
     clearTimeout(timer);
     cancelSounds();
   });
-  return <NightStage mode="wake" reduce={reducedMotion()} firstLight={props.firstLight} />;
+  return <NightStage mode="wake" reduce={reducedMotion()} restTimeOver={props.restTimeOver} />;
 };

@@ -78,7 +78,7 @@ const SettingsPart = (props: {
 export const PlaySessions = (props: PlaySessionsProps): JSX.Element => {
   // The prop gives the start value. "Open a new session now" gives the next status.
   const [status, setStatus] = createSignal(props.status);
-  const asleep = (): boolean => status().kind === 'asleep' || status().kind === 'rest-over';
+  const asleep = (): boolean => status().kind === 'asleep' || status().kind === 'rest-time-over';
   return (
     <section class="parent-section play-sessions">
       <h2>Play sessions</h2>

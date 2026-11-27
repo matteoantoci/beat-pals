@@ -16,7 +16,7 @@ describe('statusLine', () => {
     expect(statusLine({ kind: 'awake' })).toBe('The pals are awake. A session starts when the song list opens.');
     expect(statusLine({ kind: 'open', usedMinutes: 6, limitMinutes: 10 })).toBe('6 of 10 minutes used');
     expect(statusLine({ kind: 'asleep', minutesLeft: 80 })).toBe('Asleep for 1 h 20 min more');
-    expect(statusLine({ kind: 'rest-over' })).toBe('The pals wake at the next tap');
+    expect(statusLine({ kind: 'rest-time-over' })).toBe('The pals wake at the next tap');
   });
 
   it('never gives a clock time', () => {

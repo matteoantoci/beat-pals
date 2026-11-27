@@ -3,7 +3,7 @@ import {
   DEFAULT_SESSION_SETTINGS,
   endStage,
   parentStatus,
-  restOver,
+  restTimeOver,
   restoreSession,
   restoreSessionSettings,
   sessionAfter,
@@ -217,7 +217,7 @@ describe('the goodbye and the rest time', () => {
     ]).state;
 
     expect(untilOf(long)).toBe(2 * H + 30 * MIN);
-    expect(restOver(long, 2 * H + 30 * MIN)).toBe(true);
+    expect(restTimeOver(long, 2 * H + 30 * MIN)).toBe(true);
   });
 
   it('refuses a 5th start of 4 sessions in 24 h until the oldest start leaves the window', () => {
@@ -283,10 +283,10 @@ describe('the wake-up', () => {
   const asleep = session(FIRST, 0);
 
   it('ignores a wake tap before the end of the rest time, and wakes the pals after it', () => {
-    expect(restOver(asleep, 3 * H - 1)).toBe(false);
+    expect(restTimeOver(asleep, 3 * H - 1)).toBe(false);
     expect(sessionAfter(asleep, { type: 'wake-tap', now: 3 * H - 1 }).state).toBe(asleep);
 
-    expect(restOver(asleep, 3 * H)).toBe(true);
+    expect(restTimeOver(asleep, 3 * H)).toBe(true);
     expect(sessionAfter(asleep, { type: 'wake-tap', now: 3 * H }).state).toEqual({
       kind: 'awake',
       starts: [0],
@@ -318,7 +318,7 @@ describe('the hidden gap', () => {
     const shown = sessionAfter(played, { type: 'show', now: 5 * H }).state;
 
     expect(shown).toEqual({ kind: 'asleep', until: 3 * H, starts: [0] });
-    expect(restOver(shown, 5 * H)).toBe(true);
+    expect(restTimeOver(shown, 5 * H)).toBe(true);
   });
 
   it('keeps the session open after a shorter gap, and does not count the gap', () => {
@@ -485,12 +485,12 @@ describe('the status line of the parent area', () => {
     });
   });
 
-  it('gives the minutes that the pals still sleep, and rest-over after the rest time', () => {
+  it('gives the minutes that the pals still sleep, and rest-time-over after the rest time', () => {
     const asleep = session(FIRST, 0);
 
     expect(parentStatus(asleep, H + 40 * MIN)).toEqual({ kind: 'asleep', minutesLeft: 80 });
     expect(parentStatus(asleep, H + 40 * MIN - 30 * S)).toEqual({ kind: 'asleep', minutesLeft: 81 });
-    expect(parentStatus(asleep, 3 * H)).toEqual({ kind: 'rest-over' });
+    expect(parentStatus(asleep, 3 * H)).toEqual({ kind: 'rest-time-over' });
   });
 
   it('gives awake while no session is open', () => {

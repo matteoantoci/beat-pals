@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import { restOver, sessionAfter } from '../../model';
+import { restTimeOver, sessionAfter } from '../../model';
 import { loadSessionSettings, readSession, writeSession } from '../../shell/session';
 import type { SessionAnswer, SessionEvent, SessionState } from '../../model';
 import type { Accessor } from 'solid-js';
@@ -7,8 +7,8 @@ import type { Accessor } from 'solid-js';
 // The session controller: the seam between the screens and the session model (play-sessions spec, "Session rules").
 // It holds the session state of this run, gives each event the wall time, and writes the state at each change and at
 // each hide. The time counts only while a counted screen shows (App calls `count`) and the page is visible, and a tick
-// goes to the model every TICK_MS while it counts. A screen reads `state` and `restOver`, sends an event with `send`,
-// and reads the facts of the model (the stage at the end of a song, the status line) at `now()`.
+// goes to the model every TICK_MS while it counts. A screen reads `state` and `restTimeOver`, sends an event with
+// `send`, and reads the facts of the model (the stage at the end of a song, the status line) at `now()`.
 
 /** While the time counts, the model gets a tick at least this often. */
 const TICK_MS = 15_000;
@@ -21,7 +21,7 @@ export type SessionController = {
    * flush (the smoke run shows this), so a screen that must know the new state uses the answer of `send`. */
   readonly state: Accessor<SessionState>;
   /** The pals sleep and the rest time is over. It turns true at the end of the rest time, also while a screen shows. */
-  readonly restOver: Accessor<boolean>;
+  readonly restTimeOver: Accessor<boolean>;
   /** The wall time, for the facts of the model. */
   readonly now: () => number;
   /** Sends an event of a screen. Gives the answer of the model (the state, the step of the sun, the last song). */
@@ -34,19 +34,19 @@ export type SessionController = {
   readonly show: () => void;
 };
 
-type RestWatch = {
+type RestTimeWatch = {
   readonly over: Accessor<boolean>;
   /** Sets `over` for the state, and while the rest time runs, a timer for its end. */
   readonly watch: (state: SessionState) => void;
 };
 
 /** The end of the rest time: it turns true at the end, also while a screen shows. */
-const restWatch = (now: () => number): RestWatch => {
+const restTimeWatch = (now: () => number): RestTimeWatch => {
   const [over, setOver] = createSignal(false);
   let timer: number | undefined;
   const watch = (state: SessionState): void => {
     clearTimeout(timer);
-    const ended = restOver(state, now());
+    const ended = restTimeOver(state, now());
     setOver(ended);
     if (state.kind === 'asleep' && !ended) {
       timer = window.setTimeout(() => watch(state), state.until - now());
@@ -57,24 +57,24 @@ const restWatch = (now: () => number): RestWatch => {
 
 type Store = {
   readonly state: Accessor<SessionState>;
-  readonly restOver: Accessor<boolean>;
+  readonly restTimeOver: Accessor<boolean>;
   /** The state now. A read of the signal gives the new value only after the next flush, so the store keeps it here. */
   readonly current: () => SessionState;
   /** Gives the event to the model, and keeps and writes the state when it changed. */
   readonly apply: (event: SessionEvent) => SessionAnswer;
-  /** Sets `restOver` again, for example after a show. */
-  readonly watchRest: () => void;
+  /** Sets `restTimeOver` again, for example after a show. */
+  readonly watchRestTime: () => void;
 };
 
 /** The session state of this run, read from storage. */
 const sessionStore = (now: () => number): Store => {
   let current = readSession(now());
   const [state, setState] = createSignal<SessionState>(current);
-  const rest = restWatch(now);
-  rest.watch(current);
+  const restTime = restTimeWatch(now);
+  restTime.watch(current);
   return {
     state,
-    restOver: rest.over,
+    restTimeOver: restTime.over,
     current: () => current,
     apply: (event) => {
       const answer = sessionAfter(current, event);
@@ -82,17 +82,17 @@ const sessionStore = (now: () => number): Store => {
         current = answer.state;
         setState(current);
         writeSession(current);
-        rest.watch(current);
+        restTime.watch(current);
       }
       return answer;
     },
-    watchRest: () => rest.watch(current),
+    watchRestTime: () => restTime.watch(current),
   };
 };
 
 /** Makes the controller of this run from the stored state. `now` gives the wall time in ms. */
 export const createSession = (now: () => number = Date.now): SessionController => {
-  const { state, restOver: rest, current, apply, watchRest } = sessionStore(now);
+  const { state, restTimeOver: overAccessor, current, apply, watchRestTime } = sessionStore(now);
   let tickTimer: number | undefined;
   let counting = false;
   let visible = document.visibilityState === 'visible';
@@ -105,7 +105,7 @@ export const createSession = (now: () => number = Date.now): SessionController =
   };
   return {
     state,
-    restOver: rest,
+    restTimeOver: overAccessor,
     now,
     send: (type) =>
       apply(type === 'list-open' ? { type, now: now(), settings: loadSessionSettings() } : { type, now: now() }),
@@ -128,7 +128,7 @@ export const createSession = (now: () => number = Date.now): SessionController =
       if (counting) {
         countNow(true);
       }
-      watchRest();
+      watchRestTime();
     },
   };
 };

@@ -9,11 +9,11 @@ const MINUTE_MS = 60_000;
 /** A time span in whole minutes, as "45 min", "1 h", or "1 h 20 min". */
 export const spanText = (minutes: number): string => {
   const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
+  const remainder = minutes % 60;
   if (hours === 0) {
-    return `${String(rest)} min`;
+    return `${String(remainder)} min`;
   }
-  return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest)} min`;
+  return remainder === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(remainder)} min`;
 };
 
 /** The status line: the state of the session for the parent. */

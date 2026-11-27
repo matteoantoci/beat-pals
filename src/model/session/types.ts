@@ -78,12 +78,12 @@ export type SessionAnswer = {
   readonly last: boolean;
 };
 
-/** The facts of the status line of the parent area. Rest-over: the pals sleep, and the next tap wakes them. */
+/** The facts of the status line of the parent area. Rest-time-over: the pals sleep, and the next tap wakes them. */
 export type SessionStatus =
   | { readonly kind: 'awake' }
   | { readonly kind: 'open'; readonly usedMinutes: number; readonly limitMinutes: number }
   | { readonly kind: 'asleep'; readonly minutesLeft: number }
-  | { readonly kind: 'rest-over' };
+  | { readonly kind: 'rest-time-over' };
 
 export const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;

@@ -171,7 +171,8 @@ export const endStage = (state: SessionState, now: number): SunStage =>
   state.kind === 'open' ? nextStage(counted(state, now)) : 'day';
 
 /** True when the pals sleep and the rest time is over: the night title shows first light, and a tap wakes them. */
-export const restOver = (state: SessionState, now: number): boolean => state.kind === 'asleep' && now >= state.until;
+export const restTimeOver = (state: SessionState, now: number): boolean =>
+  state.kind === 'asleep' && now >= state.until;
 
 /** The facts of the status line of the parent area: the whole minutes used, or the minutes that the pals still sleep. */
 export const parentStatus = (state: SessionState, now: number): SessionStatus => {
@@ -183,6 +184,6 @@ export const parentStatus = (state: SessionState, now: number): SessionStatus =>
     return { kind: 'open', usedMinutes, limitMinutes: state.settings.minutes };
   }
   return now >= state.until
-    ? { kind: 'rest-over' }
+    ? { kind: 'rest-time-over' }
     : { kind: 'asleep', minutesLeft: Math.ceil((state.until - now) / MINUTE_MS) };
 };

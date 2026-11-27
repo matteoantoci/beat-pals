@@ -10,7 +10,7 @@ import type { JSX } from '@solidjs/web';
 // (src/ui/night/NightStage.tsx) with no sound, no timer, and no tap.
 
 const stageScreen =
-  (mode: NightMode, firstLight: boolean) =>
+  (mode: NightMode, restTimeOver: boolean) =>
   (props: SessionScreenProps): JSX.Element => {
     let shown = false;
     let decoded = false;
@@ -29,7 +29,7 @@ const stageScreen =
       <NightStage
         mode={mode}
         reduce={props.reduce}
-        firstLight={firstLight}
+        restTimeOver={restTimeOver}
         onShown={() => {
           shown = true;
           ready();

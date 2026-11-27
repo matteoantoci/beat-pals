@@ -47,7 +47,7 @@ const wakeScene = async (page: Page, from: string): Promise<void> => {
 /** After the rest time, a tap on the night title plays the wake-up scene. */
 export const tapWake = async (page: Page, url: string): Promise<void> => {
   await seedSession(page, url, asleepOver(Date.now()));
-  check('rest time over: the night title shows', await shows(page, '.night-title.night-first-light'));
+  check('rest time over: the night title shows', await shows(page, '.night-title.night-rest-time-over'));
   await tap(page, '.night-title');
   check('wake tap: the state is awake', (await sessionOf(page)).kind === 'awake');
   await wakeScene(page, 'wake tap');

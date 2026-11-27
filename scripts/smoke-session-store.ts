@@ -74,8 +74,8 @@ type Stored = {
   readonly lastSongAt: unknown;
 };
 
-/** The stored session state. Runs in the page. */
-const storedSession = (key: string): Stored => {
+/** Reads the stored session state from localStorage. Runs in the page. */
+const readStoredState = (key: string): Stored => {
   const raw = localStorage.getItem(key);
   const value: unknown = raw === null ? null : JSON.parse(raw);
   const fields = new Map<string, unknown>(typeof value === 'object' && value !== null ? Object.entries(value) : []);
@@ -88,7 +88,7 @@ const storedSession = (key: string): Stored => {
   };
 };
 
-export const sessionOf = async (page: Page): Promise<Stored> => page.evaluate(storedSession, SESSION_KEY);
+export const sessionOf = async (page: Page): Promise<Stored> => page.evaluate(readStoredState, SESSION_KEY);
 
 /**
  * Writes the session keys (null deletes them) from a static file of the same origin, where the app does not run,

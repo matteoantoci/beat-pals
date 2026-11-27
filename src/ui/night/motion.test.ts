@@ -62,7 +62,7 @@ const worstSquash = (tracks: readonly Track[]): number =>
 const plans = {
   'the goodbye scene': goodbyePlan(false),
   'the night title': nightPlan(false),
-  'the wake-up scene': wakePlan({ reduce: false, firstLight: true, rise: 300, brandShift: 0 }),
+  'the wake-up scene': wakePlan({ reduce: false, restTimeOver: true, rise: 300, brandShift: 0 }),
 };
 
 describe('the sounds of the session end and start', () => {
@@ -126,7 +126,7 @@ describe('the squash and stretch of the pals', () => {
 const reduced = {
   'the goodbye scene': goodbyePlan(true),
   'the night title': nightPlan(true),
-  'the wake-up scene': wakePlan({ reduce: true, firstLight: true, rise: 300, brandShift: 60 }),
+  'the wake-up scene': wakePlan({ reduce: true, restTimeOver: true, rise: 300, brandShift: 60 }),
 };
 
 describe('the sun and the moon', () => {

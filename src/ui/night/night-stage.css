@@ -69,7 +69,7 @@
   transition: opacity 2s ease-in-out;
 }
 
-.night-first-light .night-light {
+.night-rest-time-over .night-light {
   opacity: 1;
 }
 
@@ -86,7 +86,7 @@
 }
 
 /* The first light pales the stars. */
-.night-first-light .night-stars {
+.night-rest-time-over .night-stars {
   opacity: 0.55;
   transition: opacity 2s ease-in-out;
 }
@@ -102,7 +102,7 @@
 }
 
 /* After the rest time, the moon is low over the hill. */
-.night-first-light .night-moon {
+.night-rest-time-over .night-moon {
   top: var(--low-moon);
 }
 
@@ -427,12 +427,12 @@
   transition: opacity 2s ease-in-out;
 }
 
-.night-title.night-reduce.night-first-light .night-moon {
+.night-title.night-reduce.night-rest-time-over .night-moon {
   top: var(--moon-top);
   opacity: 0;
 }
 
-.night-title.night-reduce.night-first-light .night-moon-low {
+.night-title.night-reduce.night-rest-time-over .night-moon-low {
   top: var(--low-moon);
   opacity: 1;
 }

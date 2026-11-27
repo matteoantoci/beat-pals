@@ -24,8 +24,8 @@ export const WAKE_SUN_FACES: readonly SunFace[] = ['asleep', 'happy'];
 /** The layout facts of the wake-up scene, which the stage measures. */
 export type WakeLayout = {
   readonly reduce: boolean;
-  /** The first light shows already: the moon is low. */
-  readonly firstLight: boolean;
+  /** The rest time was over before the scene: the first light shows already, and the moon is low. */
+  readonly restTimeOver: boolean;
   /** The distance in px from the place of the sun behind the logo down to its place behind the hill. */
   readonly rise: number;
   /** Landscape: the distance in px from the brand in the middle to its column next to the play button. */
@@ -33,7 +33,7 @@ export type WakeLayout = {
 };
 
 /** The night goes: the stars, the night sky, the first light, and the moon fade out, and the dawn comes and goes. */
-const nightGoes = (firstLight: boolean): Track[] => [
+const nightGoes = (restTimeOver: boolean): Track[] => [
   track('stars', 'opacity', [
     [0.4, '1', EASE.inOut],
     [1.6, '0'],
@@ -49,7 +49,7 @@ const nightGoes = (firstLight: boolean): Track[] => [
     [2, '0'],
   ]),
   track('first-light', 'opacity', [
-    [0.5, firstLight ? '1' : '0', EASE.inOut],
+    [0.5, restTimeOver ? '1' : '0', EASE.inOut],
     [2, '0'],
   ]),
   track('hill', 'opacity', [
@@ -164,7 +164,7 @@ const moves = ({ rise, brandShift }: WakeLayout): Track[] => [
 ];
 
 export const wakePlan = (layout: WakeLayout): Track[] => [
-  ...nightGoes(layout.firstLight),
+  ...nightGoes(layout.restTimeOver),
   ...fades(layout.reduce),
   ...(layout.reduce ? reducedMoves(layout) : moves(layout)),
   ...PALS.flatMap((pal) => wakePal(pal, layout.reduce)),
