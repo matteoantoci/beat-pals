@@ -36,6 +36,9 @@ type FaceCue = { readonly face: SunFace; readonly at: number };
 /** The yawn makes the sun swell a little: one scale value, so the sun stays round. */
 type Swell = { readonly at: number; readonly top: number; readonly hold: number; readonly end: number };
 
+/** The scale of the sun at the top of the yawn swell. */
+export const SWELL = 1.04;
+
 type StepPlan = { readonly faces: readonly FaceCue[]; readonly swell: Swell | null };
 
 const PLANS: Readonly<Record<string, StepPlan>> = {
@@ -77,8 +80,14 @@ export const STEP_SOUNDS: readonly SceneSound[] = [{ effect: 'sun-step', at: STE
 /** The place of the sun in the sky strip: x as a share of the width, y in px below the top, disc diameter in px. */
 export type SunPlace = { readonly x: number; readonly y: number; readonly d: number };
 
-/** The place of the sun at each stage, in portrait and in landscape (the sunset prototype, STRIP_SUN). */
+/**
+ * The place of the sun at each stage, in portrait and in landscape. The x and d values come from the sunset
+ * prototype (STRIP_SUN). The prototype strip starts at the top of the screen, under the status bar, so its sun can
+ * go up into the top safe area. Here the strip starts below the top safe area (./sky.css). Thus the strip is 18 px
+ * (portrait) and 6 px (landscape) taller than the strip of the prototype, and each y is that much lower. The sun
+ * keeps its place above the hills, and its box with the rays stays in the strip, also at the yawn swell.
+ */
 export const SUN_PLACES: Readonly<Record<'portrait' | 'landscape', Readonly<Record<SunStage, SunPlace>>>> = {
-  portrait: { day: { x: 0.52, y: 46, d: 68 }, afternoon: { x: 0.7, y: 62, d: 74 }, sunset: { x: 0.8, y: 82, d: 84 } },
-  landscape: { day: { x: 0.5, y: 42, d: 50 }, afternoon: { x: 0.66, y: 56, d: 54 }, sunset: { x: 0.8, y: 68, d: 60 } },
+  portrait: { day: { x: 0.52, y: 64, d: 68 }, afternoon: { x: 0.7, y: 80, d: 74 }, sunset: { x: 0.8, y: 100, d: 84 } },
+  landscape: { day: { x: 0.5, y: 48, d: 50 }, afternoon: { x: 0.66, y: 62, d: 54 }, sunset: { x: 0.8, y: 74, d: 60 } },
 };

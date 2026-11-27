@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { STAGE_FACE, STEP_AT, STEP_END, STEP_SOUNDS, stepPlan } from './sun-step';
-import type { SunStep } from '../../model';
+import skyCss from './sky.css?raw';
+import { STAGE_FACE, STEP_AT, STEP_END, STEP_SOUNDS, stepPlan, SUN_PLACES, SWELL } from './sun-step';
+import type { SunStage, SunStep } from '../../model';
 
 const STEPS: readonly SunStep[] = [
   { from: 'day', to: 'afternoon' },
@@ -45,4 +46,28 @@ describe('the step of the sun', () => {
   it('plays the sun-step sound at 0.5 s', () => {
     expect(STEP_SOUNDS).toEqual([{ effect: 'sun-step', at: 0.5 }]);
   });
+});
+
+// The sky strip clips the sun (./sky.css). The box of the sun is 16/9 of the disc and holds the rays (./sun.css), so
+// the top of the box is 8/9 of the disc above the place of the sun. On the iPhone, the rays of the day sun went out
+// of the top of the strip.
+const STRIP_HEIGHTS = [...skyCss.matchAll(/--sky-strip-h: (\d+)px/g)].map((match) => Number(match[1]));
+const STAGES: readonly SunStage[] = ['day', 'afternoon', 'sunset'];
+const PLACES = (['portrait', 'landscape'] as const).flatMap((orientation) =>
+  STAGES.map((stage) => ({ orientation, stage, place: SUN_PLACES[orientation][stage] }))
+);
+
+describe('the sun in the sky strip', () => {
+  it('reads one strip height for portrait and one for landscape', () => {
+    expect(STRIP_HEIGHTS).toHaveLength(2);
+  });
+
+  it.each(PLACES)(
+    'keeps the box with the rays and the disc in the strip, with the swell ($orientation, $stage)',
+    (sun) => {
+      const half = ((sun.place.d * 8) / 9) * SWELL;
+      expect(sun.place.y - half).toBeGreaterThanOrEqual(0);
+      expect(sun.place.y + sun.place.d / 2).toBeLessThanOrEqual(STRIP_HEIGHTS[sun.orientation === 'portrait' ? 0 : 1]!);
+    }
+  );
 });

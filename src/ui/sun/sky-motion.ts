@@ -3,10 +3,8 @@
 // With reduced motion, the old sun fades out and the new sun fades in: no move and no face change.
 
 import { EASE, faceChangeSec, faceStackKeys, playKeys } from '../motion/keys';
-import { RAYS, STEP_AT, STEP_END, stepPlan, SUN_COLORS, SUN_PLACES } from './sun-step';
+import { RAYS, STEP_AT, STEP_END, stepPlan, SUN_COLORS, SUN_PLACES, SWELL } from './sun-step';
 import type { SunStep } from '../../model';
-
-const SWELL = '1.04';
 
 /** The face changes on the face stack: each face shows from its time to the time of the next face. The 2 faces of a
  * change cross-fade. */
@@ -23,8 +21,8 @@ const playFaces = (sun: Element, step: SunStep): void => {
   if (swell) {
     playKeys(sun.querySelector('.sun-svg'), 'scale', [
       [swell.at, '1', EASE.out],
-      [swell.top, SWELL, EASE.inOut],
-      [swell.hold, SWELL, EASE.out],
+      [swell.top, String(SWELL), EASE.inOut],
+      [swell.hold, String(SWELL), EASE.out],
       [swell.end, '1'],
     ]);
   }

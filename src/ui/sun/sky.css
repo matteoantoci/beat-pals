@@ -1,13 +1,15 @@
 /* The sky strip at the top of the song list (src/ui/sun/SkyStrip.tsx). It scrolls with the cards. The list
-   puts its home button and its cards on top of it, the cards below --sky-strip-h. */
+   puts its home button and its cards on top of it, the cards below --sky-strip-h. The strip clips the sun, so each
+   place of the sun (SUN_PLACES in ./sun-step.ts) keeps the box of the sun inside the strip height (./sun-step.test.ts
+   reads these heights). */
 :root {
-  --sky-strip-h: 132px;
+  --sky-strip-h: 150px;
   --sky-hill-h: 44px;
 }
 
 @media (orientation: landscape) {
   :root {
-    --sky-strip-h: 108px;
+    --sky-strip-h: 114px;
     --sky-hill-h: 34px;
   }
 }

@@ -1,5 +1,6 @@
 /* The sun of the session scenes (src/ui/sun/Sun.tsx), as in the sunset prototype. The box is 16/9 of the disc, so
-   the rays and the glow fit inside it, and the box is centred on its left and top. */
+   the rays fit inside it, and the box is centred on its left and top. The glow goes 18% out of the box on each side,
+   and it fades to nothing at its edge. */
 @property --sunc {
   syntax: '<color>';
   inherits: true;
