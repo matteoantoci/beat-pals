@@ -101,10 +101,10 @@ export const storedSession = (state: SessionState): StoredSession => ({ version:
 
 /**
  * Reads the stored session state at the start of the app, at `now`. It never throws: a damaged or old state gives
- * the awake state. A clock that went back: a stored time later than `now` counts as `now`, and an asleep-until more
- * than 24 h after `now` is cut to `now` plus 24 h. An open session does not count until the next count-start, so the
- * gap is never play time. A record of the last song gives the asleep state, with the goodbye at the start of the last
- * song plus L, but not later than `now`. Else the gap rule applies with the stored time of the hide.
+ * the awake state. For a clock that went back, a stored time later than `now` counts as `now`. Also, an asleep-until
+ * more than 24 h after `now` is cut to `now` plus 24 h. An open session does not count until the next count-start, so
+ * the gap is never play time. A record of the last song gives the asleep state. Its goodbye is at the start of the
+ * last song plus L, but not later than `now`. Else the gap rule applies with the stored time of the hide.
  */
 export const restoreSession = (stored: unknown, now: number): SessionState => {
   const state = stateOf(stored);

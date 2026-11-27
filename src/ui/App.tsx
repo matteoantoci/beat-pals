@@ -21,10 +21,10 @@ import type { Accessor } from 'solid-js';
 // Play sessions (play-sessions spec, "Session rules"): each open of the song list gives the stage of the sun, and
 // each song start asks the session if it is the last song. After the last song, the end scene button and home on the
 // pause screen open the goodbye scene, and then the title screen shows the night title while the pals sleep. The
-// wake-up scene plays at a tap on the night title after the rest time, and when the parent area closes after "Open a
-// new session now"; then the normal title shows, and the title music starts. The time counts on the song list, the
-// play screen (with the load scene and the pause screen), and the end scene. When a hidden gap ends the session on
-// one of these screens, the title screen shows.
+// wake-up scene plays at a tap on the night title after the rest time. It also plays when the parent area closes
+// after "Open a new session now". Then the normal title shows, and the title music starts. The time counts on the
+// song list, the play screen (with the load scene and the pause screen), and the end scene. When a hidden gap ends
+// the session on one of these screens, the title screen shows.
 
 type Screen = 'title' | 'songs' | 'parent' | 'play' | 'end' | 'goodbye';
 

@@ -1,10 +1,10 @@
 // The play sessions in the smoke run (scripts/smoke.ts; play-sessions spec, "Testing Decisions", Seam 2). These steps
 // run after the other online steps. They delete the session state before and after, so the other steps never meet a
 // night title or a last song. Each step writes the state it needs (scripts/smoke-session-store.ts).
-// - (a) An open session with its time used: the song list shows the sunset, the load scene of the next song has the
-//   `data-last-song` mark and shows for at least 3.2 s, the end scene button "Goodbye" opens the goodbye scene with
-//   the sun and the moon, and then the night title shows the pals asleep under the blanket, with no play button and
-//   no title music. A tap on it does nothing.
+// - (a) An open session with its time used. The song list shows the sunset. The load scene of the next song has the
+//   `data-last-song` mark and shows for at least 3.2 s. The end scene button "Goodbye" opens the goodbye scene with
+//   the sun and the moon. Then the night title shows the pals asleep under the blanket, with no play button and no
+//   title music. A tap on it does nothing.
 // - (c) A session opens and a song plays for some seconds. At the hide, the state is written, and after a reload the
 //   open session and its time used stay.
 // - (d) An open session with its time used, and the load of the last song fails: the song list comes back, and the

@@ -55,7 +55,7 @@ type Squash = readonly [width: number, height: number];
 export const BOW: Squash = [1.04, 0.94];
 export const GOODBYE_YAWN: Squash = [0.97, 1.05];
 export const SLEEP_POSE: Squash = [1.04, 0.94];
-/** The slow breath of a sleeping pal, on the stack of faces, on top of the sleep pose. */
+/** The slow breath of a pal that sleeps, on the stack of faces, on top of the sleep pose. */
 export const BREATH: Squash = [1.01, 1.03];
 export const WAKE_STRETCH: Squash = [0.95, 1.06];
 
@@ -70,7 +70,7 @@ export const EASE = {
 export const PALS: readonly PalIndex[] = [0, 1, 2];
 /** The pals lean together in their sleep. */
 export const LEAN = ['8deg', '0deg', '-8deg'] as const;
-/** The sleeping pals sit a little lower. */
+/** The pals that sleep sit a little lower. */
 export const SLEEP_DROP = '0px 3px';
 
 /** The arms of a pal: the left arm turns to the left (-1), the right arm to the right (1). */
@@ -150,7 +150,7 @@ export const faceSeq = (
   return [...keys].map(([face, faceKeys]) => track(`face-${face}`, 'opacity', faceKeys));
 };
 
-/** The slow breath of a sleeping pal from `at`: 2 s in, 2 s out, each pal 0.7 s after the one before it. */
+/** The slow breath of a pal that sleeps, from `at`: 2 s in, 2 s out, each pal 0.7 s after the one before it. */
 export const breath = (pal: PalIndex, at: number): Track => {
   const from = at + pal * 0.7;
   const keys: Key[] = [
@@ -161,7 +161,7 @@ export const breath = (pal: PalIndex, at: number): Track => {
   return { part: 'stack', pal, prop: 'scale', keys, loop: true };
 };
 
-/** The sleep pose of a pal from the start: low, leaning to the pal in the middle. */
+/** The sleep pose of a pal from the start: low, with a lean to the pal in the middle. */
 const sleepPose = (pal: PalIndex): Track[] =>
   onPal(pal)([
     track('body', 'scale', [[0, scale(SLEEP_POSE)]]),
