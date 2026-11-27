@@ -3,7 +3,7 @@ import { clearSave } from '../../shell/save';
 import type { JSX } from '@solidjs/web';
 
 // The reset of the parent area: it deletes the progress after a confirmation. The Sound effects switch, the
-// downloaded songs, and the family key are not progress, so they stay.
+// downloaded songs, the family key, and the session settings and state are not progress, so they stay.
 
 export const Reset = (): JSX.Element => {
   const [asking, setAsking] = createSignal(false);

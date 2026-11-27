@@ -9,11 +9,14 @@ import type { Accessor } from 'solid-js';
 
 // The load scene (spec, "Screens", load scene): the cover of her song on a turning record, a fill ring around the
 // record, and the pals on the stage floor in the ready state. It shows only when the load takes longer than
-// SHOW_AFTER_MS, and then stays for at least SHOWN_MS, so a fast load does not flash. A failed load shows the oops
-// moment: the ring and the record stop, the pals make the oops face, and the cover shakes.
+// SHOW_AFTER_MS, and then stays for at least SHOWN_MS, so a fast load does not flash. The load scene of the last song
+// of a session shows at once, also for a song from the cache, and stays for at least LAST_SONG_MS (play-sessions
+// spec, "Screens and motion"). It has the `data-last-song` mark. A failed load shows the oops moment: the ring and
+// the record stop, the pals make the oops face, and the cover shakes.
 
 const SHOW_AFTER_MS = 250;
 const SHOWN_MS = 600;
+const LAST_SONG_MS = 3200;
 const FADE_MS = 200;
 const OOPS_MS = 1500;
 /** The share of the distance to the target that the ring moves in each frame, so a step never jumps. */
@@ -38,19 +41,22 @@ const after = (ms: number): Promise<void> => {
   return promise;
 };
 
-/** The timing of the load scene for a play screen. */
-export const loadSceneTiming = (): LoadSceneTiming => {
-  const [state, setState] = createSignal<SceneState>('waiting');
-  let shownAt = 0;
-  const timer = setTimeout(() => {
-    shownAt = performance.now();
-    setState('shown');
-  }, SHOW_AFTER_MS);
+/** The timing of the load scene for a play screen. For the last song, the scene shows at once. */
+export const loadSceneTiming = (lastSong: boolean): LoadSceneTiming => {
+  const [state, setState] = createSignal<SceneState>(lastSong ? 'shown' : 'waiting');
+  let shownAt = performance.now();
+  const shownMs = lastSong ? LAST_SONG_MS : SHOWN_MS;
+  const timer = lastSong
+    ? undefined
+    : setTimeout(() => {
+        shownAt = performance.now();
+        setState('shown');
+      }, SHOW_AFTER_MS);
   onCleanup(() => clearTimeout(timer));
   const loaded = async (): Promise<void> => {
     clearTimeout(timer);
     if (state() === 'shown') {
-      await after(shownAt + SHOWN_MS - performance.now());
+      await after(shownAt + shownMs - performance.now());
       setState('closing');
       await after(FADE_MS);
     }
@@ -153,6 +159,8 @@ type LoadSceneProps = {
   readonly choice: SongChoice;
   readonly phase: Accessor<LoadPhase>;
   readonly state: Accessor<SceneState>;
+  /** The load of the last song of the session. */
+  readonly lastSong: boolean;
 };
 
 export const LoadScene = (props: LoadSceneProps): JSX.Element => {
@@ -160,6 +168,7 @@ export const LoadScene = (props: LoadSceneProps): JSX.Element => {
   return (
     <div
       class={['load-scene stage-backdrop', { 'load-closing': props.state() === 'closing', 'load-failed': failed() }]}
+      data-last-song={props.lastSong ? '' : undefined}
       aria-hidden="true"
     >
       <LoadDisc choice={props.choice} phase={props.phase} stopped={failed} />

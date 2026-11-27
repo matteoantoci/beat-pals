@@ -1,9 +1,9 @@
 import { createSignal, For, onCleanup, onSettled, Show } from 'solid-js';
-import { checkForUpdate, openSafeWindow } from '../../shell/update';
 import { playTitleMusic } from '../../sound';
 import { palPicture, type PalIndex } from '../pals/pal-svg';
 import { ParentCheck } from '../parent/ParentCheck';
 import { Logo } from './logo';
+import { watchSafePoint } from './safe-point';
 import { songsReady } from './songs-ready';
 import type { JSX } from '@solidjs/web';
 
@@ -12,7 +12,8 @@ import type { JSX } from '@solidjs/web';
 // music. With a ready song, one tap anywhere makes the pals hop in the happy state, and the song list opens after
 // START_MS. The music plays on in the song list. With no ready song, the play button does not show, and a tap only
 // starts the music, so the child never sees an empty song list.
-// Before the first touch, the screen is a safe point for an app update.
+// Before the first touch, the screen is a safe point for an app update (./safe-point.ts).
+// While the pals sleep, App shows the night title (./NightTitle.tsx) instead of this screen.
 // A 3-second hold on the logo shows the parent check, and its release does not start the game.
 
 /** The time of the hop before the song list opens. */
@@ -25,26 +26,6 @@ export type TitleProps = {
   readonly onStart: () => void;
   /** The parent check is passed: open the parent area. */
   readonly onParent: () => void;
-};
-
-/** A return of the page to the front: look for a new version. In the safe window, it then applies. */
-const onVisible = (): void => {
-  if (document.visibilityState === 'visible') {
-    checkForUpdate();
-  }
-};
-
-/** Keeps the safe window open until the first touch, and looks for a new version when the page shows again. Gives
- * the function that stops both. */
-const watchSafePoint = (): (() => void) => {
-  const closeSafeWindow = openSafeWindow();
-  document.addEventListener('pointerdown', closeSafeWindow, { capture: true, once: true, passive: true });
-  document.addEventListener('visibilitychange', onVisible);
-  return () => {
-    closeSafeWindow();
-    document.removeEventListener('pointerdown', closeSafeWindow, { capture: true });
-    document.removeEventListener('visibilitychange', onVisible);
-  };
 };
 
 /** The play button: a sign only, because a tap anywhere on the screen starts the game. */
