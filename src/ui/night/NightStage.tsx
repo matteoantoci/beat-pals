@@ -67,18 +67,16 @@ const wakeTracks = (root: HTMLElement, reduce: boolean, firstLight: boolean): Tr
   if (!logo || !sun || !hill || !brand) {
     return [];
   }
+  // In landscape, the brand starts in the middle and moves to its column at the end (./wake.ts), so the sun rises
+  // behind the logo in the middle.
+  const landscape = root.offsetWidth > root.offsetHeight;
+  const brandShift = landscape ? root.offsetWidth / 2 - placeIn(root, brand).x : 0;
   const place = placeIn(root, logo);
-  sun.style.left = `${String(place.x)}px`;
+  sun.style.left = `${String(place.x + brandShift)}px`;
   sun.style.top = `${String(place.y)}px`;
   sun.style.setProperty('--sun-d', `${String(Math.round(place.width * 0.52))}px`);
   const hillTop = root.offsetHeight - hill.offsetHeight;
-  const landscape = root.offsetWidth > root.offsetHeight;
-  return wakePlan({
-    reduce,
-    firstLight,
-    rise: hillTop + place.width * 0.6 - place.y,
-    brandShift: landscape ? root.offsetWidth / 2 - placeIn(root, brand).x : 0,
-  });
+  return wakePlan({ reduce, firstLight, rise: hillTop + place.width * 0.6 - place.y, brandShift });
 };
 
 /** The skies, the moon, the sun, and the hill: everything behind the logo and the pals. */

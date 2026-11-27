@@ -293,7 +293,7 @@
   bottom: 18px;
   width: 17px;
   height: 20px;
-  animation-delay: 1.2s;
+  animation-delay: -2.4s;
 }
 
 .night-zzz svg:nth-child(3) {
@@ -301,7 +301,7 @@
   bottom: 40px;
   width: 22px;
   height: 25px;
-  animation-delay: 2.4s;
+  animation-delay: -1.2s;
 }
 
 @keyframes night-twinkle {
