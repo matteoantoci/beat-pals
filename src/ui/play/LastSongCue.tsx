@@ -1,7 +1,9 @@
 import { createEffect, For, onCleanup, onSettled } from 'solid-js';
 import { loadSoundOn } from '../../shell/settings';
 import { fadeOutTitleMusic, playSceneSounds, type StopSounds } from '../../sound';
+import { deg, keysIn, playKeys, px, type Key } from '../motion/keys';
 import { decodeSessionPals } from '../pals/pal-svg';
+import { ARM_SIDES } from '../pals/session-pal-motion';
 import { SessionPal } from '../pals/SessionPal';
 import {
   armShowKeys,
@@ -16,7 +18,6 @@ import {
   RAY_TURN,
   SUN_SINK,
   waveKeys,
-  type Key,
 } from './cue-motion';
 import { stopCue } from './cue-stop';
 import { LoadDisc } from './LoadDisc';
@@ -52,64 +53,42 @@ const RAYS = Array.from({ length: 16 }, (_, k) => {
   return [...point(62), ...point(80)] as const;
 });
 
-/** The motion of one property: its keys, and the CSS value of a key value. */
-type Motion = { readonly property: string; readonly keys: readonly Key[]; readonly unit: (value: number) => string };
+/** The motion of one property of each element that a selector finds in the scene. */
+type PartMotion = { readonly selector: string; readonly prop: string; readonly keys: readonly Key[] };
 
-/** One Web Animation of a property along its keys, on the scene timeline. It holds its first value before the first
- * key and its last value after the last key. */
-const track = (el: Element, { property, keys, unit }: Motion): void => {
-  const start = keys[0]?.[0] ?? 0;
-  const length = Math.max(0.001, (keys.at(-1)?.[0] ?? 0) - start);
-  const frames = keys.map(([at, value, easing]) => ({
-    offset: (at - start) / length,
-    [property]: unit(value),
-    easing: easing ?? 'linear',
-  }));
-  el.animate(frames, { delay: start * 1000, duration: length * 1000, fill: 'both' });
-};
-
-const px = (value: number): string => `0px ${String(value)}px`;
-const deg = (value: number): string => `${String(value)}deg`;
 const plain = (value: number): string => String(value);
-
-/** A motion of each element that a selector finds in the scene. */
-type PartMotion = { readonly selector: string; readonly motion: Motion };
+const lift = (value: number): string => px(0, value);
 
 /** The motion of the sky parts: the rays pulse and turn, the glow gets brighter, and the sun sinks. */
 const SKY_MOTIONS: readonly PartMotion[] = [
-  { selector: '.cue-rays', motion: { property: 'scale', keys: RAY_PULSE, unit: plain } },
-  { selector: '.cue-rays', motion: { property: 'rotate', keys: RAY_TURN, unit: deg } },
-  { selector: '.cue-glow', motion: { property: 'opacity', keys: GLOW, unit: plain } },
-  { selector: '.cue-sun', motion: { property: 'translate', keys: SUN_SINK, unit: px } },
+  { selector: '.cue-rays', prop: 'scale', keys: keysIn(RAY_PULSE, plain) },
+  { selector: '.cue-rays', prop: 'rotate', keys: keysIn(RAY_TURN, (angle) => deg(1, angle)) },
+  { selector: '.cue-glow', prop: 'opacity', keys: keysIn(GLOW, plain) },
+  { selector: '.cue-sun', prop: 'translate', keys: keysIn(SUN_SINK, lift) },
 ];
-
-/** The arm of a session pal on one side: -1 turns it to the left, 1 to the right. */
-const SIDES = [
-  { arm: 'left', selector: '.session-pal-arm-left', turn: -1 },
-  { arm: 'right', selector: '.session-pal-arm-right', turn: 1 },
-] as const;
 
 /** The hops of a pal, and the wave of its arms that show. */
 const palMotions = (pal: (typeof CUE_PALS)[number]): readonly PartMotion[] => {
   const body = `.cue-pal-${pal.place} .session-pal`;
   return [
-    { selector: body, motion: { property: 'translate', keys: hopKeys(pal.delay), unit: px } },
-    ...SIDES.filter(({ arm }) => pal.arms.includes(arm)).flatMap(({ selector, turn }): PartMotion[] => [
+    { selector: body, prop: 'translate', keys: keysIn(hopKeys(pal.delay), lift) },
+    ...ARM_SIDES.filter(({ arm }) => pal.arms.includes(arm)).flatMap(({ selector, side }): PartMotion[] => [
       {
         selector: `${body} ${selector}`,
-        motion: { property: 'rotate', keys: waveKeys(pal.delay), unit: (value) => deg(turn * value) },
+        prop: 'rotate',
+        keys: keysIn(waveKeys(pal.delay), (angle) => deg(side, angle)),
       },
-      { selector: `${body} ${selector}`, motion: { property: 'opacity', keys: armShowKeys(pal.delay), unit: plain } },
+      { selector: `${body} ${selector}`, prop: 'opacity', keys: keysIn(armShowKeys(pal.delay), plain) },
     ]),
   ];
 };
 
 /** Starts the motion of the scene. Reduced motion: only the fade-in. */
 const playCue = (root: HTMLElement, reduce: boolean): void => {
-  track(root, { property: 'opacity', keys: FADE_IN, unit: plain });
+  playKeys(root, 'opacity', keysIn(FADE_IN, plain));
   const motions = reduce ? [] : [...SKY_MOTIONS, ...CUE_PALS.flatMap(palMotions)];
-  for (const { selector, motion } of motions) {
-    root.querySelectorAll(selector).forEach((el) => track(el, motion));
+  for (const { selector, prop, keys } of motions) {
+    root.querySelectorAll(selector).forEach((el) => playKeys(el, prop, keys));
   }
 };
 

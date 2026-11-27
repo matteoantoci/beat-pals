@@ -3,7 +3,8 @@
 // slides off and the pals stretch (2.2 s), the title look of the day comes back (2.3 s to 3.6 s), and the play button
 // pops in (3.8 s). The types and the helpers are in ./motion.ts.
 
-import { EASE, faceFade, faceOn, PALS, track, type Track } from './motion';
+import { EASE, faceChangeSec } from '../motion/keys';
+import { curve, faceCurves, PALS, type Curve } from './motion';
 import { wakePal } from './wake-pals';
 import type { SceneSound } from '../../sound';
 import type { SunFace } from '../sun/Sun';
@@ -33,56 +34,68 @@ export type WakeLayout = {
 };
 
 /** The night goes: the stars, the night sky, the first light, and the moon fade out, and the dawn comes and goes. */
-const nightGoes = (restTimeOver: boolean): Track[] => [
-  track('stars', 'opacity', [
+const nightGoes = (restTimeOver: boolean): Curve[] => [
+  curve('stars', 'opacity', [
     [0.4, '1', EASE.inOut],
     [1.6, '0'],
   ]),
-  track('sky-dawn', 'opacity', [
+  curve('sky-dawn', 'opacity', [
     [0.5, '0', EASE.inOut],
     [2, '1'],
     [2.3, '1', EASE.inOut],
     [3.6, '0'],
   ]),
-  track('sky-night', 'opacity', [
+  curve('sky-night', 'opacity', [
     [0.5, '1', EASE.inOut],
     [2, '0'],
   ]),
-  track('first-light', 'opacity', [
+  curve('first-light', 'opacity', [
     [0.5, restTimeOver ? '1' : '0', EASE.inOut],
     [2, '0'],
   ]),
-  track('hill', 'opacity', [
+  curve('hill', 'opacity', [
     [2.3, '1', EASE.inOut],
     [3.6, '0'],
   ]),
-  track('moon', 'opacity', [
+  curve('moon', 'opacity', [
     [0.3, '1', EASE.inOut],
     [1.8, '0'],
   ]),
 ];
 
 /** The logo opens its eyes, the sun wakes, the blanket and the "Zzz" go, and the play button comes. */
-const fades = (reduce: boolean): Track[] => {
-  const fade = faceFade(reduce);
+const fades = (reduce: boolean): Curve[] => {
+  const fade = faceChangeSec(reduce);
   return [
-    faceOn('sun-face-asleep', ['start', 1.6], fade),
-    faceOn('sun-face-happy', [1.6], fade),
-    track('sun-rays', 'opacity', [
+    ...faceCurves(
+      [
+        ['sun-face-asleep', 0],
+        ['sun-face-happy', 1.6],
+      ],
+      fade,
+      false
+    ),
+    curve('sun-rays', 'opacity', [
       [1.6, '0', EASE.out],
       [2.1, '1'],
     ]),
-    faceOn('logo-asleep', ['start', 2.45], fade),
-    faceOn('logo-awake', [2.45], fade),
-    track('zzz', 'opacity', [
+    ...faceCurves(
+      [
+        ['logo-asleep', 0],
+        ['logo-awake', 2.45],
+      ],
+      fade,
+      false
+    ),
+    curve('zzz', 'opacity', [
       [0.3, '1'],
       [0.8, '0'],
     ]),
-    track('blanket', 'opacity', [
+    curve('blanket', 'opacity', [
       [2.2, '1', EASE.in],
       [2.7, '0'],
     ]),
-    track('play', 'opacity', [
+    curve('play', 'opacity', [
       [3.8, '0', EASE.out],
       [4.2, '1'],
     ]),
@@ -91,8 +104,8 @@ const fades = (reduce: boolean): Track[] => {
 
 /** Reduced motion: the sun fades in behind the logo and out again. In landscape, the brand fades out in the middle
  * and fades in at its column. */
-const reducedMoves = ({ brandShift }: WakeLayout): Track[] => [
-  track('sun', 'opacity', [
+const reducedMoves = ({ brandShift }: WakeLayout): Curve[] => [
+  curve('sun', 'opacity', [
     [0.9, '0'],
     [1.6, '1'],
     [2.3, '1'],
@@ -101,13 +114,13 @@ const reducedMoves = ({ brandShift }: WakeLayout): Track[] => [
   ...(brandShift === 0
     ? []
     : [
-        track('brand', 'opacity', [
+        curve('brand', 'opacity', [
           [3.5, '1'],
           [3.8, '0'],
           [3.8001, '0'],
           [4.1, '1'],
         ]),
-        track('brand', 'translate', [
+        curve('brand', 'translate', [
           [3.8, `${String(brandShift)}px 0px`, 'step-end'],
           [3.8001, '0px 0px'],
         ]),
@@ -116,54 +129,54 @@ const reducedMoves = ({ brandShift }: WakeLayout): Track[] => [
 
 /** The motion: the moon sets, the sun rises and fades, the logo label pops, the blanket slides off, the play button
  * pops in, and in landscape the brand moves to its column. */
-const moves = ({ rise, brandShift }: WakeLayout): Track[] => [
-  track('moon', 'translate', [
+const moves = ({ rise, brandShift }: WakeLayout): Curve[] => [
+  curve('moon', 'translate', [
     [0.3, '0px 0px', EASE.in],
     [1.8, '0px 140px'],
   ]),
-  track('sun-rise', 'translate', [
+  curve('sun-rise', 'translate', [
     [0.9, `0px ${String(rise)}px`, EASE.out],
     [2.5, '0px 0px'],
   ]),
-  track('sun-rays', 'scale', [
+  curve('sun-rays', 'scale', [
     [1.6, '0.7', EASE.out],
     [2.4, '1'],
   ]),
-  track('sun', 'opacity', [
+  curve('sun', 'opacity', [
     [2.5, '1'],
     [2.9, '0'],
   ]),
-  track('logo-label', 'scale', [
+  curve('logo-label', 'scale', [
     [2.4, '1', EASE.out],
     [2.55, '1.08', EASE.out],
     [2.9, '1'],
   ]),
-  track('blanket', 'translate', [
+  curve('blanket', 'translate', [
     [2.2, '-50% 0px', EASE.in],
     [2.7, '-50% 50px'],
   ]),
   {
-    ...track('logo-disc', 'rotate', [
+    ...curve('logo-disc', 'rotate', [
       [2.5, '0deg'],
       [10.5, '360deg'],
     ]),
     loop: true,
   },
-  track('play', 'scale', [
+  curve('play', 'scale', [
     [3.8, '0.6', EASE.out],
     [4.3, '1'],
   ]),
   ...(brandShift === 0
     ? []
     : [
-        track('brand', 'translate', [
+        curve('brand', 'translate', [
           [3.6, `${String(brandShift)}px 0px`, EASE.out],
           [4.2, '0px 0px'],
         ]),
       ]),
 ];
 
-export const wakePlan = (layout: WakeLayout): Track[] => [
+export const wakePlan = (layout: WakeLayout): Curve[] => [
   ...nightGoes(layout.restTimeOver),
   ...fades(layout.reduce),
   ...(layout.reduce ? reducedMoves(layout) : moves(layout)),

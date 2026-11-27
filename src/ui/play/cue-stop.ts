@@ -1,6 +1,8 @@
 // The oops moment of the last-song cue (./LastSongCue.tsx; play-sessions spec, "Screens and motion"): "A failed load
 // of the cue: the wave and the hops stop, the pals show the oops state."
 
+import { faceChangeSec } from '../motion/keys';
+
 /** Ends the motions of an element where they are, and moves it from there to `keyframe` in `ms`. */
 const settle = (el: Element, keyframe: Keyframe, ms: number): void => {
   for (const animation of el.getAnimations()) {
@@ -9,9 +11,6 @@ const settle = (el: Element, keyframe: Keyframe, ms: number): void => {
   }
   el.animate([keyframe], { duration: ms, fill: 'forwards', easing: 'ease-out' });
 };
-
-/** The time of a face change: a quick cut, or a fade with reduced motion. */
-const faceChangeMs = (reduce: boolean): number => (reduce ? 250 : 80);
 
 /** The oops moment of a failed load: each motion stops where it is, the pals land, their arms fade out, and the oops
  * face shows. The CSS animations of the disc stop through the class of the failed load scene (play.css). A load can
@@ -28,6 +27,6 @@ export const stopCue = (root: HTMLElement, reduce: boolean): void => {
   root.querySelectorAll('.session-pal').forEach((body) => settle(body, { translate: '0px 0px' }, 150));
   root.querySelectorAll('.session-pal-arm').forEach((arm) => settle(arm, { opacity: 0 }, 200));
   root.querySelectorAll('.session-pal-face[data-face="oops"]').forEach((face) => {
-    face.animate([{ opacity: 0 }, { opacity: 1 }], { duration: faceChangeMs(reduce), fill: 'forwards' });
+    face.animate([{ opacity: 0 }, { opacity: 1 }], { duration: faceChangeSec(reduce) * 1000, fill: 'forwards' });
   });
 };

@@ -1,9 +1,9 @@
 import { For, onSettled } from 'solid-js';
 import { loadSoundOn } from '../../shell/settings';
 import { playSceneSounds } from '../../sound';
-import { playStep, RAYS, SUN_COLORS } from './sky-motion';
+import { playStep } from './sky-motion';
 import { Sun, type SunFace } from './Sun';
-import { STAGE_FACE, STEP_SOUNDS, stepPlan, SUN_PLACES, type SunPlace } from './sun-step';
+import { RAYS, STAGE_FACE, STEP_SOUNDS, stepPlan, SUN_COLORS, SUN_PLACES, type SunPlace } from './sun-step';
 import type { SunStage, SunStep } from '../../model';
 import type { JSX } from '@solidjs/web';
 

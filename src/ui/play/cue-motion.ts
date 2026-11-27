@@ -6,6 +6,8 @@
 // - The ring shows the lower of the time out of 3.2 s and the load fill. The song starts at 3.2 s or when the load
 //   ends, whichever is later (the load scene timing in LoadScene.tsx).
 
+import { EASE, type Key as SceneKey } from '../motion/keys';
+import { armWaveKeys, waveEnd } from '../pals/session-pal-motion';
 import type { SceneSound } from '../../sound';
 import type { PalIndex } from '../pals/pal-svg';
 
@@ -23,15 +25,8 @@ export const CUE_SOUNDS: readonly SceneSound[] = [{ effect: 'last-song', at: NOT
 /** The share of the ring to fill (0 to 1), `sec` seconds after the cue starts, with the load at `loadFill` (0 to 1). */
 export const cueRing = (sec: number, loadFill: number): number => Math.min(Math.max(0, sec / CUE_SEC), 1, loadFill);
 
-/** One key of a motion: its time, its value, and the easing to the next key (linear when absent). Before the first
- * key, the first value holds; after the last key, the last value holds. */
-export type Key = readonly [at: number, value: number, easing?: string];
-
-const EASE = {
-  out: 'cubic-bezier(0.22, 1, 0.36, 1)',
-  in: 'cubic-bezier(0.55, 0, 0.8, 0.4)',
-  sine: 'cubic-bezier(0.37, 0, 0.63, 1)',
-} as const;
+/** One key of a cue motion, with a number as its value (src/ui/motion/keys.ts). */
+export type Key = SceneKey<number>;
 
 /** The scale of the rays: a short pulse on each note, and a longer, bigger pulse on the last note. */
 export const RAY_PULSE: readonly Key[] = [
@@ -108,26 +103,14 @@ export const hopKeys = (delay: number): readonly Key[] => [
 ];
 
 const WAVES = 4;
-const WAVE_HALF = 0.3;
-const WAVE_OUT = 110;
-const WAVE_LOW = 32;
-const WAVE_HIGH = 70;
-/** The rest of a raised arm, in degrees from up. Reduced motion shows the arms at this angle (cue.css). */
-const ARM_REST = 45;
+/** The angle of a raised arm, in degrees from up. Reduced motion shows the arms at this angle (cue.css). */
+const ARM_RAISED = 45;
 
 /** The wave of an arm, in degrees from up, outwards: the arm comes out from behind the pal, goes back and forth 4
- * times, and rests up. */
+ * times, and stays raised. */
 export const waveKeys = (delay: number): readonly Key[] => {
   const at = WAVE_AT + delay;
-  const swings = Array.from({ length: WAVES }, (_, k): Key[] => {
-    const from = at + 0.25 + k * 2 * WAVE_HALF;
-    return [
-      [from + WAVE_HALF, WAVE_HIGH, EASE.sine],
-      [from + 2 * WAVE_HALF, WAVE_LOW, EASE.sine],
-    ];
-  }).flat();
-  const end = at + 0.25 + WAVES * 2 * WAVE_HALF;
-  return [[at, WAVE_OUT, EASE.out], [at + 0.25, WAVE_LOW, EASE.sine], ...swings, [end + 0.3, ARM_REST, EASE.in]];
+  return [...armWaveKeys(at, WAVES), [waveEnd(at, WAVES) + 0.3, ARM_RAISED, EASE.in]];
 };
 
 /** The arm shows when the wave starts, in opacity. */

@@ -7,17 +7,18 @@
 // With reduced motion, only the faces change, with a fade: no sit, no stretch, no arms (C16).
 // The pals are session pals (src/ui/pals/SessionPal.tsx): the motion moves their parts through their classes.
 
-import { animate } from './animate';
+import { deg, EASE, faceChangeSec, faceStackKeys, keysIn, playKeys, px, scale, type Squash } from '../motion/keys';
+import { ARM_SIDES, stretchKeys, stretchShowKeys } from '../pals/session-pal-motion';
 import type { Lane, SunStage } from '../../model';
 import type { PalFace } from '../pals/pal-svg';
 
 /** The stage of the yawn: at late afternoon the pals end on the happy face, at sunset on a calm closed-eye smile. */
 export type Yawn = Exclude<SunStage, 'day'>;
 
-/** The sit of a pal, width × height. */
-export const SIT = { x: 1.05, y: 0.94 } as const;
-/** The stretch of a pal during its yawn, width × height. */
-export const STRETCH = { x: 0.96, y: 1.06 } as const;
+/** The sit of a pal. */
+export const SIT: Squash = [1.05, 0.94];
+/** The stretch of a pal during its yawn. */
+export const STRETCH: Squash = [0.96, 1.06];
 
 /** The yawn sound starts just before the yawn of the first pal. */
 export const YAWN_SOUND_AT = 3.2;
@@ -33,9 +34,6 @@ const STAGGER_SEC = 0.12;
 const STRETCH_SEC = 0.3;
 /** The arms come out from behind the pal and go back in this time. */
 const ARMS_SEC = 0.35;
-/** A face changes with a fast fade, or with a slow fade under reduced motion. */
-const FACE_SEC = 0.08;
-const REDUCED_FACE_SEC = 0.25;
 
 /** The yawn of the scene: from the late-afternoon stage on, only when the play opened no record color and no pal
  * joins. So the reward scenes stay as they are. */
@@ -57,53 +55,14 @@ export const yawnTimes = (lane: Lane): YawnTimes => {
 /** The face of a pal after its yawn. */
 export const endFace = (yawn: Yawn): PalFace => (yawn === 'sunset' ? 'joy' : 'happy');
 
-const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
-const EASE_IN_OUT = 'cubic-bezier(0.65, 0, 0.35, 1)';
-const EASE_IN = 'cubic-bezier(0.55, 0, 0.8, 0.4)';
-const EASE_SINE = 'cubic-bezier(0.37, 0, 0.63, 1)';
-
-/** One key of a track: the scene time, the value, and the easing to the next key (linear by default). */
-type Key = readonly [at: number, value: string, easing?: string];
-
-/** One animation of one property through its keys. Before the first key the first value holds, and after the last
- * key the last value holds. */
-const track = (el: Element, property: string, keys: readonly Key[]): void => {
-  const from = keys[0]?.[0] ?? 0;
-  const sec = (keys.at(-1)?.[0] ?? from) - from;
-  const frames = keys.map(([at, value, easing]) => ({
-    offset: (at - from) / sec,
-    [property]: value,
-    easing: easing ?? 'linear',
-  }));
-  animate(el, frames, { at: from, sec, easing: 'linear' });
-};
-
-const px = (x: number, y: number): string => `${String(x)}px ${String(y)}px`;
-const scale = ({ x, y }: { readonly x: number; readonly y: number }): string => `${String(x)} ${String(y)}`;
-const turn = (deg: number): string => `${String(deg)}deg`;
-
-/** The faces of the stack in turn: the start face, the yawn face, and the end face. Each face fades in over the
- * face below it, and the face below goes out after that, so the pal never turns see-through. */
+/** The faces of the stack in turn: the start face, the yawn face, and the end face. Each face covers the face below
+ * it, so the pal never turns see-through. The stack can hold one face 2 times, so the faces go by their place. */
 const changeFaces = (pal: Element, times: readonly number[], reduced: boolean): void => {
-  const fade = reduced ? REDUCED_FACE_SEC : FACE_SEC;
+  const keys = faceStackKeys(times, faceChangeSec(reduced), true);
   pal.querySelectorAll('.session-pal-face').forEach((face, k) => {
-    const on = times[k];
-    if (on === undefined) {
-      return;
-    }
-    const keys: Key[] =
-      k === 0
-        ? []
-        : [
-            [on - fade, '0'],
-            [on, '1'],
-          ];
-    const off = times[k + 1];
-    if (off !== undefined) {
-      keys.push([off, '1'], [off + 0.001, '0']);
-    }
-    if (keys.length > 0) {
-      track(face, 'opacity', keys);
+    const faceKeys = keys[k];
+    if (faceKeys !== undefined) {
+      playKeys(face, 'opacity', faceKeys);
     }
   });
 };
@@ -111,39 +70,35 @@ const changeFaces = (pal: Element, times: readonly number[], reduced: boolean): 
 /** The pal sits down, stretches up with the yawn, and sits again. */
 const sitAndStretch = (body: Element, { sit, yawn, back }: YawnTimes): void => {
   const settled = sit + SIT_SEC;
-  track(body, 'scale', [
-    [sit, '1 1', EASE_OUT],
-    [settled, scale(SIT), EASE_IN_OUT],
+  playKeys(body, 'scale', [
+    [sit, '1 1', EASE.out],
+    [settled, scale(SIT), EASE.inOut],
     [yawn + STRETCH_SEC, scale(STRETCH)],
-    [back - STRETCH_SEC, scale(STRETCH), EASE_IN_OUT],
+    [back - STRETCH_SEC, scale(STRETCH), EASE.inOut],
     [back, scale(SIT)],
   ]);
-  track(body, 'translate', [
-    [sit, px(0, 0), EASE_OUT],
-    [settled, px(0, 4), EASE_IN_OUT],
+  playKeys(body, 'translate', [
+    [sit, px(0, 0), EASE.out],
+    [settled, px(0, 4), EASE.inOut],
     [yawn + STRETCH_SEC, px(0, -2)],
-    [back - STRETCH_SEC, px(0, -2), EASE_IN_OUT],
+    [back - STRETCH_SEC, px(0, -2), EASE.inOut],
     [back, px(0, 4)],
   ]);
 };
 
 /** The arms come out from behind the pal and open wide for the yawn, then go back. */
 const stretchArms = (pal: Element, { yawn, back }: YawnTimes): void => {
-  pal.querySelectorAll('.session-pal-arm').forEach((arm) => {
-    const side = arm.classList.contains('session-pal-arm-left') ? -1 : 1;
-    track(arm, 'rotate', [
-      [yawn, turn(side * 120), EASE_OUT],
-      [yawn + ARMS_SEC, turn(side * 16), EASE_SINE],
-      [back - ARMS_SEC, turn(side * 24), EASE_IN],
-      [back, turn(side * 120)],
-    ]);
-    track(arm, 'opacity', [
-      [yawn, '0'],
-      [yawn + 0.1, '1'],
-      [back - 0.1, '1'],
-      [back, '0'],
-    ]);
-  });
+  for (const { selector, side } of ARM_SIDES) {
+    const arm = pal.querySelector(selector);
+    playKeys(
+      arm,
+      'rotate',
+      keysIn(stretchKeys({ at: yawn, end: back, open: [ARMS_SEC, 16], close: [ARMS_SEC, 24] }), (angle) =>
+        deg(side, angle)
+      )
+    );
+    playKeys(arm, 'opacity', stretchShowKeys(yawn, back));
+  }
 };
 
 const LANES: readonly Lane[] = [0, 1, 2];

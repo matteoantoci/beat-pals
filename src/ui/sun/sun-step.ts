@@ -8,13 +8,27 @@
 
 import type { SunStage, SunStep } from '../../model';
 import type { SceneSound } from '../../sound';
-import type { SunFace } from './Sun';
+import type { SunFace, SunRays } from './Sun';
 
 export const STEP_AT = 0.5;
 export const STEP_END = 3.1;
 
 /** The face of the sun at each stage. */
 export const STAGE_FACE: Readonly<Record<SunStage, SunFace>> = { day: 'happy', afternoon: 'calm', sunset: 'droopy' };
+
+/** The colour of the sun at each stage. */
+export const SUN_COLORS: Readonly<Record<SunStage, string>> = {
+  day: 'oklch(0.89 0.16 96)',
+  afternoon: 'oklch(0.86 0.16 76)',
+  sunset: 'oklch(0.8 0.16 54)',
+};
+
+/** The rays of the sun at each stage. */
+export const RAYS: Readonly<Record<SunStage, SunRays>> = {
+  day: { opacity: 1, scale: 1 },
+  afternoon: { opacity: 0.75, scale: 0.86 },
+  sunset: { opacity: 0, scale: 0.72 },
+};
 
 /** One face of the step, and the time when it shows. */
 type FaceCue = { readonly face: SunFace; readonly at: number };

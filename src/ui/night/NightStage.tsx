@@ -1,12 +1,13 @@
 import { For, onSettled, Show } from 'solid-js';
 import { SessionPal } from '../pals/SessionPal';
-import { Sun } from '../sun/Sun';
+import { Sun, type SunFace, type SunRays } from '../sun/Sun';
+import { RAYS, SUN_COLORS } from '../sun/sun-step';
 import { Logo } from '../title/logo';
 import { GOODBYE_SUN_FACES, goodbyePlan } from './goodbye';
 import { GOODBYE_FACES } from './goodbye-pals';
-import { nightPlan, PALS, type Track } from './motion';
+import { nightPlan, PALS, type Curve } from './motion';
 import { Blanket, Moon, PlaySign, Stars, Zzz } from './night-parts';
-import { playTracks } from './timeline';
+import { playCurves } from './timeline';
 import { WAKE_SUN_FACES, wakePlan } from './wake';
 import { WAKE_FACES } from './wake-pals';
 import type { PalFace } from '../pals/pal-svg';
@@ -38,19 +39,6 @@ type NightStageProps = {
   readonly children?: JSX.Element;
 };
 
-/** The class of each scene, which the smoke test looks for. */
-const MODE_CLASS: Readonly<Record<NightMode, string>> = { goodbye: 'goodbye', night: 'night-title', wake: 'wake-up' };
-
-const FACES: Readonly<Record<NightMode, readonly PalFace[]>> = {
-  goodbye: GOODBYE_FACES,
-  night: ['sleep'],
-  wake: WAKE_FACES,
-};
-
-/** The sun colours of the sunset stage (goodbye) and of the day (wake-up). */
-const SUNSET_SUN = 'oklch(0.8 0.16 54)';
-const DAY_SUN = 'oklch(0.89 0.16 96)';
-
 /** The middle of an element in the box of `root`, and its width. */
 const placeIn = (root: Element, el: Element): { x: number; y: number; width: number } => {
   const box = root.getBoundingClientRect();
@@ -58,8 +46,8 @@ const placeIn = (root: Element, el: Element): { x: number; y: number; width: num
   return { x: rect.left - box.left + rect.width / 2, y: rect.top - box.top + rect.height / 2, width: rect.width };
 };
 
-/** The wake-up scene: puts the sun behind the logo, and gives the tracks with the measured distances. */
-const wakeTracks = (root: HTMLElement, reduce: boolean, restTimeOver: boolean): Track[] => {
+/** The wake-up scene: puts the sun behind the logo, and gives the curves with the measured distances. */
+const wakeCurves = (root: HTMLElement, reduce: boolean, restTimeOver: boolean): Curve[] => {
   const logo = root.querySelector('.logo');
   const sun = root.querySelector<HTMLElement>('.sun');
   const hill = root.querySelector<HTMLElement>('.night-hill');
@@ -79,8 +67,50 @@ const wakeTracks = (root: HTMLElement, reduce: boolean, restTimeOver: boolean): 
   return wakePlan({ reduce, restTimeOver, rise: hillTop + place.width * 0.6 - place.y, brandShift });
 };
 
+/** What each scene of the stage has. */
+type Scene = {
+  /** The class of the scene, which the smoke test looks for. */
+  readonly class: string;
+  /** The faces of the stacks of the pals, bottom first. */
+  readonly faces: readonly PalFace[];
+  /** The sunset sky behind the night sky. */
+  readonly sunsetSky: boolean;
+  /** The big sun, if the scene has one. */
+  readonly sun?: { readonly faces: readonly SunFace[]; readonly color: string; readonly rays: SunRays };
+  /** The play button. */
+  readonly play: boolean;
+  /** The curves of the scene, for the stage that shows. */
+  readonly plan: (stage: HTMLElement, props: NightStageProps) => Curve[];
+};
+
+const SCENES: Readonly<Record<NightMode, Scene>> = {
+  goodbye: {
+    class: 'goodbye',
+    faces: GOODBYE_FACES,
+    sunsetSky: true,
+    sun: { faces: GOODBYE_SUN_FACES, color: SUN_COLORS.sunset, rays: RAYS.sunset },
+    play: false,
+    plan: (_, props) => goodbyePlan(props.reduce),
+  },
+  night: {
+    class: 'night-title',
+    faces: ['sleep'],
+    sunsetSky: false,
+    play: false,
+    plan: (_, props) => nightPlan(props.reduce),
+  },
+  wake: {
+    class: 'wake-up',
+    faces: WAKE_FACES,
+    sunsetSky: false,
+    sun: { faces: WAKE_SUN_FACES, color: SUN_COLORS.day, rays: { opacity: 0, scale: 0.7 } },
+    play: true,
+    plan: (stage, props) => wakeCurves(stage, props.reduce, props.restTimeOver ?? false),
+  },
+};
+
 /** The skies, the moon, the sun, and the hill: everything behind the logo and the pals. */
-const Sky = (props: { readonly mode: NightMode }): JSX.Element => (
+const Sky = (props: { readonly scene: Scene }): JSX.Element => (
   <>
     <div class="night-layer stage-backdrop" />
     <div class="night-layer night-sky-dawn" data-part="sky-dawn" />
@@ -88,7 +118,7 @@ const Sky = (props: { readonly mode: NightMode }): JSX.Element => (
       <Stars />
     </div>
     <div class="night-layer night-light" data-part="first-light" />
-    <Show when={props.mode === 'goodbye'}>
+    <Show when={props.scene.sunsetSky}>
       <div class="night-layer night-sky-sunset" data-part="sky-sunset" />
     </Show>
     <div class="night-moon" data-part="moon">
@@ -97,18 +127,15 @@ const Sky = (props: { readonly mode: NightMode }): JSX.Element => (
     <div class="night-moon night-moon-low">
       <Moon id="night-moon-low" />
     </div>
-    <Show when={props.mode === 'goodbye'}>
-      <Sun class="night-sun" faces={GOODBYE_SUN_FACES} color={SUNSET_SUN} rays={{ opacity: 0, scale: 0.72 }} />
-    </Show>
-    <Show when={props.mode === 'wake'}>
-      <Sun class="night-sun" faces={WAKE_SUN_FACES} color={DAY_SUN} rays={{ opacity: 0, scale: 0.7 }} />
+    <Show when={props.scene.sun} keyed>
+      {(sun) => <Sun class="night-sun" faces={sun.faces} color={sun.color} rays={sun.rays} />}
     </Show>
     <div class="night-hill" data-part="hill" />
   </>
 );
 
 /** The logo with the wordmark, the play button of the wake-up scene, and the pals in their bed. */
-const Content = (props: { readonly mode: NightMode; readonly onLogoHold?: (() => void) | undefined }): JSX.Element => (
+const Content = (props: { readonly scene: Scene; readonly onLogoHold?: (() => void) | undefined }): JSX.Element => (
   <div class="night-content">
     <div class="title-brand night-brand" data-part="brand">
       <Logo sleepy onHold={props.onLogoHold} />
@@ -116,14 +143,14 @@ const Content = (props: { readonly mode: NightMode; readonly onLogoHold?: (() =>
         Beat <span>Pals</span>
       </h1>
     </div>
-    <Show when={props.mode === 'wake'}>
+    <Show when={props.scene.play}>
       <PlaySign />
     </Show>
     <div class="pal-band night-band" aria-hidden="true">
       <For each={PALS}>
         {(index) => (
           <span class="night-pal" data-pal={index}>
-            <SessionPal index={index} faces={FACES[props.mode]} />
+            <SessionPal index={index} faces={props.scene.faces} />
           </span>
         )}
       </For>
@@ -139,12 +166,7 @@ export const NightStage = (props: NightStageProps): JSX.Element => {
     if (!root) {
       return;
     }
-    const plans: Readonly<Record<NightMode, (stage: HTMLElement) => Track[]>> = {
-      goodbye: () => goodbyePlan(props.reduce),
-      night: () => nightPlan(props.reduce),
-      wake: (stage) => wakeTracks(stage, props.reduce, props.restTimeOver ?? false),
-    };
-    playTracks(root, plans[props.mode](root));
+    playCurves(root, SCENES[props.mode].plan(root, props));
     props.onShown?.();
   });
   return (
@@ -155,13 +177,13 @@ export const NightStage = (props: NightStageProps): JSX.Element => {
       class={[
         'night-stage',
         `night-${props.mode}`,
-        MODE_CLASS[props.mode],
+        SCENES[props.mode].class,
         { 'night-rest-time-over': props.restTimeOver ?? false, 'night-reduce': props.reduce },
       ]}
       onPointerUp={() => props.onPointerUp?.()}
     >
-      <Sky mode={props.mode} />
-      <Content mode={props.mode} onLogoHold={props.onLogoHold} />
+      <Sky scene={SCENES[props.mode]} />
+      <Content scene={SCENES[props.mode]} onLogoHold={props.onLogoHold} />
       {props.children}
     </main>
   );

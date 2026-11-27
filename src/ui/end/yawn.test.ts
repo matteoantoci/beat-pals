@@ -27,9 +27,9 @@ describe('the yawn of the end scene', () => {
   });
 
   it('keeps each stretch of the pals within 6% of 1.0 on each axis', () => {
-    expect(SIT).toEqual({ x: 1.05, y: 0.94 });
-    expect(STRETCH).toEqual({ x: 0.96, y: 1.06 });
-    for (const scale of [SIT.x, SIT.y, STRETCH.x, STRETCH.y]) {
+    expect(SIT).toEqual([1.05, 0.94]);
+    expect(STRETCH).toEqual([0.96, 1.06]);
+    for (const scale of [...SIT, ...STRETCH]) {
       expect(scale).toBeGreaterThanOrEqual(0.94);
       expect(scale).toBeLessThanOrEqual(1.06);
     }

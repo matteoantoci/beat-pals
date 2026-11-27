@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { GOODBYE_SEC, GOODBYE_SOUNDS, goodbyePlan } from './goodbye';
-import { BOW, BREATH, GOODBYE_YAWN, nightPlan, SLEEP_POSE, WAKE_STRETCH, type Key, type Track } from './motion';
+import { BOW, BREATH, GOODBYE_YAWN, nightPlan, SLEEP_POSE, WAKE_STRETCH, type Curve } from './motion';
 import { WAKE_SEC, WAKE_SOUNDS, wakePlan } from './wake';
+import type { Key } from '../motion/keys';
 
 /** The keys before and after scene time `at`. */
 const around = (keys: readonly Key[], at: number): readonly [Key | undefined, Key | undefined] => {
@@ -10,21 +11,21 @@ const around = (keys: readonly Key[], at: number): readonly [Key | undefined, Ke
 };
 
 /** The scene time of a loop: after its last key, it starts again at its first key. */
-const loopTime = (track: Track, at: number): number => {
-  const first = track.keys[0]?.[0] ?? 0;
-  const period = (track.keys.at(-1)?.[0] ?? first) - first;
-  return track.loop && at > first + period && period > 0 ? first + ((at - first) % period) : at;
+const loopTime = (curve: Curve, at: number): number => {
+  const first = curve.keys[0]?.[0] ?? 0;
+  const period = (curve.keys.at(-1)?.[0] ?? first) - first;
+  return curve.loop && at > first + period && period > 0 ? first + ((at - first) % period) : at;
 };
 
-// The value of a track at scene time `at`, as the Web Animations of the scene give it (fill both): the first value
+// The value of a curve at scene time `at`, as the Web Animations of the scene give it (fill both): the first value
 // before the first key, the last value after the last key, and a straight line between 2 keys. The easings of the
 // scenes never go past their 2 keys, so the straight line gives the same range.
-const valueAt = (track: Track, at: number): string => {
-  const [before, after] = around(track.keys, loopTime(track, at));
+const valueAt = (curve: Curve, at: number): string => {
+  const [before, after] = around(curve.keys, loopTime(curve, at));
   if (!before || !after) {
     return (before ?? after)?.[1] ?? '';
   }
-  const share = (loopTime(track, at) - before[0]) / (after[0] - before[0]);
+  const share = (loopTime(curve, at) - before[0]) / (after[0] - before[0]);
   const to = after[1].split(' ').map(Number);
   return before[1]
     .split(' ')
@@ -39,21 +40,21 @@ const axes = (value: string): [number, number] => {
   return [x, y];
 };
 
-type Probe = { readonly part: Track['part']; readonly pal: number; readonly at: number };
+type Probe = { readonly part: Curve['part']; readonly pal: number; readonly at: number };
 
-const scaleOf = (tracks: readonly Track[], { part, pal, at }: Probe): [number, number] => {
-  const found = tracks.find((each) => each.part === part && each.pal === pal && each.prop === 'scale');
+const scaleOf = (curves: readonly Curve[], { part, pal, at }: Probe): [number, number] => {
+  const found = curves.find((each) => each.part === part && each.pal === pal && each.prop === 'scale');
   return found ? axes(valueAt(found, at)) : [1, 1];
 };
 
 /** The largest distance from 1.0 of the body scale times the stack scale of each pal, over 20 s of the scene. */
-const worstSquash = (tracks: readonly Track[]): number =>
+const worstSquash = (curves: readonly Curve[]): number =>
   Math.max(
     ...[0, 1, 2].flatMap((pal) =>
       Array.from({ length: 2001 }, (_, step) => {
         const at = step / 100;
-        const body = scaleOf(tracks, { part: 'body', pal, at });
-        const stack = scaleOf(tracks, { part: 'stack', pal, at });
+        const body = scaleOf(curves, { part: 'body', pal, at });
+        const stack = scaleOf(curves, { part: 'stack', pal, at });
         return Math.max(Math.abs(body[0] * stack[0] - 1), Math.abs(body[1] * stack[1] - 1));
       })
     )
@@ -103,8 +104,8 @@ describe('the squash and stretch of the pals', () => {
 
   it.each(Object.entries(plans))(
     'stay within 6%% of 1.0 on each axis in %s, a pose and its loop together',
-    (_, tracks) => {
-      expect(worstSquash(tracks)).toBeLessThanOrEqual(0.06 + 1e-9);
+    (_, curves) => {
+      expect(worstSquash(curves)).toBeLessThanOrEqual(0.06 + 1e-9);
     }
   );
 
@@ -145,14 +146,14 @@ describe('the sun and the moon', () => {
 });
 
 describe('reduced motion', () => {
-  it.each(Object.entries(reduced))('gives no loop in %s', (_, tracks) => {
-    expect(tracks.filter((each) => each.loop)).toEqual([]);
+  it.each(Object.entries(reduced))('gives no loop in %s', (_, curves) => {
+    expect(curves.filter((each) => each.loop)).toEqual([]);
   });
 
   // A colour change is a fade too. A still value that never changes is a pose, not a motion: the arms keep their
   // raised pose for the fade.
-  it.each(Object.entries(reduced))('gives only fades in %s, and no move of a visible part', (_, tracks) => {
-    const moves = tracks.filter(
+  it.each(Object.entries(reduced))('gives only fades in %s, and no move of a visible part', (_, curves) => {
+    const moves = curves.filter(
       ({ part, prop }) => part !== 'brand' && !['opacity', 'background-color', '--sunc'].includes(prop)
     );
     expect(moves.filter(({ keys }) => new Set(keys.map(([, value]) => value)).size > 1)).toEqual([]);
