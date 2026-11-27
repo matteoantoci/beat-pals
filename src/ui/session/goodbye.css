@@ -1,6 +1,0 @@
-/* The goodbye scene (src/ui/session/GoodbyeScene.tsx), in its plain look: the night sky of the night title
-   (src/ui/title/night.css), with no art. The full scene comes later (ticket 07). */
-.goodbye {
-  height: 100%;
-  background: linear-gradient(to bottom, oklch(0.14 0.05 275), oklch(0.22 0.08 285));
-}

@@ -1,4 +1,4 @@
-import { createSignal, Match, onSettled, Show, Switch } from 'solid-js';
+import { createSignal, Match, onSettled, Switch } from 'solid-js';
 import { endStage } from '../model';
 import { savePlay } from '../shell/save';
 import { keepSongsFresh } from '../shell/songs';
@@ -6,9 +6,8 @@ import { EndScene } from './end/EndScene';
 import { ParentArea } from './parent/ParentArea';
 import { PlayScreen } from './play/PlayScreen';
 import { GoodbyeScene } from './session/GoodbyeScene';
+import { Title, wakeRoutes } from './session/TitleRoute';
 import { SongList, type SongChoice, type SunView } from './songs/SongList';
-import { NightTitle } from './title/NightTitle';
-import { TitleScreen } from './title/TitleScreen';
 import type { PlayOutcome, SunStage } from '../model';
 import type { PlayResult } from './play/play-load';
 import type { SessionController } from './session/controller';
@@ -22,8 +21,10 @@ import type { Accessor } from 'solid-js';
 // Play sessions (play-sessions spec, "Session rules"): each open of the song list gives the stage of the sun, and
 // each song start asks the session if it is the last song. After the last song, the end scene button and home on the
 // pause screen open the goodbye scene, and then the title screen shows the night title while the pals sleep. The
-// time counts on the song list, the play screen (with the load scene and the pause screen), and the end scene. When
-// a hidden gap ends the session on one of these screens, the title screen shows.
+// wake-up scene plays at a tap on the night title after the rest time, and when the parent area closes after "Open a
+// new session now"; then the normal title shows, and the title music starts. The time counts on the song list, the
+// play screen (with the load scene and the pause screen), and the end scene. When a hidden gap ends the session on
+// one of these screens, the title screen shows.
 
 type Screen = 'title' | 'songs' | 'parent' | 'play' | 'end' | 'goodbye';
 
@@ -122,21 +123,17 @@ export const App = (props: { readonly session: SessionController }): JSX.Element
   // After the setup, the new songs download at the start and at each return to the app (spec, "Delivery").
   onSettled(keepSongsFresh);
   const { shown, sun, playing, ended, go, openList, play, done, end } = appRoutes(session);
+  const wakes = wakeRoutes(session, go);
   return (
     <Switch>
       <Match when={shown() === 'title'}>
-        <Show
-          when={session.state().kind === 'asleep'}
-          fallback={<TitleScreen onStart={openList} onParent={() => go('parent')} />}
-        >
-          <NightTitle dawn={session.restOver()} onWake={() => session.send('wake-tap')} onParent={() => go('parent')} />
-        </Show>
+        <Title session={session} routes={wakes} onStart={openList} />
       </Match>
       <Match when={shown() === 'songs'}>
         <SongList sun={sun()} onHome={() => go('title')} onPlay={play} />
       </Match>
       <Match when={shown() === 'parent'}>
-        <ParentArea session={session} onClose={() => go('title')} />
+        <ParentArea session={session} onClose={wakes.closeParent} />
       </Match>
       <Match when={shown() === 'play' && playing()} keyed>
         {(current) => (

@@ -1,22 +1,46 @@
 import { onSettled } from 'solid-js';
-import { decodeSessionPals } from '../../../pals/pal-svg';
-import { NightTitle } from '../../../title/NightTitle';
+import { NightStage, type NightMode } from '../../../night/NightStage';
+import { decodePals, decodeSessionPals } from '../../../pals/pal-svg';
 import type { SessionScreenProps, SessionScreens } from '../registry';
 import type { JSX } from '@solidjs/web';
 
-// The `night` and `dawn` screens of the session demo (play-sessions spec, "Demo route"): the night title while the
-// rest time runs, and the night title after the rest time, with the lighter sky. A tap and the parent check change
-// nothing here.
+// The screens of the session end and start in the session demo (play-sessions spec, "Demo route"): `goodbye` (the
+// goodbye scene), `night` (the night title while the rest time runs), `dawn` (the night title after the rest time,
+// with the first light), and `wake` (the wake-up scene after the first light). They show the stage of the scenes
+// (src/ui/night/NightStage.tsx) with no sound, no timer, and no tap.
 
-const nothing = (): void => undefined;
-
-const nightScreen =
-  (dawn: boolean) =>
+const stageScreen =
+  (mode: NightMode, firstLight: boolean) =>
   (props: SessionScreenProps): JSX.Element => {
+    let shown = false;
+    let decoded = false;
+    const ready = (): void => {
+      if (shown && decoded) {
+        props.ready();
+      }
+    };
     onSettled(() => {
-      decodeSessionPals().then(props.ready, reportError);
+      Promise.all([decodePals(), decodeSessionPals()]).then(() => {
+        decoded = true;
+        ready();
+      }, reportError);
     });
-    return <NightTitle dawn={dawn} onWake={nothing} onParent={nothing} />;
+    return (
+      <NightStage
+        mode={mode}
+        reduce={props.reduce}
+        firstLight={firstLight}
+        onShown={() => {
+          shown = true;
+          ready();
+        }}
+      />
+    );
   };
 
-export const screens: SessionScreens = { night: nightScreen(false), dawn: nightScreen(true) };
+export const screens: SessionScreens = {
+  goodbye: stageScreen('goodbye', false),
+  night: stageScreen('night', false),
+  dawn: stageScreen('night', true),
+  wake: stageScreen('wake', true),
+};

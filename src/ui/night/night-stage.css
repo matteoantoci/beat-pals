@@ -1,0 +1,414 @@
+/* The stage of the session end and start (src/ui/night/NightStage.tsx): the goodbye scene, the night title, and the
+   wake-up scene, as the title scenes of the sunset prototype. The stage fills the whole screen, also under the safe
+   areas, so the sky, the hill, and the blanket reach the edges. The content keeps inside the safe areas, which come
+   from the --inset-* properties of the session demo, or from env() in the app. The scenes animate the parts
+   (./motion.ts); this sheet gives the night look of each part. */
+.night-stage {
+  --sat: var(--inset-top, env(safe-area-inset-top, 0px));
+  --sar: var(--inset-right, env(safe-area-inset-right, 0px));
+  --sab: var(--inset-bottom, env(safe-area-inset-bottom, 0px));
+  --sal: var(--inset-left, env(safe-area-inset-left, 0px));
+  --hill-h: calc(var(--sab) + 101px);
+  --big: 150px;
+  --sun-x: 50%;
+  --sun-lift: 84px;
+  --moon-top: calc(var(--sat) + 8px);
+  --low-moon: calc(100% - var(--hill-h) - 64px);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.night-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.night-sky {
+  background: linear-gradient(
+    oklch(0.13 0.05 272),
+    oklch(0.18 0.07 280) 45%,
+    oklch(0.25 0.1 287) calc(100% - var(--hill-h))
+  );
+}
+
+.night-sky-sunset {
+  background: linear-gradient(
+    oklch(0.36 0.14 298),
+    oklch(0.52 0.17 350) 38%,
+    oklch(0.66 0.17 28) 66%,
+    oklch(0.78 0.15 60) calc(100% - var(--hill-h))
+  );
+}
+
+.night-sky-dawn {
+  opacity: 0;
+  background: linear-gradient(
+    oklch(0.4 0.13 285),
+    oklch(0.58 0.13 335) 45%,
+    oklch(0.78 0.13 50) 75%,
+    oklch(0.88 0.11 85) calc(100% - var(--hill-h))
+  );
+}
+
+/* The first light after the rest time: a warm glow that comes up behind the hill. It fades in, also while the night
+   title shows. */
+.night-light {
+  opacity: 0;
+  background:
+    radial-gradient(
+      120% 46% at 50% calc(100% - var(--hill-h)),
+      oklch(0.8 0.12 60 / 0.85),
+      oklch(0.6 0.13 20 / 0.45) 45%,
+      transparent 100%
+    ),
+    linear-gradient(transparent 40%, oklch(0.42 0.12 320 / 0.6) calc(100% - var(--hill-h)));
+  transition: opacity 2s ease-in-out;
+}
+
+.night-first-light .night-light {
+  opacity: 1;
+}
+
+.night-stars {
+  position: absolute;
+  inset: 0 0 var(--hill-h) 0;
+}
+
+.night-stars i {
+  position: absolute;
+  border-radius: 50%;
+  background: oklch(0.97 0.03 95);
+  animation: night-twinkle 3.2s ease-in-out infinite;
+}
+
+/* The first light pales the stars. */
+.night-first-light .night-stars {
+  opacity: 0.55;
+  transition: opacity 2s ease-in-out;
+}
+
+.night-moon {
+  position: absolute;
+  z-index: 1;
+  top: var(--moon-top);
+  right: calc(var(--sar) + 16px);
+  width: 60px;
+  height: 60px;
+  transition: top 2.4s ease-in-out;
+}
+
+/* After the rest time, the moon is low over the hill. */
+.night-first-light .night-moon {
+  top: var(--low-moon);
+}
+
+.night-moon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.night-moon-halo {
+  stop-color: oklch(0.95 0.06 95);
+}
+
+.night-moon-face {
+  fill: oklch(0.94 0.07 95);
+}
+
+.night-moon-spot {
+  fill: oklch(0.86 0.06 95);
+}
+
+/* The big sun of the goodbye scene. The wake-up scene puts it behind the logo (NightStage.tsx). */
+.night-stage .night-sun {
+  z-index: 1;
+  left: var(--sun-x);
+  top: calc(100% - var(--hill-h) - var(--sun-lift));
+  --sun-d: var(--big);
+}
+
+.night-hill {
+  position: absolute;
+  z-index: 2;
+  left: -12%;
+  right: -12%;
+  bottom: 0;
+  height: var(--hill-h);
+  border-radius: 50% 50% 0 0 / 40px 40px 0 0;
+  background: oklch(0.17 0.07 280);
+}
+
+.night-goodbye .night-hill {
+  background: oklch(0.3 0.13 290);
+}
+
+/* The content: the layout of the title screen (src/ui/title/title.css) inside the safe areas. */
+.night-content {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  justify-items: center;
+  align-items: center;
+  height: 100%;
+  box-sizing: border-box;
+  padding: calc(var(--sat) + 24px) var(--sar) calc(var(--sab) + 16px) var(--sal);
+}
+
+/* The record stands still while the logo sleeps. The wake-up scene turns it again. */
+.night-stage .logo-disc {
+  animation: none;
+}
+
+.night-stage .logo-label {
+  transform-origin: 60px 60px;
+}
+
+.night-band {
+  grid-row: 4;
+}
+
+.night-band::before {
+  background: oklch(0.1 0.05 280 / 0.6);
+}
+
+.night-pal {
+  position: relative;
+  width: 108px;
+  height: 108px;
+}
+
+.night-pal::after {
+  content: '';
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: -6px;
+  height: 10px;
+  border-radius: 50%;
+  background: oklch(0.16 0.08 285 / 0.6);
+}
+
+/* The play button of the wake-up scene (title.css) waits until it pops in, and then pulses. */
+.night-play {
+  opacity: 0;
+}
+
+/* The blanket: its wavy edge over the pals, and the cloth down to the bottom of the screen, as in a bed. */
+.night-blanket {
+  --blanket-top: 58px;
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: calc(-1 * (var(--sab) + 40px));
+  display: flex;
+  flex-direction: column;
+  width: calc(100% + 28px);
+  height: calc(var(--blanket-top) + var(--sab) + 40px);
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.night-blanket svg {
+  display: block;
+  flex: none;
+  width: 100%;
+  height: var(--blanket-top);
+  overflow: visible;
+}
+
+.night-blanket::after {
+  content: '';
+  flex: 1;
+  margin: -1px 1.62% 0;
+  background: var(--grape-600);
+}
+
+.night-blanket-cloth {
+  fill: var(--grape-600);
+}
+
+.night-blanket-edge {
+  fill: none;
+  stroke: var(--grape-950);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.night-blanket-seam {
+  fill: none;
+  stroke: oklch(0.6 0.16 283);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.night-blanket-star {
+  fill: var(--grape-300);
+  opacity: 0.9;
+}
+
+.night-blanket-lemon {
+  fill: var(--lemon);
+}
+
+.night-zzz {
+  position: absolute;
+  z-index: 3;
+  right: 2%;
+  bottom: 88%;
+  width: 90px;
+  height: 80px;
+  pointer-events: none;
+}
+
+.night-zzz svg {
+  position: absolute;
+  overflow: visible;
+  opacity: 0;
+  animation: night-z 3.6s ease-out infinite;
+}
+
+.night-zzz path {
+  fill: none;
+  stroke: oklch(0.95 0.04 95);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.night-zzz svg:nth-child(1) {
+  left: 0;
+  bottom: 0;
+  width: 13px;
+  height: 15px;
+}
+
+.night-zzz svg:nth-child(2) {
+  left: 18px;
+  bottom: 18px;
+  width: 17px;
+  height: 20px;
+  animation-delay: 1.2s;
+}
+
+.night-zzz svg:nth-child(3) {
+  left: 40px;
+  bottom: 40px;
+  width: 22px;
+  height: 25px;
+  animation-delay: 2.4s;
+}
+
+@keyframes night-twinkle {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes night-z {
+  0% {
+    opacity: 0;
+    transform: translate(0, 10px);
+  }
+
+  20% {
+    opacity: 0.9;
+  }
+
+  80% {
+    opacity: 0.8;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(10px, -20px);
+  }
+}
+
+/* Landscape: the logo and the wordmark take both columns (the play button of the wake-up scene takes the right
+   column), and the band stands on the floor. */
+@media (orientation: landscape) {
+  .night-stage {
+    --hill-h: calc(var(--sab) + 89px);
+    --big: 108px;
+    --sun-x: 76%;
+    --sun-lift: 52px;
+  }
+
+  .night-moon {
+    width: 56px;
+    height: 56px;
+    --moon-top: calc(var(--sat) + 14px);
+  }
+
+  .night-content {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr auto;
+    column-gap: 24px;
+    padding-top: calc(var(--sat) + 12px);
+  }
+
+  .night-brand {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-top: 0;
+  }
+
+  .night-wake .night-brand {
+    grid-column: 1;
+  }
+
+  .night-play {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0;
+  }
+
+  .night-band {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .night-pal {
+    width: 88px;
+    height: 88px;
+  }
+
+  .night-blanket {
+    --blanket-top: 48px;
+  }
+}
+
+/* Reduced motion (and the `reduce` flag of the session demo): no loop. The stars and the "Zzz" keep still, the
+   first light only fades, and the moon does not move. */
+.night-reduce .night-stars i,
+.night-reduce .night-play {
+  animation: none;
+}
+
+.night-reduce .night-zzz svg {
+  animation: none;
+  opacity: 0.85;
+}
+
+.night-reduce .night-zzz svg:nth-child(2) {
+  translate: 0 -2px;
+}
+
+.night-reduce .night-zzz svg:nth-child(3) {
+  translate: 0 -4px;
+}
+
+.night-reduce .night-moon {
+  transition: none;
+}
