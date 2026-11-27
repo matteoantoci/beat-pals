@@ -4,6 +4,8 @@ import { progressOf } from '../../shell/save';
 import { loadFamilyKey, readCover, readSongStore, watchDownload } from '../../shell/songs';
 import { playTitleMusic } from '../../sound';
 import { palPicture } from '../pals/pal-svg';
+import { reducedMotion } from '../play/reduced-motion';
+import { SkyStrip } from '../sun/SkyStrip';
 import { Record, Stars } from './record';
 import type { FamilyKey, IndexSong, SunStage, SunStep } from '../../model';
 import type { JSX } from '@solidjs/web';
@@ -15,8 +17,8 @@ import type { Accessor } from 'solid-js';
 // The title screen opens the list only when a song is ready. The title music plays on, and a tap starts it again
 // when it does not play.
 // Play sessions (play-sessions spec, "Screens and motion"): each open of the list gets the sun stage of the session
-// and the step of the sun that plays, or none. The list gives the stage in `data-sun-stage`; the sun comes later
-// (ticket 04).
+// and the step of the sun that plays, or none. The sky strip at the top shows them (src/ui/sun/SkyStrip.tsx), and
+// the list gives the stage in `data-sun-stage`.
 
 type Card = { song: IndexSong; picture: string | undefined };
 
@@ -147,6 +149,7 @@ export const SongList = (props: SongListProps): JSX.Element => {
   };
   return (
     <main class="song-list" data-sun-stage={props.sun.stage}>
+      <SkyStrip stage={props.sun.stage} step={props.sun.step} reduce={reducedMotion()} />
       <button type="button" class="song-home" aria-label="Home" onClick={() => props.onHome()}>
         <HomeIcon />
       </button>

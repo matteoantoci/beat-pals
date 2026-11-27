@@ -1,4 +1,5 @@
 import { createSignal, Match, onSettled, Show, Switch } from 'solid-js';
+import { endStage } from '../model';
 import { savePlay } from '../shell/save';
 import { keepSongsFresh } from '../shell/songs';
 import { EndScene } from './end/EndScene';
@@ -8,7 +9,7 @@ import { GoodbyeScene } from './session/GoodbyeScene';
 import { SongList, type SongChoice, type SunView } from './songs/SongList';
 import { NightTitle } from './title/NightTitle';
 import { TitleScreen } from './title/TitleScreen';
-import type { PlayOutcome } from '../model';
+import type { PlayOutcome, SunStage } from '../model';
 import type { PlayResult } from './play/play-load';
 import type { SessionController } from './session/controller';
 import type { JSX } from '@solidjs/web';
@@ -39,8 +40,16 @@ const COUNTED: Readonly<Record<Screen, boolean>> = {
 /** The song of the play screen. */
 type Playing = { readonly choice: SongChoice; readonly lastSong: boolean };
 
-/** The play that the end scene shows. */
-type Ended = Playing & { readonly score: number; readonly outcome: PlayOutcome };
+/** The play that the end scene shows, with the stage of the sun at the end of the song. */
+type Ended = Playing & { readonly score: number; readonly outcome: PlayOutcome; readonly stage: SunStage };
+
+/** Saves the play, and gives what the end scene shows. */
+const endedOf = (current: Playing, score: number, session: SessionController): Ended => ({
+  ...current,
+  score,
+  outcome: savePlay(current.choice.song.id, score),
+  stage: endStage(session.state(), session.now()),
+});
 
 type Routes = {
   /** The screen that shows: the title screen when the session ended on a counted screen (a hidden gap). */
@@ -82,7 +91,7 @@ const appRoutes = (session: SessionController): Routes => {
   };
   const end = (current: Playing, result: PlayResult): void => {
     if (result.kind === 'score') {
-      setEnded({ ...current, score: result.score, outcome: savePlay(current.choice.song.id, result.score) });
+      setEnded(endedOf(current, result.score, session));
       go('end');
       return;
     }
